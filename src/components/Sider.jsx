@@ -140,8 +140,9 @@
 //     </div>
 //   );
 // }
-import React, { useState } from "react";
+import React from "react";
 import { Layout, Menu, Avatar, Button, Typography } from "antd";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   UserOutlined,
   TeamOutlined,
@@ -158,16 +159,26 @@ const { Sider } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { label: "Overview", icon: <HomeOutlined /> },
-  { label: "My Loved Ones", icon: <UserOutlined /> },
-  { label: "Appointments", icon: <CalendarOutlined /> },
-  { label: "Care Team", icon: <TeamOutlined /> },
-  { label: "Messages", icon: <MessageOutlined /> },
-  { label: "Billing & Membership", icon: <DollarOutlined /> },
+  { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+  { label: "My Loved Ones", icon: <UserOutlined />, path: "/my_loved_ones" },
+  { label: "Appointments", icon: <CalendarOutlined />, path: "/appointments" },
+  { label: "Care Team", icon: <TeamOutlined />, path: "/care_team" },
+  { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+  {
+    label: "Billing & Membership",
+    icon: <DollarOutlined />,
+    path: "/billing_and_membership",
+  },
 ];
 
 export default function CustomSider() {
-  const [activeItem, setActiveItem] = useState("Overview");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the current active menu key by matching current pathname with menu paths
+  const activeItem =
+    menuItems.find((item) => location.pathname.startsWith(item.path))?.path ||
+    "/overview";
 
   return (
     <Sider
@@ -211,27 +222,19 @@ export default function CustomSider() {
           mode="inline"
           selectedKeys={[activeItem]}
           onClick={({ key }) => {
-            setActiveItem(key);
-            console.log(`${key} clicked`);
+            navigate(key);
+            console.log(`Navigating to ${key}`);
           }}
           style={{
             background: "transparent",
             borderInlineEnd: "none",
           }}
-        >
-          {menuItems.map((item) => (
-            <Menu.Item
-              key={item.label}
-              icon={item.icon}
-              style={{
-                borderRadius: 50,
-                margin: "4px 0",
-              }}
-            >
-              {item.label}
-            </Menu.Item>
-          ))}
-        </Menu>
+          items={menuItems.map(({ label, icon, path }) => ({
+            key: path,
+            icon,
+            label,
+          }))}
+        />
       </div>
 
       {/* Settings Button */}
