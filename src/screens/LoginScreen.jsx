@@ -1,8 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+const onSubmit = (e) => {
+    e.preventDefault();
+    if(email === "sponsor@verimed.com" && password === "Sponsor@123") {
+      window.location.href = "/overview";
+    } else {
+      alert("Invalid credentials. Please try again.");
+    }
+};
+
   return (
     <div
       style={{
@@ -105,7 +117,7 @@ export default function LoginScreen() {
               Please enter below details to access the dashboard
             </p>
 
-            <form>
+            <form onSubmit={onSubmit}>
               <label
                 style={{
                   display: "block",
@@ -128,6 +140,8 @@ export default function LoginScreen() {
                   fontSize: 14,
                 }}
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
 
               <label
@@ -153,6 +167,8 @@ export default function LoginScreen() {
                     fontSize: 14,
                   }}
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <span
                   style={{
