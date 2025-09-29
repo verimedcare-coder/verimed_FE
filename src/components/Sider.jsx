@@ -175,7 +175,6 @@ export default function CustomSider() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the current active menu key by matching current pathname with menu paths
   const activeItem =
     menuItems.find((item) => location.pathname.startsWith(item.path))?.path ||
     "/overview";
@@ -188,12 +187,13 @@ export default function CustomSider() {
         background: "#007F5F1F",
         position: "sticky",
         top: 0,
-        padding: "20px 20px",
+        padding: "20px",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        justifyContent: "space-between", // 👈 keeps top and bottom separate
       }}
     >
+      {/* TOP SECTION */}
       <div>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -223,7 +223,6 @@ export default function CustomSider() {
           selectedKeys={[activeItem]}
           onClick={({ key }) => {
             navigate(key);
-            console.log(`Navigating to ${key}`);
           }}
           style={{
             background: "transparent",
@@ -233,12 +232,28 @@ export default function CustomSider() {
             key: path,
             icon,
             label,
+            style:
+              activeItem === path
+                ? {
+                    background: "#FFFFFF",
+                    border: "1px solid #007F5F",
+                    borderRadius: "200px",
+                    color: "#2E2E2E",
+                    fontWeight: 500,
+                  }
+                : {
+                    background: "transparent",
+                    border: "1px solid transparent",
+                    borderRadius: "200px",
+                    color: "#2E2E2E",
+                    fontWeight: 500,
+                  },
           }))}
         />
       </div>
 
-      {/* Settings Button */}
-      <div style={{ textAlign: "center", paddingTop: 10 }}>
+      {/* BOTTOM SECTION */}
+      <div style={{ textAlign: "center", marginTop: "25%" }}>
         <Button
           icon={<SettingOutlined />}
           block

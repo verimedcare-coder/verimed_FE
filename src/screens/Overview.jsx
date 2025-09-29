@@ -118,7 +118,7 @@ export default function Overview() {
           style={{
             padding: "30px",
             overflowY: "auto",
-            overflowX: "hidden", // 🚀 fix scroll
+            overflowX: "hidden",
             gap: 20,
             display: "flex",
             flexDirection: "column",
