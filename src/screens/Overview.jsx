@@ -13,6 +13,7 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
+import { Table } from "antd";
 
 export default function Overview() {
   const dotStyle = (color) => ({
@@ -97,6 +98,44 @@ export default function Overview() {
         "Patient Adheres To Prescribed Regimen, No Side Effects Reported.",
     },
   ];
+
+  const columns = [
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      width: 120,
+    },
+    {
+      title: "Time",
+      dataIndex: "time",
+      key: "time",
+      width: 120,
+    },
+    {
+      title: "Doctor/Nurse",
+      dataIndex: "doctor",
+      key: "doctor",
+      width: 180,
+    },
+    {
+      title: "Diagnostic",
+      dataIndex: "diagnostic",
+      key: "diagnostic",
+      width: 200,
+    },
+    {
+      title: "Comments",
+      dataIndex: "comments",
+      key: "comments",
+      ellipsis: true,
+    },
+  ];
+
+  const dataSource = medicalHistory.map((item, index) => ({
+    key: index,
+    ...item,
+  }));
 
   return (
     <div
@@ -480,34 +519,15 @@ export default function Overview() {
             <SectionHeader title="Medical History">
               <Primarybtn name="Get Appointment" />
             </SectionHeader>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  {[
-                    "Date",
-                    "Time",
-                    "Doctor/Nurse",
-                    "Diagnostic",
-                    "Comments",
-                  ].map((h) => (
-                    <th key={h} style={thStyle}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {medicalHistory.map((row, i) => (
-                  <tr key={i}>
-                    <td style={tdStyle}>{row.date}</td>
-                    <td style={tdStyle}>{row.time}</td>
-                    <td style={tdStyle}>{row.doctor}</td>
-                    <td style={tdStyle}>{row.diagnostic}</td>
-                    <td style={tdStyle}>{row.comments}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <Table
+              columns={columns}
+              dataSource={dataSource}
+              pagination={{ pageSize: 5 }} // Optional: adds pagination
+              scroll={{ x: true }} // ✅ Enables horizontal scroll only inside table if needed
+              bordered
+              style={{ width: "100%" }}
+            />
           </div>
         </div>
       </div>
@@ -515,7 +535,6 @@ export default function Overview() {
   );
 }
 
-/* 🔹 Reusable Section Header */
 function SectionHeader({ title, children }) {
   return (
     <div
