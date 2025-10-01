@@ -577,7 +577,11 @@ export default function Overview() {
                       style={{ cursor: "pointer", fontSize: "18px" }}
                       onClick={() => setShowCalendar(!showCalendar)}
                     >
-                      {showCalendar ? "▲" : "▼"}
+                      {showCalendar ? (
+                        <UpOutlined style={{ fontSize: 14 }} />
+                      ) : (
+                        <DownOutlined style={{ fontSize: 14 }} />
+                      )}
                     </span>
                   </div>
 
