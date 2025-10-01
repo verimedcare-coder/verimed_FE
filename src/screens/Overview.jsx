@@ -204,6 +204,33 @@ export default function Overview() {
 
   const appointmentDates = appointments.map((a) => a.date.toDateString());
 
+  // Appointment Details (left)
+  const appointmentDetails = [
+    {
+      date: "Aug 10, 2025 – 10:00 AM",
+      badge: "Physician In-Home Visit",
+      type: "Home Visit",
+      provider: "Nurse Clarisse A.",
+      status: "Confirmed",
+      comments:
+        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
+    },
+    {
+      date: "Sep 02, 2024 – 09:30 AM",
+      checkin: "Completed on time",
+      vitals: "BP: 130/85 / Blood Sugar: 108 mg/dL / Temperature: 36.8 °C",
+      comments:
+        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
+    },
+    {
+      date: "Sep 01, 2024 – 11:30 AM",
+      status: "Needs Monitoring",
+      comments:
+        "Patient stable, continue current hypertension medication. Encourage daily walking.",
+      next: "Aug 24, 2025 – Virtual consult with Dr. Paul",
+    },
+  ];
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -1145,41 +1172,172 @@ export default function Overview() {
               }}
             >
               {/* Left Section */}
-              <div
-                style={{
-                  backgroundColor: "white",
-                  padding: 20,
-                  borderRadius: 16,
-                }}
-              >
-                <p
-                  style={{ fontSize: 20, fontWeight: "600", color: "#2E2E2E" }}
-                >
-                  Appointment Details
-                </p>
-                <div style={{ gap: 15 }}>
-                  {/* appointment card */}
-                  <div
-                    style={{
-                      height: 206,
-                      borderWidth: 1,
-                      borderStyle: "solid",
-                      borderColor: "#004E89",
-                      backgroundColor: "#004E890A",
-                      padding: 20,
-                      borderRadius: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      Aug 10, 2025 – 10:00 AM
+              <div style={appointmentWrapper}>
+                <SectionHeader title="Appointment Details" />
+                <div style={timelineWrapper}>
+                  <div style={timelineLine}></div> {/* vertical line */}
+                  {appointmentDetails.map((item, index) => (
+                    <div key={index} style={timelineItem}>
+                      <div style={timelineDot}></div>
+                      <div style={timelineContent}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: -10,
+                          }}
+                        >
+                          <p style={apptDate}>{item.date} </p>
+                          <p>
+                            {item.badge && (
+                              <span style={badge}>{item.badge}</span>
+                            )}
+                          </p>
+                        </div>
+                        {item.type && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Type:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.type}
+                            </span>
+                          </p>
+                        )}
+                        {item.provider && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Assigned Provider:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.provider}
+                            </span>
+                          </p>
+                        )}
+                        {item.status && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Status:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.status}
+                            </span>
+                          </p>
+                        )}
+                        {item.checkin && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Check-in Status:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.checkin}
+                            </span>
+                          </p>
+                        )}
+                        {item.vitals && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Vitals Recorded:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.vitals}
+                            </span>
+                          </p>
+                        )}
+                        {item.comments && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Comments:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.comments}
+                            </span>
+                          </p>
+                        )}
+                        {item.next && (
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#2E2E2E",
+                            }}
+                          >
+                            Next Appointment:{" "}
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: "#06152B99",
+                              }}
+                            >
+                              {item.next}
+                            </span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -1563,4 +1721,76 @@ const tdStyle = {
   color: "#374151",
   borderBottom: "1px solid #F0F2F5",
   wordBreak: "break-word", // 🚀 wrap text
+};
+
+/* LEFT SIDE */
+const appointmentWrapper = {
+  background: "#fff",
+  borderRadius: "12px",
+  padding: "20px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 20,
+};
+
+const timelineWrapper = {
+  position: "relative",
+  marginLeft: 20,
+  display: "flex",
+  flexDirection: "column",
+  gap: 20,
+};
+
+const timelineLine = {
+  position: "absolute",
+  left: 5,
+  top: 0,
+  bottom: 0,
+  width: 2,
+  background: "#2E2E2E",
+  opacity: 0.1,
+};
+
+const timelineItem = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 15,
+  position: "relative",
+};
+
+const timelineDot = {
+  width: 12,
+  height: 12,
+  borderRadius: "50%",
+  background: "#004E89",
+  marginTop: 5,
+  flexShrink: 0,
+  zIndex: 1,
+};
+
+const timelineContent = {
+  background: "#004E890A",
+  border: "1px solid #E6E8EB",
+  borderRadius: "10px",
+  padding: "15px",
+  flex: 1,
+  gap: 16,
+};
+
+const apptDate = {
+  fontSize: 12,
+  fontWeight: 600,
+  marginBottom: 8,
+  color: "#2E2E2E",
+};
+
+const badge = {
+  background: "#FFFFFF",
+  color: "#2E2E2E",
+  fontSize: 12,
+  fontWeight: 500,
+  padding: "2px 8px",
+  borderRadius: "6px",
+  border: "1px solid #1B1B1B33",
+  marginLeft: 10,
 };
