@@ -679,7 +679,7 @@ const timelineDot = {
   width: 12,
   height: 12,
   borderRadius: "50%",
-  background: "#1762A6",
+  background: "#004E89",
   marginTop: 5,
   flexShrink: 0,
   zIndex: 1,
