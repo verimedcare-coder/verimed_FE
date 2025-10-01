@@ -5,45 +5,45 @@ import VerimedLogo from "../assets/icons/VerimedLogo.png";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-const onSubmit = (e) => {
-  e.preventDefault();
+  const onSubmit = (e) => {
+    e.preventDefault();
 
-  let userData = null;
+    let userData = null;
 
-  if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
-    userData = {
-      email,
-      type: "sponsor",
-    };
-    window.location.href = "/overview";
-  } else if (email === "patient@verimed.com" && password === "Patient@123") {
-    userData = {
-      email,
-      type: "patient",
-    };
-    window.location.href = "/overview";
-  } else if (email === "care@verimed.com" && password === "Care@123") {
-    userData = {
-      email,
-      type: "care",
-    };
-    window.location.href = "/overview";
-  } else if (email === "doctor@verimed.com" && password === "Doctor@123") {
-    userData = {
-      email,
-      type: "doctor",
-    };
-    window.location.href = "/overview";
-  } else {
-    alert("Invalid credentials. Please try again.");
-  }
+    if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
+      userData = {
+        email,
+        type: "sponsor",
+      };
+      window.location.href = "/overview";
+    } else if (email === "patient@verimed.com" && password === "Patient@123") {
+      userData = {
+        email,
+        type: "patient",
+      };
+      window.location.href = "/overview";
+    } else if (email === "care@verimed.com" && password === "Care@123") {
+      userData = {
+        email,
+        type: "care",
+      };
+      window.location.href = "/overview";
+    } else if (email === "doctor@verimed.com" && password === "Doctor@123") {
+      userData = {
+        email,
+        type: "doctor",
+      };
+      window.location.href = "/overview";
+    } else {
+      alert("Invalid credentials. Please try again.");
+    }
 
-  if (userData) {
-    localStorage.setItem("userData", JSON.stringify(userData));
-  }
-};
+    if (userData) {
+      localStorage.setItem("userData", JSON.stringify(userData));
+    }
+  };
 
   return (
     <div
