@@ -147,7 +147,7 @@ export default function Overview() {
   const appointments = [
     {
       id: 1,
-      date: new Date(2025, 7, 14), // Aug is month index 7 (0-based)
+      date: new Date(2025, 7, 14),
       doctor: "Dr. Ashton Cleve",
       time: "10:00am - 10:30am",
     },
@@ -582,71 +582,6 @@ export default function Overview() {
               )}
 
               {/* Appointment Cards */}
-              {/* {appointments
-                .filter(
-                  (a) =>
-                    a.date.getMonth() === currentMonth.getMonth() &&
-                    a.date.getFullYear() === currentMonth.getFullYear()
-                )
-                .map((appt) => {
-                  const isSelected = appt.id === selectedAppointmentId;
-
-                  return (
-                    <div
-                      key={appt.id}
-                      onClick={() => handleCardClick(appt)}
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        background: isSelected ? "#004C91" : "#F3F4F6",
-                        color: isSelected ? "#fff" : "#000",
-                        borderRadius: "8px",
-                        padding: "10px",
-                        cursor: "pointer",
-                        transition: "transform 0.15s, box-shadow 0.15s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow =
-                          "0 2px 8px rgba(0,0,0,0.15)";
-                        if (!isSelected) {
-                          e.currentTarget.style.background = "#004E89"; // light blue on hover
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = "none";
-                        if (!isSelected) {
-                          e.currentTarget.style.background = "#F3F4F6"; // revert to original
-                        }
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: isSelected ? "#00396E" : "#FFFFFF",
-                          color: isSelected ? "#fff" : "#000",
-                          borderRadius: "6px",
-                          width: "45px",
-                          textAlign: "center",
-                          padding: "5px 0",
-                        }}
-                      >
-                        <div style={{ fontSize: "13px" }}>
-                          {appt.date.toLocaleDateString("en-US", {
-                            weekday: "short",
-                          })}
-                        </div>
-                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                          {appt.date.getDate()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                          {appt.doctor}
-                        </div>
-                        <div style={{ fontSize: "13px" }}>{appt.time}</div>
-                      </div>
-                    </div>
-                  );
-                })} */}
               {appointments
                 .filter(
                   (a) =>
@@ -690,10 +625,8 @@ export default function Overview() {
                           e.currentTarget.style.color = "#000";
                           const dateBox =
                             e.currentTarget.querySelector(".date-box");
-                          // dateBox.style.background = "#FFFFFF";
-                          // dateBox.style.color = "#000";
-                          dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                          dateBox.style.color = "#fff"; // white text on blue
+                          dateBox.style.background = "#004C91";
+                          dateBox.style.color = "#fff";
                         }
                       }}
                     >
@@ -742,8 +675,8 @@ export default function Overview() {
             <Table
               columns={columns}
               dataSource={dataSource}
-              pagination={{ pageSize: 5 }} // Optional: adds pagination
-              scroll={{ x: true }} // ✅ Enables horizontal scroll only inside table if needed
+              pagination={{ pageSize: 5 }}
+              scroll={{ x: true }}
               bordered
               style={{ width: "100%" }}
             />
