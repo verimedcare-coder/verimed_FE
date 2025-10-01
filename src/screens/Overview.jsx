@@ -15,6 +15,7 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { Table } from "antd";
 import { useNavigate } from "react-router-dom";
+import { DownOutlined, UpOutlined } from "@ant-design/icons";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -153,7 +154,7 @@ export default function Overview() {
   const appointments = [
     {
       id: 1,
-      date: new Date(2025, 7, 14), // Aug is month index 7 (0-based)
+      date: new Date(2025, 7, 14),
       doctor: "Dr. Ashton Cleve",
       time: "10:00am - 10:30am",
     },
@@ -1481,7 +1482,6 @@ function InfoItem({ label, value }) {
 const cardStyle = {
   borderRadius: "12px",
   padding: "20px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   width: "100%",
   display: "flex",
   flexDirection: "column",
@@ -1531,7 +1531,7 @@ const vitalCard = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  border: "1px solid #E6E8EB",
+  border: "1px solid #1B1B1B1A",
   borderRadius: "10px",
   padding: "10px",
   minHeight: "80px",
@@ -1544,7 +1544,7 @@ const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
-  tableLayout: "fixed", // 🚀 keeps inside container
+  tableLayout: "fixed",
 };
 
 const thStyle = {
