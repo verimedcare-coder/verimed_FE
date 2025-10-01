@@ -561,9 +561,13 @@ export default function Overview() {
                         display: "grid",
                         gridTemplateColumns: "repeat(7, 1fr)",
                         gap: "4px",
-                        marginTop: "5px",
+                        marginTop: "-15px",
                         textAlign: "center",
                         fontSize: "12px",
+                        padding: "10px 10px ",
+                        borderBottomRightRadius: 8,
+                        borderBottomLeftRadius: 8,
+                        background: "#007F5F14",
                       }}
                     >
                       {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
@@ -580,11 +584,14 @@ export default function Overview() {
                             key={day.toISOString()}
                             style={{
                               padding: "4px 0",
-                              borderRadius: "4px",
+                              borderRadius: "6px",
+                              textAlign: "center",
                               background: isAppointment
-                                ? "#FFF8E1"
+                                ? "linear-gradient(180deg, #B78520, #F0C330)"
                                 : "transparent",
-                              position: "relative",
+                              color: isAppointment ? "white" : "inherit",
+                              fontWeight: isAppointment ? 600 : 400,
+                              transition: "background 0.3s ease",
                             }}
                           >
                             {day.getDate()}
@@ -1280,7 +1287,11 @@ export default function Overview() {
                     style={{ cursor: "pointer", fontSize: "18px" }}
                     onClick={() => setShowCalendar(!showCalendar)}
                   >
-                    {showCalendar ? "▲" : "▼"}
+                    {showCalendar ? (
+                      <UpOutlined style={{ fontSize: 14 }} />
+                    ) : (
+                      <DownOutlined style={{ fontSize: 14 }} />
+                    )}
                   </span>
                 </div>
 
@@ -1380,10 +1391,9 @@ export default function Overview() {
                             e.currentTarget.style.color = "#000";
                             const dateBox =
                               e.currentTarget.querySelector(".date-box");
-                            // dateBox.style.background = "#FFFFFF";
-                            // dateBox.style.color = "#000";
-                            dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                            dateBox.style.color = "#fff"; // white text on blue
+
+                            dateBox.style.background = "#004C91";
+                            dateBox.style.color = "#fff";
                           }
                         }}
                       >
