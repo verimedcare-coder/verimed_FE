@@ -15,6 +15,7 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { Table } from "antd";
 import { useNavigate } from "react-router-dom";
+import { DownOutlined, UpOutlined } from "@ant-design/icons";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -524,7 +525,11 @@ export default function Overview() {
                   style={{ cursor: "pointer", fontSize: "18px" }}
                   onClick={() => setShowCalendar(!showCalendar)}
                 >
-                  {showCalendar ? "▲" : "▼"}
+                  {showCalendar ? (
+                    <UpOutlined style={{ fontSize: 14 }} />
+                  ) : (
+                    <DownOutlined style={{ fontSize: 14 }} />
+                  )}
                 </span>
               </div>
 
@@ -535,9 +540,14 @@ export default function Overview() {
                     display: "grid",
                     gridTemplateColumns: "repeat(7, 1fr)",
                     gap: "4px",
-                    marginTop: "5px",
+                    marginTop: "-15px",
                     textAlign: "center",
                     fontSize: "12px",
+                    padding: "10px 10px ",
+                    borderBottomRightRadius: 8,
+                    borderBottomLeftRadius: 8,
+
+                    background: "#007F5F14",
                   }}
                 >
                   {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
@@ -554,26 +564,17 @@ export default function Overview() {
                         key={day.toISOString()}
                         style={{
                           padding: "4px 0",
-                          borderRadius: "4px",
-                          background: isAppointment ? "#FFF8E1" : "transparent",
-                          position: "relative",
+                          borderRadius: "6px",
+                          textAlign: "center",
+                          background: isAppointment
+                            ? "linear-gradient(180deg, #B78520, #F0C330)" // ✨ soft gold gradient
+                            : "transparent",
+                          color: isAppointment ? "white" : "inherit",
+                          fontWeight: isAppointment ? 600 : 400,
+                          transition: "background 0.3s ease",
                         }}
                       >
                         {day.getDate()}
-                        {isAppointment && (
-                          <div
-                            style={{
-                              width: "5px",
-                              height: "5px",
-                              background: "#B38C1D",
-                              borderRadius: "50%",
-                              position: "absolute",
-                              bottom: "2px",
-                              left: "50%",
-                              transform: "translateX(-50%)",
-                            }}
-                          ></div>
-                        )}
                       </div>
                     );
                   })}
@@ -806,7 +807,6 @@ function InfoItem({ label, value }) {
 const cardStyle = {
   borderRadius: "12px",
   padding: "20px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   width: "100%",
   display: "flex",
   flexDirection: "column",
@@ -856,7 +856,7 @@ const vitalCard = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  border: "1px solid #E6E8EB",
+  border: "1px solid #1B1B1B1A",
   borderRadius: "10px",
   padding: "10px",
   minHeight: "80px",
