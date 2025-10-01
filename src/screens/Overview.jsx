@@ -802,7 +802,7 @@ const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
-  tableLayout: "fixed", // 🚀 keeps inside container
+  tableLayout: "fixed",
 };
 
 const thStyle = {
