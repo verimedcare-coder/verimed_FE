@@ -119,18 +119,18 @@ export default function Banner() {
         }}
       >
         {/* Half circle */}
-        <div
-          style={{
-            position: "absolute",
-            right: "-100px",
-            top: "0",
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            backgroundColor: "#B0B9BC",
-            zIndex: 1,
-          }}
-        ></div>
+         {/* <div
+        style={{
+          position: "absolute",
+          right: "0",
+          bottom: "0",
+          width: "300px",
+          height: "300px",
+          borderRadius: "50%",
+          backgroundColor: "#B0B9BC",
+          zIndex: 1,
+        }}
+      /> */}
 
         {/* Image */}
         <img
@@ -139,7 +139,7 @@ export default function Banner() {
           style={{
             height: "228px",
             width: 295,
-            top: "32px",
+            top: "40px",
             position: "relative",
             zIndex: 2,
           }}
