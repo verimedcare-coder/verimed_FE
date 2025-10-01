@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -14,8 +14,14 @@ import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { Table } from "antd";
+import { useNavigate } from "react-router-dom";
 
 export default function Overview() {
+  const navigate = useNavigate();
+  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 7));
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+
   const dotStyle = (color) => ({
     width: "8px",
     height: "8px",
@@ -137,6 +143,59 @@ export default function Overview() {
     ...item,
   }));
 
+  const appointments = [
+    {
+      id: 1,
+      date: new Date(2025, 7, 14), // Aug is month index 7 (0-based)
+      doctor: "Dr. Ashton Cleve",
+      time: "10:00am - 10:30am",
+    },
+    {
+      id: 2,
+      date: new Date(2025, 7, 15),
+      doctor: "Dr. Ashton Cleve",
+      time: "10:00am - 10:30am",
+    },
+  ];
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+    );
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+    );
+  };
+
+  const handleCardClick = (appointment) => {
+    setSelectedAppointmentId(appointment.id);
+    navigate(`/appointments/${appointment.id}`);
+  };
+
+  const formatMonthYear = (date) => {
+    return date.toLocaleString("default", { month: "short", year: "numeric" });
+  };
+
+  const getMonthDays = (year, month) => {
+    const days = [];
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const monthDays = getMonthDays(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth()
+  );
+
+  const appointmentDates = appointments.map((a) => a.date.toDateString());
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -223,35 +282,7 @@ export default function Overview() {
             </div>
           </div>
 
-          {/* Care Team */}
-          {/* <div style={cardStyle}>
-            <SectionHeader title="Care Team Details">
-              <Primarybtn name="View Reports" />
-            </SectionHeader>
-            <div style={profileBox}>
-              <img
-                src={patientdetails}
-                alt="nurse"
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: "12px",
-                  objectFit: "cover",
-                  flexShrink: 0,
-                }}
-              />
-              <div style={infoGrid}>
-                <InfoItem label="Name" value={careTeam.name} />
-                <InfoItem label="Role" value={careTeam.role} />
-                <InfoItem label="Contact Number" value={careTeam.contact} />
-                <InfoItem label="Next Visit" value={careTeam.nextVisit} />
-                <InfoItem label="Visit Frequency" value={careTeam.frequency} />
-              </div>
-            </div>
-            <p style={{ fontSize: 14, color: "#4B5563", marginTop: 10 }}>
-              {careTeam.specialization}
-            </p>
-          </div> */}
+          {/* careTeam */}
           <div
             style={{
               display: "flex",
@@ -267,57 +298,41 @@ export default function Overview() {
             <div
               style={{
                 background: "#fff",
-                flex: 1,
-                borderRadius: "10px",
                 border: "1px solid #E5E7EB",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
+                borderRadius: "10px",
+                padding: "16px",
+                fontFamily: "Inter, sans-serif",
               }}
             >
-              {/* Top row */}
+              {/* Header Row */}
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  marginBottom: "16px",
                 }}
               >
-                <p
+                <h3
                   style={{
                     fontSize: "16px",
                     fontWeight: 500,
-                    color: "#1B1B1B",
+                    margin: 0,
+                    color: "#2E2E2E",
                   }}
                 >
                   Care Team Details
-                </p>
-                <button
-                  style={{
-                    background: "#F5D565",
-                    border: "1px solid #D4B543",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                  }}
-                >
-                  View Reports
-                </button>
-              </div>
+                </h3>
 
-              {/* Profile Row */}
+                <SecondaryBtn name="view reports" onClick={() => {}} />
+              </div>
               <div
-                style={{
-                  display: "flex",
-                  gap: "15px",
-                  alignItems: "center",
-                  borderTop: "1px solid #E5E7EB",
-                  paddingTop: "15px",
-                }}
-              >
+                style={{ borderTop: "1px solid #E5E7EB", marginBottom: "16px" }}
+              />
+
+              {/* Content Row */}
+              <div style={{ display: "flex", gap: "16px" }}>
+                {/* Left - Avatar */}
                 <img
                   src={patientdetails}
                   alt="Profile"
@@ -329,54 +344,83 @@ export default function Overview() {
                     flexShrink: 0,
                   }}
                 />
+
+                {/* Right - Info Grid */}
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: "10px 20px",
                     flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
-                      Name
+                  {/* Row 1 */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: "10px 20px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                        Name
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.name}
+                      </div>
                     </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.name}
+                    <div>
+                      <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                        Role
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.role}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
-                      Role
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.role}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
-                      Contact Number
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.contact}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
-                      Next Visit
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.nextVisit}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
-                      Visit Frequency
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.frequency}
+                    <div>
+                      <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                        Contact Number
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.contact}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px solid #E5E7EB" }} />
+
+                  {/* Row 2 */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, 1fr)",
+                      gap: "10px 20px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                        Next Visit
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.nextVisit}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                        Visit Frequency
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.frequency}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px solid #E5E7EB" }} />
+
+                  {/* Row 3 */}
                   <div>
                     <div style={{ fontSize: "13px", color: "#6B7280" }}>
                       Specialization
@@ -390,6 +434,7 @@ export default function Overview() {
             </div>
 
             {/* Right - Upcoming Appointments */}
+
             <div
               style={{
                 background: "#fff",
@@ -400,6 +445,7 @@ export default function Overview() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "15px",
+                fontFamily: "Inter, sans-serif",
               }}
             >
               {/* Header */}
@@ -430,7 +476,11 @@ export default function Overview() {
                 </span>
               </div>
 
-              {/* Month */}
+              <div
+                style={{ borderTop: "1px solid #E5E7EB", marginBottom: "8px" }}
+              />
+
+              {/* Month Row */}
               <div
                 style={{
                   background: "#E8F0EA",
@@ -442,80 +492,248 @@ export default function Overview() {
                   alignItems: "center",
                 }}
               >
-                <span>Aug 2025</span>
-                <span style={{ display: "flex", gap: "8px" }}>
-                  <span>{"<"}</span>
-                  <span>{">"}</span>
+                <span
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <button
+                    onClick={handlePrevMonth}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                    }}
+                  >
+                    ‹
+                  </button>
+                  {formatMonthYear(currentMonth)}
+                  <button
+                    onClick={handleNextMonth}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                    }}
+                  >
+                    ›
+                  </button>
+                </span>
+
+                <span
+                  style={{ cursor: "pointer", fontSize: "18px" }}
+                  onClick={() => setShowCalendar(!showCalendar)}
+                >
+                  {showCalendar ? "▲" : "▼"}
                 </span>
               </div>
 
-              {/* Appointment 1 */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  background: "#004C91",
-                  color: "#fff",
-                  borderRadius: "8px",
-                  padding: "10px",
-                  cursor: "pointer",
-                }}
-              >
+              {/* Calendar */}
+              {showCalendar && (
                 <div
                   style={{
-                    background: "#00396E",
-                    borderRadius: "6px",
-                    width: "45px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: "4px",
+                    marginTop: "5px",
                     textAlign: "center",
-                    padding: "5px 0",
+                    fontSize: "12px",
                   }}
                 >
-                  <div style={{ fontSize: "13px" }}>Fri</div>
-                  <div style={{ fontSize: "16px", fontWeight: 600 }}>14</div>
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
+                    <div key={d} style={{ fontWeight: 600 }}>
+                      {d}
+                    </div>
+                  ))}
+                  {monthDays.map((day) => {
+                    const isAppointment = appointmentDates.includes(
+                      day.toDateString()
+                    );
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        style={{
+                          padding: "4px 0",
+                          borderRadius: "4px",
+                          background: isAppointment ? "#FFF8E1" : "transparent",
+                          position: "relative",
+                        }}
+                      >
+                        {day.getDate()}
+                        {isAppointment && (
+                          <div
+                            style={{
+                              width: "5px",
+                              height: "5px",
+                              background: "#B38C1D",
+                              borderRadius: "50%",
+                              position: "absolute",
+                              bottom: "2px",
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                            }}
+                          ></div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    Dr. Ashton Cleve
-                  </div>
-                  <div style={{ fontSize: "13px" }}>10:00am - 10:30am</div>
-                </div>
-              </div>
+              )}
 
-              {/* Appointment 2 */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  background: "#F3F4F6",
-                  borderRadius: "8px",
-                  padding: "10px",
-                  cursor: "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    background: "#E5E7EB",
-                    borderRadius: "6px",
-                    width: "45px",
-                    textAlign: "center",
-                    padding: "5px 0",
-                  }}
-                >
-                  <div style={{ fontSize: "13px" }}>Sat</div>
-                  <div style={{ fontSize: "16px", fontWeight: 600 }}>15</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    Dr. Ashton Cleve
-                  </div>
-                  <div style={{ fontSize: "13px" }}>10:00am - 10:30am</div>
-                </div>
-              </div>
+              {/* Appointment Cards */}
+              {/* {appointments
+                .filter(
+                  (a) =>
+                    a.date.getMonth() === currentMonth.getMonth() &&
+                    a.date.getFullYear() === currentMonth.getFullYear()
+                )
+                .map((appt) => {
+                  const isSelected = appt.id === selectedAppointmentId;
+
+                  return (
+                    <div
+                      key={appt.id}
+                      onClick={() => handleCardClick(appt)}
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        background: isSelected ? "#004C91" : "#F3F4F6",
+                        color: isSelected ? "#fff" : "#000",
+                        borderRadius: "8px",
+                        padding: "10px",
+                        cursor: "pointer",
+                        transition: "transform 0.15s, box-shadow 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 2px 8px rgba(0,0,0,0.15)";
+                        if (!isSelected) {
+                          e.currentTarget.style.background = "#004E89"; // light blue on hover
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = "none";
+                        if (!isSelected) {
+                          e.currentTarget.style.background = "#F3F4F6"; // revert to original
+                        }
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: isSelected ? "#00396E" : "#FFFFFF",
+                          color: isSelected ? "#fff" : "#000",
+                          borderRadius: "6px",
+                          width: "45px",
+                          textAlign: "center",
+                          padding: "5px 0",
+                        }}
+                      >
+                        <div style={{ fontSize: "13px" }}>
+                          {appt.date.toLocaleDateString("en-US", {
+                            weekday: "short",
+                          })}
+                        </div>
+                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                          {appt.date.getDate()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                          {appt.doctor}
+                        </div>
+                        <div style={{ fontSize: "13px" }}>{appt.time}</div>
+                      </div>
+                    </div>
+                  );
+                })} */}
+              {appointments
+                .filter(
+                  (a) =>
+                    a.date.getMonth() === currentMonth.getMonth() &&
+                    a.date.getFullYear() === currentMonth.getFullYear()
+                )
+                .map((appt, index) => {
+                  const isSelected =
+                    selectedAppointmentId === appt.id ||
+                    (selectedAppointmentId === null && index === 0);
+
+                  return (
+                    <div
+                      key={appt.id}
+                      onClick={() => handleCardClick(appt)}
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "center",
+                        background: isSelected ? "#004C91" : "#F3F4F6",
+                        color: isSelected ? "#fff" : "#000",
+                        borderRadius: "8px",
+                        padding: "10px",
+                        cursor: "pointer",
+                        transition:
+                          "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = "#004E89";
+                          e.currentTarget.style.color = "#fff";
+                          const dateBox =
+                            e.currentTarget.querySelector(".date-box");
+                          dateBox.style.background = "#fff";
+                          dateBox.style.color = "#00396E";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = "#F3F4F6";
+                          e.currentTarget.style.color = "#000";
+                          const dateBox =
+                            e.currentTarget.querySelector(".date-box");
+                          // dateBox.style.background = "#FFFFFF";
+                          // dateBox.style.color = "#000";
+                          dateBox.style.background = "#004C91"; // keep blue for secondary cards
+                          dateBox.style.color = "#fff"; // white text on blue
+                        }
+                      }}
+                    >
+                      {/* Date Box */}
+                      <div
+                        className="date-box"
+                        style={{
+                          background: isSelected ? "#FFFFFF" : "#FFFFFF",
+                          color: isSelected ? "#000" : "#000",
+                          borderRadius: "6px",
+                          width: "45px",
+                          textAlign: "center",
+                          padding: "5px 0",
+                          transition: "background 0.2s ease, color 0.2s ease",
+                        }}
+                      >
+                        <div style={{ fontSize: "13px" }}>
+                          {appt.date.toLocaleDateString("en-US", {
+                            weekday: "short",
+                          })}
+                        </div>
+                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                          {appt.date.getDate()}
+                        </div>
+                      </div>
+
+                      {/* Appointment Info */}
+                      <div style={{ flexGrow: 1 }}>
+                        <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                          {appt.doctor}
+                        </div>
+                        <div style={{ fontSize: "13px" }}>{appt.time}</div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 
           {/* Medical History */}
-          <div style={cardStyle}>
+          <div style={tableContainer}>
             <SectionHeader title="Medical History">
               <Primarybtn name="Get Appointment" />
             </SectionHeader>
@@ -586,6 +804,16 @@ function InfoItem({ label, value }) {
 
 /* 🔹 Styles */
 const cardStyle = {
+  borderRadius: "12px",
+  padding: "20px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  width: "100%",
+  display: "flex",
+  flexDirection: "column",
+  gap: 20,
+  minWidth: 0,
+};
+const tableContainer = {
   background: "#fff",
   borderRadius: "12px",
   padding: "20px",
@@ -610,7 +838,7 @@ const profileBox = {
 
 const infoGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", // 🚀 responsive grid
+  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
   gap: "10px 20px",
   minWidth: 0,
   flex: 1,
@@ -618,7 +846,7 @@ const infoGrid = {
 
 const vitalsGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", // 🚀 responsive
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
   gap: 15,
   minWidth: 0,
   width: "100%",
