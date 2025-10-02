@@ -211,9 +211,11 @@ export default function Messages() {
                 <div style={{ flex: 1 }}>
                   <div
                     style={{
-                      fontWeight: "bold",
+                      fontSize: 16,
+                      fontWeight: 500,
                       display: "flex",
                       alignItems: "center",
+                      color: "#45464E",
                     }}
                   >
                     {user.name}
@@ -227,37 +229,69 @@ export default function Messages() {
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: 12, color: "#666" }}>
+                  <div
+                    style={{ fontSize: 14, fontWeight: 400, color: "#8B8D97" }}
+                  >
                     {user.message}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 11, color: "#999" }}>{user.time}</div>
-                  {user.unread > 0 && (
-                    <div
-                      style={{
-                        marginTop: 4,
-                        backgroundColor: "#D4AF37",
-                        color: "#fff",
-                        borderRadius: "50%",
-                        width: 20,
-                        height: 20,
-                        fontSize: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {user.unread}
-                    </div>
-                  )}
-                  {user.isNew && (
-                    <div
-                      style={{ fontSize: 10, color: "#4CAF50", marginTop: 4 }}
-                    >
-                      New
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      display: "flex",
+
+                      gap: 10,
+                    }}
+                  >
+                    {user.unread > 0 && (
+                      <div
+                        style={{
+                          marginTop: 4,
+                          backgroundColor: "#004E89",
+                          color: "#fff",
+                          borderRadius: "50%",
+                          width: 20,
+                          height: 20,
+                          fontSize: 12,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {user.unread}
+                      </div>
+                    )}
+                    {user.isNew && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 400,
+                          color: "#007F5F",
+                          marginTop: 4,
+                          background: "#007F5F1F",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: 8,
+                          padding: 3,
+                        }}
+                      >
+                        New
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 400,
+                      color: "#8B8D97",
+                      position: "absolute",
+                      bottom: 5,
+                      right: 5,
+                    }}
+                  >
+                    {user.time}
+                  </div>
                 </div>
               </div>
             ))}
