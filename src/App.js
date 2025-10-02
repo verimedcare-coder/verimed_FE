@@ -7,6 +7,8 @@ import Appointments from "./screens/Appointments";
 import CareTeam from "./screens/CareTeam";
 import BillingAndMembership from "./screens/BillingAndMembership";
 import Messages from "./screens/Messages";
+import MyReports from "./screens/MyReports";
+import MyCareTaker from "./screens/MyCareTaker";
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
           element={<BillingAndMembership />}
         />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/my_reports" element={<MyReports />} />
+        <Route path="/my_care_taker" element={<MyCareTaker />} />
       </Routes>
     </Router>
   );

@@ -812,7 +812,7 @@ export default function Overview() {
                   bordered
                   style={{ width: "100%" }}
                 />
-              </div>{" "}
+              </div>
             </>
           )}
 
@@ -1712,30 +1712,6 @@ const vitalCard = {
 
 const vitalLabel = { fontSize: 14, fontWeight: 600, marginBottom: 2 };
 const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
-
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-  tableLayout: "fixed",
-};
-
-const thStyle = {
-  textAlign: "left",
-  padding: "12px",
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#1B1B1B",
-  borderBottom: "1px solid #E6E8EB",
-  wordBreak: "break-word",
-};
-
-const tdStyle = {
-  padding: "12px",
-  fontSize: 14,
-  color: "#374151",
-  borderBottom: "1px solid #F0F2F5",
-  wordBreak: "break-word", // 🚀 wrap text
-};
 
 /* LEFT SIDE */
 const appointmentWrapper = {
