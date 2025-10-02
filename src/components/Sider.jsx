@@ -16,20 +16,59 @@ import Profile from "../assets/images/profileBg.jpg";
 const { Sider } = Layout;
 const { Text } = Typography;
 
-const menuItems = [
-  { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
-  { label: "My Loved Ones", icon: <UserOutlined />, path: "/my_loved_ones" },
-  { label: "My Reports", icon: <CalendarOutlined />, path: "/my_reports" },
-  { label: "My Care Taker", icon: <TeamOutlined />, path: "/my_care_taker" },
-  { label: "Appointments", icon: <CalendarOutlined />, path: "/appointments" },
-  { label: "Care Team", icon: <TeamOutlined />, path: "/care_team" },
-  { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
-  {
-    label: "Billing & Membership",
-    icon: <DollarOutlined />,
-    path: "/billing_and_membership",
-  },
-];
+const menuConfig = {
+  sponsor: [
+    { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    { label: "My Loved Ones", icon: <UserOutlined />, path: "/my_loved_ones" },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    { label: "Care Team", icon: <TeamOutlined />, path: "/care_team" },
+    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    {
+      label: "Billing & Membership",
+      icon: <DollarOutlined />,
+      path: "/billing_and_membership",
+    },
+  ],
+  patient: [
+    { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    { label: "My Reports", icon: <CalendarOutlined />, path: "/my_reports" },
+    { label: "My Care Taker", icon: <TeamOutlined />, path: "/my_care_taker" },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+  ],
+  care: [
+    { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    {
+      label: "Assigned Patients",
+      icon: <UserOutlined />,
+      path: "/assigned_patients",
+    },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+  ],
+  doctor: [
+    { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    { label: "Patient List", icon: <UserOutlined />, path: "/patient_list" },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+  ],
+};
 
 export default function CustomSider() {
   const navigate = useNavigate();
@@ -37,22 +76,11 @@ export default function CustomSider() {
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
 
-  const filteredMenuItems =
-    user?.type === "patient"
-      ? menuItems.filter((item) =>
-          [
-            "Overview",
-            "My Reports",
-            "My Care Taker",
-            "Appointments",
-            "Messages",
-          ].includes(item.label)
-        )
-      : menuItems;
+  const filteredMenuItems = menuConfig[user?.type] || menuConfig["patient"];
 
   const activeItem =
     filteredMenuItems.find((item) => location.pathname.startsWith(item.path))
-      ?.path || "/overview";
+      ?.path || filteredMenuItems[0].path;
 
   return (
     <Sider
