@@ -10,7 +10,6 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
-import SecondaryBtn from "../components/SecondaryBtn";
 import { Button, Table } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
 
