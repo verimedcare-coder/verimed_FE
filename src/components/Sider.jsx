@@ -9,6 +9,7 @@ import {
   DollarOutlined,
   HomeOutlined,
   SettingOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 import Profile from "../assets/images/profileBg.jpg";
@@ -47,26 +48,41 @@ const menuConfig = {
   care: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     {
-      label: "Assigned Patients",
+      label: "My Patients",
       icon: <UserOutlined />,
-      path: "/assigned_patients",
+      path: "/my_patients",
     },
     {
-      label: "Appointments",
+      label: "Daily Reports",
       icon: <CalendarOutlined />,
-      path: "/appointments",
+      path: "/daily_reports",
+    },
+    {
+      label: "Health Monitoring",
+      icon: <HeartOutlined />,
+      path: "/health_monitoring",
     },
     { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
   ],
   doctor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
-    { label: "Patient List", icon: <UserOutlined />, path: "/patient_list" },
     {
-      label: "Appointments",
+      label: "My Appointments",
       icon: <CalendarOutlined />,
-      path: "/appointments",
+      path: "/my_appointments",
+    },
+    {
+      label: "My Patients",
+      icon: <UserOutlined />,
+      path: "/my_patients",
+    },
+    {
+      label: "Reports To Review",
+      icon: <CalendarOutlined />,
+      path: "/reports_to_review",
     },
     { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    { label: "Masters", icon: <SettingOutlined />, path: "/master" },
   ],
 };
 
