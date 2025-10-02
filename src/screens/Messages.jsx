@@ -506,6 +506,9 @@ export default function Messages() {
         onCancel={() => setIsModalOpen(false)}
         footer={null}
       >
+        <p style={{ fontSize: 16, fontWeight: 500, color: "#8B8D97" }}>
+          Search a Customer to start a conversation
+        </p>
         <input
           placeholder="Search customer name"
           value={newSearchTerm}
