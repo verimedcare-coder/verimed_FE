@@ -3,6 +3,7 @@ import React from "react";
 
 export default function Primarybtn({
   name = "Click Me",
+  icon = null,
   onClick,
   style = {},
   ...props
@@ -11,6 +12,9 @@ export default function Primarybtn({
     <button
       onClick={onClick}
       style={{
+        display: "flex",
+        alignItems: "center",
+        gap: icon ? "6px" : "0", // space between icon and text
         background: "linear-gradient(180deg, #F0C330 , #B78520)",
         color: "#fff",
         fontWeight: 600,
@@ -26,6 +30,7 @@ export default function Primarybtn({
       }}
       {...props}
     >
+      {icon && <span>{icon}</span>}
       {name}
     </button>
   );
