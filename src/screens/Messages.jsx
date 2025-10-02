@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
-import { SearchOutlined } from "@ant-design/icons";
+import { MessageOutlined, SearchOutlined } from "@ant-design/icons";
+import Primarybtn from "../components/PrimaryBtn";
+import newMessage from "../assets/icons/new-message.svg";
 
 // Sample users
 const initialUsers = [
@@ -198,7 +200,7 @@ export default function Messages() {
                   position: "relative",
                 }}
               >
-                <img
+                {/* <img
                   src={user.avatar}
                   alt={user.name}
                   style={{
@@ -208,7 +210,41 @@ export default function Messages() {
                     marginRight: 10,
                   }}
                 />
-                <div style={{ flex: 1 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: user.online ? "#4CAF50" : "#ccc",
+                    marginLeft: 6,
+                  }}
+                /> */}
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      display: "block",
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: -4,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: user.online ? "#F0C330" : "#C4CAE8",
+                      border: "3px solid white", // optional: adds a white border for contrast
+                    }}
+                  />
+                </div>
+
+                <div style={{ flex: 1, marginLeft: 8 }}>
                   <div
                     style={{
                       fontSize: 16,
@@ -219,15 +255,6 @@ export default function Messages() {
                     }}
                   >
                     {user.name}
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: user.online ? "#4CAF50" : "#ccc",
-                        marginLeft: 6,
-                      }}
-                    />
                   </div>
                   <div
                     style={{ fontSize: 14, fontWeight: 400, color: "#8B8D97" }}
@@ -235,32 +262,20 @@ export default function Messages() {
                     {user.message}
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    textAlign: "right",
+                  }}
+                >
                   <div
                     style={{
                       display: "flex",
-
                       gap: 10,
+                      position: "absolute",
+                      right: 5,
+                      top: 5,
                     }}
                   >
-                    {user.unread > 0 && (
-                      <div
-                        style={{
-                          marginTop: 4,
-                          backgroundColor: "#004E89",
-                          color: "#fff",
-                          borderRadius: "50%",
-                          width: 20,
-                          height: 20,
-                          fontSize: 12,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {user.unread}
-                      </div>
-                    )}
                     {user.isNew && (
                       <div
                         style={{
@@ -277,6 +292,24 @@ export default function Messages() {
                         }}
                       >
                         New
+                      </div>
+                    )}
+                    {user.unread > 0 && (
+                      <div
+                        style={{
+                          marginTop: 4,
+                          backgroundColor: "#004E89",
+                          color: "#fff",
+                          borderRadius: "50%",
+                          width: 20,
+                          height: 20,
+                          fontSize: 12,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {user.unread}
                       </div>
                     )}
                   </div>
@@ -323,14 +356,24 @@ export default function Messages() {
                   <img
                     src={selectedUser.avatar}
                     alt={selectedUser.name}
-                    style={{ width: 40, height: 40, borderRadius: "50%" }}
+                    style={{ width: 40, height: 40, borderRadius: 8 }}
                   />
                   <div>
-                    <strong>{selectedUser.name}</strong>
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 500,
+                        color: "#45464E",
+                        margin: 0,
+                      }}
+                    >
+                      {selectedUser.name}
+                    </p>
                     <div
                       style={{
-                        fontSize: 12,
-                        color: selectedUser.online ? "#4CAF50" : "#999",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: selectedUser.online ? "#27AE60" : "#8B8D97",
                       }}
                     >
                       {selectedUser.online ? "Online" : "Offline"}
@@ -343,12 +386,17 @@ export default function Messages() {
                   <div
                     style={{
                       textAlign: "center",
-                      fontSize: 12,
-                      color: "#999",
-                      marginBottom: 10,
                     }}
                   >
-                    12 August 2022
+                    <p
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 400,
+                        color: "#1C1D22",
+                      }}
+                    >
+                      12 August 2022
+                    </p>
                   </div>
                   {messages[selectedUser.id]?.map((msg, index) => (
                     <div
@@ -364,8 +412,8 @@ export default function Messages() {
                           padding: "10px 15px",
                           borderRadius: 10,
                           backgroundColor:
-                            msg.sender === "me" ? "#0047AB" : "#E0F7FA",
-                          color: msg.sender === "me" ? "#fff" : "#000",
+                            msg.sender === "me" ? "#004E89" : "#007F5F",
+                          color: msg.sender === "me" ? "#fff" : "#fff",
                           maxWidth: "70%",
                         }}
                       >
@@ -429,9 +477,27 @@ export default function Messages() {
                   color: "#999",
                 }}
               >
-                <div style={{ fontSize: 48, marginBottom: 20 }}>💬</div>
-                <h2>Messages</h2>
-                <p>Click on a contact to view messages.</p>
+                <div style={{ fontSize: 48 }}>
+                  <img src={newMessage} />
+                </div>
+                <h2
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 500,
+                    color: "#000000",
+                    margin: 0,
+                  }}
+                >
+                  Messages
+                </h2>
+                <p style={{ fontSize: 14, fontWeight: 400, color: "#8B8D97" }}>
+                  Click on a contact to view messages.
+                </p>
+                <Primarybtn
+                  name="New Appointment"
+                  icon={<MessageOutlined />}
+                  // onClick={() => setIsModalOpen(true)}
+                />
               </div>
             )}
           </div>
