@@ -291,7 +291,6 @@ export default function MyLovedOnes() {
           </div>
 
           {/* Appointment Details + Timeline */}
-          {/* Appointment Details + Timeline */}
           <div
             style={{
               display: "grid",
