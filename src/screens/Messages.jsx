@@ -1,37 +1,406 @@
-import React from "react";
+import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
+import { SearchOutlined } from "@ant-design/icons";
 
+// Sample users
+const initialUsers = [
+  {
+    id: 1,
+    name: "Jane Doe",
+    message: "Hi, I want make enquiries about your...",
+    time: "12:55 am",
+    unread: 2,
+    online: true,
+    isNew: true,
+    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+  },
+  {
+    id: 2,
+    name: "Janet Adebayo",
+    message: "Hi, I want make enquiries about your...",
+    time: "12:56 am",
+    unread: 1,
+    online: true,
+    isNew: true,
+    avatar: "https://randomuser.me/api/portraits/women/2.jpg",
+  },
+  {
+    id: 3,
+    name: "Kunle Adekunle",
+    message: "Macbook Pro",
+    time: "12:55 am",
+    unread: 0,
+    online: false,
+    isNew: false,
+    avatar: "https://randomuser.me/api/portraits/men/3.jpg",
+  },
+  {
+    id: 4,
+    name: "Mary Obi",
+    message: "Do you deliver outside Lagos?",
+    time: "12:40 am",
+    unread: 3,
+    online: true,
+    isNew: true,
+    avatar: "https://randomuser.me/api/portraits/women/5.jpg",
+  },
+  {
+    id: 5,
+    name: "Chris Johnson",
+    message: "Need to confirm the invoice",
+    time: "12:35 am",
+    unread: 0,
+    online: false,
+    isNew: false,
+    avatar: "https://randomuser.me/api/portraits/men/6.jpg",
+  },
+];
+
+// const chatMessages = [
+//   {
+//     sender: "them",
+//     text: "Hello, I want to make enquiries about your product",
+//     time: "12:55 am",
+//   },
+//   {
+//     sender: "me",
+//     text: "What do you need to know?",
+//     time: "12:57 am",
+//   },
+//   {
+//     sender: "them",
+//     text: "I want to know if the price is negotiable, I need about 2 units",
+//     time: "12:58 am",
+//   },
+// ];
+
+const initialMessages = {
+  1: [
+    { sender: "them", text: "Hello!", time: "12:00" },
+    { sender: "me", text: "Hi Jane, how can I help?", time: "12:01" },
+  ],
+  2: [{ sender: "them", text: "Is this product in stock?", time: "1:00" }],
+  3: [],
+  // Add for all users
+};
 export default function Messages() {
+  const [users, setUsers] = useState(initialUsers);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [messageInput, setMessageInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [messages, setMessages] = useState(initialMessages);
+
+  const filteredUsers = users.filter((user) =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSend = () => {
+    if (messageInput.trim() && selectedUser) {
+      const newMessage = {
+        sender: "me",
+        text: messageInput,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => ({
+        ...prev,
+        [selectedUser.id]: [...(prev[selectedUser.id] || []), newMessage],
+      }));
+
+      setMessageInput("");
+    }
+  };
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    const updatedUsers = users.map((u) =>
+      u.id === user.id ? { ...u, unread: 0, isNew: false } : u
+    );
+    setUsers(updatedUsers);
+  };
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
     >
-      {/* Sidebar */}
       <div style={{ width: "240px", flexShrink: 0 }}>
         <Sider />
       </div>
 
-      {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ flexShrink: 0 }}>
           <Header />
         </div>
 
-        {/* Content area with just text */}
         <div
           style={{
             flex: 1,
-            padding: 30,
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "#1B1B1B",
+            overflow: "hidden",
+            gap: 20,
+            padding: 20,
           }}
         >
-          Messages
+          {/* LEFT PANEL */}
+          <div
+            style={{
+              width: "35%",
+              borderRadius: 12,
+              backgroundColor: "#fff",
+              overflowY: "auto",
+              overflowX: "hidden",
+              minWidth: 0,
+            }}
+          >
+            <div style={{ padding: 10, borderBottom: "1px solid #eee" }}>
+              <div style={{ position: "relative" }}>
+                <SearchOutlined
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    left: 10,
+                    color: "#999",
+                  }}
+                />
+
+                <input
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 8px 8px 30px",
+                    border: "1px solid #ccc",
+                    borderRadius: 5,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* USER LIST */}
+            {filteredUsers.map((user) => (
+              <div
+                key={user.id}
+                onClick={() => handleSelectUser(user)}
+                style={{
+                  padding: 10,
+                  borderBottom: "1px solid #f0f0f0",
+                  backgroundColor:
+                    selectedUser?.id === user.id ? "#f3f3f3" : "#fff",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  position: "relative",
+                }}
+              >
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    marginRight: 10,
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    {user.name}
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: user.online ? "#4CAF50" : "#ccc",
+                        marginLeft: 6,
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>
+                    {user.message}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: "#999" }}>{user.time}</div>
+                  {user.unread > 0 && (
+                    <div
+                      style={{
+                        marginTop: 4,
+                        backgroundColor: "#D4AF37",
+                        color: "#fff",
+                        borderRadius: "50%",
+                        width: 20,
+                        height: 20,
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {user.unread}
+                    </div>
+                  )}
+                  {user.isNew && (
+                    <div
+                      style={{ fontSize: 10, color: "#4CAF50", marginTop: 4 }}
+                    >
+                      New
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* RIGHT PANEL */}
+          <div
+            style={{
+              flex: 1,
+              backgroundColor: "#fff",
+              borderRadius: 12,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {selectedUser ? (
+              <>
+                {/* Chat Header */}
+                <div
+                  style={{
+                    padding: 15,
+                    borderBottom: "1px solid #eee",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <img
+                    src={selectedUser.avatar}
+                    alt={selectedUser.name}
+                    style={{ width: 40, height: 40, borderRadius: "50%" }}
+                  />
+                  <div>
+                    <strong>{selectedUser.name}</strong>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: selectedUser.online ? "#4CAF50" : "#999",
+                      }}
+                    >
+                      {selectedUser.online ? "Online" : "Offline"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat Messages */}
+                <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      fontSize: 12,
+                      color: "#999",
+                      marginBottom: 10,
+                    }}
+                  >
+                    12 August 2022
+                  </div>
+                  {messages[selectedUser.id]?.map((msg, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        marginBottom: 10,
+                        textAlign: msg.sender === "me" ? "right" : "left",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "inline-block",
+                          padding: "10px 15px",
+                          borderRadius: 10,
+                          backgroundColor:
+                            msg.sender === "me" ? "#0047AB" : "#E0F7FA",
+                          color: msg.sender === "me" ? "#fff" : "#000",
+                          maxWidth: "70%",
+                        }}
+                      >
+                        {msg.text}
+                      </div>
+                      <div
+                        style={{ fontSize: 10, color: "#999", marginTop: 2 }}
+                      >
+                        {msg.time}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chat Input */}
+                <div
+                  style={{
+                    padding: 15,
+                    borderTop: "1px solid #eee",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    placeholder="Your message"
+                    style={{
+                      flex: 1,
+                      padding: "10px 15px",
+                      borderRadius: 20,
+                      border: "1px solid #ccc",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    onClick={handleSend}
+                    style={{
+                      marginLeft: 10,
+                      backgroundColor: "#D4AF37",
+                      color: "#fff",
+                      border: "none",
+                      padding: "10px 20px",
+                      borderRadius: 20,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
+              </>
+            ) : (
+              // No contact selected
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                  color: "#999",
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 20 }}>💬</div>
+                <h2>Messages</h2>
+                <p>Click on a contact to view messages.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
