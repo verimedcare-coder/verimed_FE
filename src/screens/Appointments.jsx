@@ -357,6 +357,7 @@ export default function Appointments() {
                 fontFamily: "Inter, sans-serif",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 marginTop: "20px",
+                width: "100%",
               }}
             >
               <div
