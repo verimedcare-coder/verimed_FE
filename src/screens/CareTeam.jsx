@@ -1,6 +1,8 @@
 import React from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
+import SecondaryBtn from "../components/SecondaryBtn";
+import patientdetails from "../assets/images/patient-profile.jpg";
 
 const actions = [
   {
@@ -21,6 +23,15 @@ const actions = [
 ];
 
 export default function CareTeam() {
+  const careTeam = {
+    name: "Clarisse A.",
+    role: "Primary Care Taker / Skilled Nurse",
+    Experience: "15+",
+    Languages: "English, French",
+    Contact: "+966 558441502",
+    specialization:
+      "Hypertension, diabetes, infusion therapy, elderly mobility support",
+  };
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -40,22 +51,151 @@ export default function CareTeam() {
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "space-between",
-            gap: "20px",
             width: "100%",
             background: "#F9FAFB",
-            padding: "20px",
             borderRadius: "10px",
           }}
         >
+          <div
+            style={{
+              background: "transparent",
+              border: "1px solid #E5E7EB",
+              borderRadius: "10px",
+              padding: "16px",
+              padding: 20,
+              margin: "20px",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            {/* Header Row */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  margin: 0,
+                  color: "#2E2E2E",
+                }}
+              >
+                Care Team Details
+              </h3>
+
+              <SecondaryBtn name="view reports" onClick={() => {}} />
+            </div>
+            <div
+              style={{
+                borderTop: "1px solid #E5E7EB",
+                marginBottom: "16px",
+              }}
+            />
+
+            {/* Content Row */}
+            <div style={{ display: "flex", gap: "16px" }}>
+              {/* Left - Avatar */}
+              <img
+                src={patientdetails}
+                alt="Profile"
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "12px",
+                  objectFit: "cover",
+                  flexShrink: 0,
+                }}
+              />
+
+              {/* Right - Info Grid */}
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                }}
+              >
+                {/* Row 1 */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      Name
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.name}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      Role
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.role}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      Experience
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Experience}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      Languages
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Languages}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                      Contact Number
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Contact}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div style={{ borderTop: "1px solid #E5E7EB" }} />
+
+                {/* Row 3 */}
+                <div>
+                  <div style={{ fontSize: "13px", color: "#6B7280" }}>
+                    Specialization
+                  </div>
+                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                    {careTeam.specialization}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div
             style={{
               flex: 1,
               display: "grid",
               gridTemplateColumns: "2fr 1fr",
               gap: 20,
-              padding: 20,
+              minWidth: 0,
               overflowY: "auto",
+              padding: "20px",
             }}
           >
             {/* LEFT SIDE - Latest Actions by Care Taker (kept same) */}
@@ -179,8 +319,8 @@ export default function CareTeam() {
                             :{" "}
                             <span
                               style={{
-                                fontSize: 15,
-                                fontWeight: 700,
+                                fontSize: 14,
+                                fontWeight: 600,
                                 color: "#1B1B1B",
                               }}
                             >
