@@ -9,6 +9,7 @@ import BillingAndMembership from "./screens/BillingAndMembership";
 import Messages from "./screens/Messages";
 import MyReports from "./screens/MyReports";
 import MyCareTaker from "./screens/MyCareTaker";
+import MyPatients from "./screens/MyPatients";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/my_reports" element={<MyReports />} />
         <Route path="/my_care_taker" element={<MyCareTaker />} />
+        <Route path="/my_patients" element={<MyPatients />} />
       </Routes>
     </Router>
   );

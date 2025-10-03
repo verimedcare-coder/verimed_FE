@@ -475,12 +475,6 @@ const snapshotBox = {
   gap: 12,
 };
 
-// const vitalsGrid = {
-//   display: "grid",
-//   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-//   gap: "8px 16px",
-// };
-
 const lastUpdateRow = {
   display: "flex",
   justifyContent: "space-between",

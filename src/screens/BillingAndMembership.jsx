@@ -121,9 +121,7 @@ export default function BillingAndMembership() {
   ];
 
   return (
-    <div
-      style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
-    >
+    <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
       {/* Sidebar */}
       <div style={{ width: "240px", flexShrink: 0 }}>
         <Sider />

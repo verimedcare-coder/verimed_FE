@@ -47,12 +47,12 @@ const menuConfig = {
   care: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     {
-      label: "Assigned Patients",
+      label: "My Patients",
       icon: <UserOutlined />,
-      path: "/assigned_patients",
+      path: "/my_patients",
     },
     {
-      label: "Appointments",
+      label: "Daily Reports",
       icon: <CalendarOutlined />,
       path: "/appointments",
     },
