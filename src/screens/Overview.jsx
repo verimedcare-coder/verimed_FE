@@ -166,6 +166,77 @@ export default function Overview() {
     },
   ];
 
+  const docStats = [
+    {
+      id: 1,
+      name: "Total Appointments",
+      count: 88,
+      diff: "+95%",
+      duration: "in last 7 Days",
+    },
+    {
+      id: 2,
+      name: "Total Appointments",
+      count: 58,
+      diff: "+95%",
+      duration: "in last 7 Days",
+    },
+    {
+      id: 3,
+      name: "Completed",
+      count: 20,
+      diff: "+95%",
+      duration: "in last 7 Days",
+    },
+    {
+      id: 4,
+      name: "Pending",
+      count: 24,
+      diff: "+25%",
+      duration: "in last 7 Days",
+    },
+    // {
+    //   id: 5,
+    //   name: "Cancelled",
+    //   count: 6,
+    //   diff: "+15%",
+    //   duration: "in last 7 Days",
+    // },
+  ];
+
+  const todaysAppointment = [
+    {
+      id: 1,
+      name: "Mr. Samuel N.",
+      disease: "Hypertension, Type 2 Diabetes",
+      place: "Home Visit",
+      date: "Aug 15",
+      time: "10:00 AM - 01:00 PM",
+      amount: "150,000 CFA",
+      subscription: "Premium Plan",
+    },
+    {
+      id: 2,
+      name: "Mr. Samuel N.",
+      disease: "Hypertension, Type 2 Diabetes",
+      place: "Home Visit",
+      date: "Aug 15",
+      time: "10:00 AM - 01:00 PM",
+      amount: "150,000 CFA",
+      subscription: "Premium Plan",
+    },
+    // {
+    //   id: 3,
+    //   name: "Mr. Samuel N.",
+    //   disease: "Hypertension, Type 2 Diabetes",
+    //   place: "Home Visit",
+    //   date: "Aug 15",
+    //   time: "10:00 AM - 01:00 PM",
+    //   amount: "150,000 CFA",
+    //   subscription: "Premium Plan",
+    // },
+  ];
+
   const handlePrevMonth = () => {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
@@ -262,63 +333,695 @@ export default function Overview() {
           {user?.type === "sponsor" && <Banner />}
 
           {/* Patient Details */}
-          {(user?.type === "sponsor" || "patient" || "care") && (
-            <div style={cardStyle}>
-              <SectionHeader title="Patient Details">
-                <Primarybtn name="View Full Profile" />
-                <SecondaryBtn name="Download" />
-              </SectionHeader>
+          {user?.type !== "doctor" &&
+            (user?.type === "sponsor" ||
+              user?.type === "patient" ||
+              user?.type === "care") && (
+              <div style={cardStyle}>
+                <SectionHeader title="Patient Details">
+                  <Primarybtn name="View Full Profile" />
+                  <SecondaryBtn name="Download" />
+                </SectionHeader>
 
-              {/* Profile */}
-              <div style={profileBox}>
-                <img
-                  src={patientdetails}
-                  alt="profile"
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "12px",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={infoGrid}>
-                  {patientInfo.map((item, i) => (
-                    <InfoItem key={i} label={item.label} value={item.value} />
-                  ))}
+                {/* Profile */}
+                <div style={profileBox}>
+                  <img
+                    src={patientdetails}
+                    alt="profile"
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "12px",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={infoGrid}>
+                    {patientInfo.map((item, i) => (
+                      <InfoItem key={i} label={item.label} value={item.value} />
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Vitals */}
-              <div style={vitalsGrid}>
-                {vitals.map((item, i) => (
-                  <div key={i} style={vitalCard}>
-                    <img
-                      src={item.icon}
-                      alt={item.label}
-                      style={{ width: 24, height: 24, flexShrink: 0 }}
-                    />
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        minWidth: 0,
-                      }}
-                    >
-                      <p style={vitalLabel}>{item.label}</p>
+                {/* Vitals */}
+                <div style={vitalsGrid}>
+                  {vitals.map((item, i) => (
+                    <div key={i} style={vitalCard}>
+                      <img
+                        src={item.icon}
+                        alt={item.label}
+                        style={{ width: 24, height: 24, flexShrink: 0 }}
+                      />
                       <div
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: 5,
+                          flexDirection: "column",
+                          minWidth: 0,
                         }}
                       >
-                        <div style={dotStyle(item.color)}></div>
-                        <span style={vitalValue}>{item.value}</span>
+                        <p style={vitalLabel}>{item.label}</p>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                          }}
+                        >
+                          <div style={dotStyle(item.color)}></div>
+                          <span style={vitalValue}>{item.value}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Doctor overview stats */}
+          {user?.type === "doctor" && (
+            <div
+              style={{
+                width: "100%",
+                overflowX: "auto", // horizontal scroll only for this div
+                paddingBottom: 10,
+                scrollbarWidth: "thin",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "stretch",
+                  gap: 20,
+                  minWidth: 0,
+                }}
+              >
+                {docStats.map((stat, idx) => (
+                  <div
+                    key={stat.id}
+                    style={{
+                      minWidth: 220,
+                      maxWidth: 300,
+                      flex: "0 0 auto",
+                      backgroundColor: "white",
+                      borderRadius: 8,
+                      padding: 16,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    {/* ...card content... */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                        gap: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: 40,
+                          width: 40,
+                          borderRadius: 100,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#007F5F33",
+                        }}
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <g clipPath="url(#clip0_484_11034)">
+                            <path
+                              d="M11.5 21H6C5.46957 21 4.96086 20.7893 4.58579 20.4142C4.21071 20.0391 4 19.5304 4 19V7C4 6.46957 4.21071 5.96086 4.58579 5.58579C4.96086 5.21071 5.46957 5 6 5H18C18.5304 5 19.0391 5.21071 19.4142 5.58579C19.7893 5.96086 20 6.46957 20 7V11"
+                              stroke="#007F5F"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M16 3V7"
+                              stroke="#007F5F"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M8 3V7"
+                              stroke="#007F5F"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M4 11H20"
+                              stroke="#007F5F"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M18.0001 22.0001L21.3501 18.7161C21.5556 18.5168 21.719 18.2783 21.8307 18.0147C21.9425 17.7512 22.0003 17.4679 22.0007 17.1817C22.0012 16.8954 21.9443 16.612 21.8334 16.3481C21.7225 16.0841 21.5599 15.8451 21.3551 15.6451C20.9373 15.2365 20.3763 15.0071 19.7918 15.006C19.2074 15.0049 18.6455 15.2321 18.2261 15.6391L18.0021 15.8591L17.7791 15.6391C17.3613 15.2307 16.8006 15.0016 16.2163 15.0005C15.6321 14.9994 15.0705 15.2264 14.6511 15.6331C14.4456 15.8324 14.2821 16.0708 14.1703 16.3343C14.0585 16.5978 14.0006 16.8811 14 17.1673C13.9994 17.4536 14.0562 17.7371 14.167 18.001C14.2778 18.265 14.4404 18.504 14.6451 18.7041L18.0001 22.0001Z"
+                              stroke="#007F5F"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </g>
+                          <defs>
+                            <clipPath id="clip0_484_11034">
+                              <rect width="24" height="24" fill="white" />
+                            </clipPath>
+                          </defs>
+                        </svg>
+                      </div>
+                      <p style={{ color: "#6C7688", fontWeight: "500" }}>
+                        {stat.name}
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <p
+                        style={{
+                          color: "#2E2E2E",
+                          fontSize: 24,
+                          fontWeight: "800",
+                        }}
+                      >
+                        {stat.count}
+                      </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          justifyContent: "center",
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          style={{
+                            backgroundColor: "#27AE60",
+                            height: 20,
+                            width: 49,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 6,
+                          }}
+                        >
+                          <p
+                            style={{
+                              color: "white",
+                              fontSize: 12,
+                              fontWeight: "500",
+                            }}
+                          >
+                            {stat.diff}
+                          </p>
+                        </div>
+                        <p style={{ color: "#6C7688", fontSize: 13 }}>
+                          {stat.duration}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Today's Schedule */}
+          {user?.type === "doctor" && (
+            <div style={{ width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <p
+                  style={{ color: "#1B1B1B", fontWeight: "600", fontSize: 20 }}
+                >
+                  Today's Schedule
+                </p>
+                <Primarybtn name="View All Appointments" onClick={() => {}} />
+              </div>
+              <div
+                style={{
+                  width: "100%",
+                  overflowX: "auto", // horizontal scroll only for this div
+                  paddingBottom: 10,
+                  scrollbarWidth: "thin",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    minWidth: 0,
+                  }}
+                >
+                  {todaysAppointment.map((appt, idx) => (
+                    <div
+                      key={appt.id}
+                      style={{
+                        height: 256,
+                        width: 372,
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        background: "#fff",
+                        flex: "0 0 auto",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-start",
+                          gap: 12,
+                        }}
+                      >
+                        <img
+                          alt={appt.name}
+                          src={patientdetails}
+                          style={{
+                            height: 65,
+                            width: 65,
+                            borderRadius: 100,
+                            objectFit: "contain",
+                          }}
+                        />
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: "600" }}>
+                            {appt.name}
+                          </p>
+                          <p style={{ color: "#7A7D84" }}>{appt.disease}</p>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "#004E891F",
+                              height: 22,
+                              width: 82,
+                              borderRadius: 20,
+                            }}
+                          >
+                            <p style={{ fontSize: 12, color: "#004E89" }}>
+                              {appt.place}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          height: 1,
+                          width: "100%",
+                          backgroundColor: "#E5E5E5",
+                          margin: "12px 0",
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M10 1.875C8.39303 1.875 6.82214 2.35152 5.486 3.24431C4.14985 4.1371 3.10844 5.40605 2.49348 6.8907C1.87852 8.37535 1.71762 10.009 2.03112 11.5851C2.34463 13.1612 3.11846 14.6089 4.25476 15.7452C5.39106 16.8815 6.8388 17.6554 8.4149 17.9689C9.99099 18.2824 11.6247 18.1215 13.1093 17.5065C14.594 16.8916 15.8629 15.8502 16.7557 14.514C17.6485 13.1779 18.125 11.607 18.125 10C18.1227 7.84581 17.266 5.78051 15.7427 4.25727C14.2195 2.73403 12.1542 1.87727 10 1.875ZM10 16.875C8.64026 16.875 7.31105 16.4718 6.18046 15.7164C5.04987 14.9609 4.16868 13.8872 3.64833 12.6309C3.12798 11.3747 2.99183 9.99237 3.2571 8.65875C3.52238 7.32513 4.17716 6.10013 5.13864 5.13864C6.10013 4.17716 7.32514 3.52237 8.65876 3.2571C9.99238 2.99183 11.3747 3.12798 12.631 3.64833C13.8872 4.16868 14.9609 5.04987 15.7164 6.18045C16.4718 7.31104 16.875 8.64025 16.875 10C16.8729 11.8227 16.1479 13.5702 14.8591 14.8591C13.5702 16.1479 11.8227 16.8729 10 16.875ZM15 10C15 10.1658 14.9342 10.3247 14.8169 10.4419C14.6997 10.5592 14.5408 10.625 14.375 10.625H10C9.83424 10.625 9.67527 10.5592 9.55806 10.4419C9.44085 10.3247 9.375 10.1658 9.375 10V5.625C9.375 5.45924 9.44085 5.30027 9.55806 5.18306C9.67527 5.06585 9.83424 5 10 5C10.1658 5 10.3247 5.06585 10.4419 5.18306C10.5592 5.30027 10.625 5.45924 10.625 5.625V9.375H14.375C14.5408 9.375 14.6997 9.44085 14.8169 9.55806C14.9342 9.67527 15 9.83424 15 10Z"
+                              fill="#007F5F"
+                            />
+                          </svg>
+                          <div>
+                            <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
+                              {appt.date}
+                            </p>
+                            <p style={{ color: "#7A7D84", fontSize: 12 }}>
+                              {appt.time}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            height: "100%",
+                            width: 1,
+                            backgroundColor: "#E5E5E5",
+                          }}
+                        />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M14.375 6.99766V6.5625C14.375 4.60312 11.4195 3.125 7.5 3.125C3.58047 3.125 0.625 4.60312 0.625 6.5625V9.6875C0.625 11.3195 2.67578 12.6164 5.625 13.0047V13.4375C5.625 15.3969 8.58047 16.875 12.5 16.875C16.4195 16.875 19.375 15.3969 19.375 13.4375V10.3125C19.375 8.69531 17.3891 7.39687 14.375 6.99766ZM18.125 10.3125C18.125 11.3453 15.7195 12.5 12.5 12.5C12.2086 12.5 11.9195 12.4898 11.6344 12.4711C13.3195 11.857 14.375 10.8594 14.375 9.6875V8.26094C16.7086 8.60859 18.125 9.55234 18.125 10.3125ZM5.625 11.7383V9.87969C6.2467 9.96069 6.87304 10.0009 7.5 10C8.12696 10.0009 8.7533 9.96069 9.375 9.87969V11.7383C8.75422 11.83 8.12751 11.8757 7.5 11.875C6.87249 11.8757 6.24578 11.83 5.625 11.7383ZM13.125 8.58828V9.6875C13.125 10.343 12.1555 11.0469 10.625 11.4742V9.64844C11.6336 9.40391 12.4875 9.03984 13.125 8.58828ZM7.5 4.375C10.7195 4.375 13.125 5.52969 13.125 6.5625C13.125 7.59531 10.7195 8.75 7.5 8.75C4.28047 8.75 1.875 7.59531 1.875 6.5625C1.875 5.52969 4.28047 4.375 7.5 4.375ZM1.875 9.6875V8.58828C2.5125 9.03984 3.36641 9.40391 4.375 9.64844V11.4742C2.84453 11.0469 1.875 10.343 1.875 9.6875ZM6.875 13.4375V13.1117C7.08047 13.1195 7.28828 13.125 7.5 13.125C7.80312 13.125 8.09922 13.1148 8.38984 13.0977C8.7127 13.2132 9.04157 13.3113 9.375 13.3914V15.2242C7.84453 14.7969 6.875 14.093 6.875 13.4375ZM10.625 15.4883V13.625C11.2465 13.7085 11.8729 13.7503 12.5 13.75C13.127 13.7509 13.7533 13.7107 14.375 13.6297V15.4883C13.1316 15.6706 11.8684 15.6706 10.625 15.4883ZM15.625 15.2242V13.3984C16.6336 13.1539 17.4875 12.7898 18.125 12.3383V13.4375C18.125 14.093 17.1555 14.7969 15.625 15.2242Z"
+                              fill="#007F5F"
+                            />
+                          </svg>
+                          <div>
+                            <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
+                              {appt.amount}
+                            </p>
+                            <p style={{ color: "#7A7D84", fontSize: 12 }}>
+                              {appt.subscription}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <SecondaryBtn
+                          name="Patient Details"
+                          onClick={() => {}}
+                        />
+                        <Primarybtn name="Visit Patient" onClick={() => {}} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Medical Reports & Daily Reports */}
+          {user?.type === "doctor" && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                width: "100%",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor: "#004E89",
+                  padding: 20,
+                  borderRadius: 16,
+                  width: "60%",
+                  backgroundColor: "#004E890A",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Medical Reports (Doctor Reports)
+                  </p>
+                  <Primarybtn name="View Full Reports" onClick={() => {}} />
+                </div>
+                <div
+                  style={{
+                    height: 1,
+                    width: "100%",
+                    backgroundColor: "#1B1B1B",
+                    opacity: 0.1,
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                />
+                <div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontWeight: "500",
+                    }}
+                  >
+                    - Patient stable, continue medication, BP to be checked
+                    daily.
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontWeight: "500",
+                      }}
+                    >
+                      - Diabetes under control, advised diet adjustment.
+                    </p>
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Aug 15, 2025 – Dr. Paul
+                    </p>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    height: 1,
+                    width: "100%",
+                    backgroundColor: "#1B1B1B",
+                    opacity: 0.1,
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                />
+                <div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontWeight: "500",
+                    }}
+                  >
+                    - BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontWeight: "500",
+                      }}
+                    >
+                      - BP: 150/92 | Status: ⚠ Escalated to Physician
+                    </p>
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontSize: 16,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Aug 16, 2025 – Nurse Clarisse
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  width: "40%",
+                  backgroundColor: "white",
+                  padding: 20,
+                  borderRadius: 16,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                }}
+              >
+                <p
+                  style={{
+                    color: "#007F5F",
+                    fontSize: 16,
+                    fontWeight: "500",
+                  }}
+                >
+                  Urgent Alerts
+                </p>
+                <div
+                  style={{
+                    height: 1,
+                    width: "100%",
+                    backgroundColor: "#1B1B1B",
+                    opacity: 0.1,
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                />
+                <div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Alerts Requiring Attention
+                  </p>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                    }}
+                  >
+                    Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
+                    Nurse Clarisse)
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                      }}
+                    >
+                      Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
+                      Nurse Clarisse)
+                    </p>
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Aug 15, 2025 – Dr. Paul
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <SecondaryBtn name="Review" onClick={() => {}} />
+                    <Primarybtn name="Adjust Medication" onClick={() => {}} />
+                  </div>
+                </div>
+                <div
+                  style={{
+                    height: 1,
+                    width: "100%",
+                    backgroundColor: "#1B1B1B",
+                    opacity: 0.1,
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                />
+                <div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Alerts Requiring Attention
+                  </p>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                    }}
+                  >
+                    Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
+                    Nurse Clarisse)
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                      }}
+                    >
+                      Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
+                      Nurse Clarisse)
+                    </p>
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Aug 15, 2025 – Dr. Paul
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <SecondaryBtn name="Review" onClick={() => {}} />
+                    <Primarybtn name="Adjust Medication" onClick={() => {}} />
+                  </div>
+                </div>
               </div>
             </div>
           )}
