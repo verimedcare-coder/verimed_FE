@@ -583,7 +583,6 @@ function InfoItem({ label, value }) {
 const cardStyle = {
   borderRadius: "12px",
   padding: "20px",
-  width: "100%",
   display: "flex",
   flexDirection: "column",
   gap: 20,

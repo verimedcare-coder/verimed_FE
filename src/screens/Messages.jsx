@@ -4,8 +4,8 @@ import Sider from "../components/Sider";
 import { MessageOutlined, SearchOutlined } from "@ant-design/icons";
 import Primarybtn from "../components/PrimaryBtn";
 import newMessage from "../assets/icons/new-message.svg";
+import { Modal } from "antd";
 
-// Sample users
 const initialUsers = [
   {
     id: 1,
@@ -59,24 +59,6 @@ const initialUsers = [
   },
 ];
 
-// const chatMessages = [
-//   {
-//     sender: "them",
-//     text: "Hello, I want to make enquiries about your product",
-//     time: "12:55 am",
-//   },
-//   {
-//     sender: "me",
-//     text: "What do you need to know?",
-//     time: "12:57 am",
-//   },
-//   {
-//     sender: "them",
-//     text: "I want to know if the price is negotiable, I need about 2 units",
-//     time: "12:58 am",
-//   },
-// ];
-
 const initialMessages = {
   1: [
     { sender: "them", text: "Hello!", time: "12:00" },
@@ -92,6 +74,8 @@ export default function Messages() {
   const [messageInput, setMessageInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [messages, setMessages] = useState(initialMessages);
+  const [isModalOpen, setIsModalOpen] = useState(false); // 🆕 for modal
+  const [newSearchTerm, setNewSearchTerm] = useState("");
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -123,6 +107,19 @@ export default function Messages() {
       u.id === user.id ? { ...u, unread: 0, isNew: false } : u
     );
     setUsers(updatedUsers);
+  };
+
+  const newMessageUsers = users.filter(
+    (user) => !messages[user.id] || messages[user.id].length === 0
+  );
+
+  const filteredNewMessageUsers = newMessageUsers.filter((user) =>
+    user.name.toLowerCase().includes(newSearchTerm.toLowerCase())
+  );
+
+  const handleStartNewConversation = (user) => {
+    handleSelectUser(user);
+    setIsModalOpen(false);
   };
 
   return (
@@ -496,13 +493,69 @@ export default function Messages() {
                 <Primarybtn
                   name="New Appointment"
                   icon={<MessageOutlined />}
-                  // onClick={() => setIsModalOpen(true)}
+                  onClick={() => setIsModalOpen(true)}
                 />
               </div>
             )}
           </div>
         </div>
       </div>
+      <Modal
+        title="New Message"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+      >
+        <p style={{ fontSize: 16, fontWeight: 500, color: "#8B8D97" }}>
+          Search a Customer to start a conversation
+        </p>
+        <input
+          placeholder="Search customer name"
+          value={newSearchTerm}
+          onChange={(e) => setNewSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px 12px",
+            border: "1px solid #ccc",
+            borderRadius: 5,
+            marginBottom: 10,
+          }}
+        />
+        {filteredNewMessageUsers.length > 0 ? (
+          filteredNewMessageUsers.map((user) => (
+            <div
+              key={user.id}
+              onClick={() => handleStartNewConversation(user)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 0",
+                cursor: "pointer",
+                borderBottom: "1px solid #f0f0f0",
+              }}
+            >
+              <img
+                src={user.avatar}
+                alt={user.name}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  marginRight: 10,
+                }}
+              />
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 500 }}>{user.name}</div>
+                <div style={{ fontSize: 12, color: "#8B8D97" }}>
+                  No conversation yet
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p style={{ textAlign: "center", color: "#8B8D97" }}>No new users</p>
+        )}
+      </Modal>
     </div>
   );
 }
