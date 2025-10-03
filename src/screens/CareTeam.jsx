@@ -32,6 +32,7 @@ export default function CareTeam() {
     specialization:
       "Hypertension, diabetes, infusion therapy, elderly mobility support",
   };
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
