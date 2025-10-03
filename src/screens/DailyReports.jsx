@@ -33,7 +33,6 @@ export default function DailyReports() {
       <div style={{ width: "240px", flexShrink: 0 }}>
         <Sider />
       </div>
-
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ flexShrink: 0 }}>

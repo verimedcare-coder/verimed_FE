@@ -13,9 +13,10 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Table } from "antd";
+import { DatePicker, Table } from "antd";
 import { useNavigate } from "react-router-dom";
-import { DownOutlined, UpOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
+import { CalendarOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -1504,7 +1505,15 @@ export default function Overview() {
               {/* Medical History */}
               <div style={tableContainer}>
                 <SectionHeader title="Medical History">
-                  <Primarybtn name="Get Appointment" />
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <DatePicker
+                      picker="year"
+                      defaultValue={dayjs("2025", "YYYY")}
+                      suffixIcon={<CalendarOutlined />}
+                      style={{ width: 100 }}
+                    />
+                    <Primarybtn name="Get Appointment" />
+                  </div>
                 </SectionHeader>
 
                 <Table
