@@ -13,10 +13,9 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { DatePicker, Table } from "antd";
+import { Table } from "antd";
 import { useNavigate } from "react-router-dom";
-import dayjs from "dayjs";
-import { CalendarOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
+import { DownOutlined, UpOutlined } from "@ant-design/icons";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -402,160 +401,152 @@ export default function Overview() {
           {user?.type === "doctor" && (
             <div
               style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 12,
                 width: "100%",
-                overflowX: "auto", // horizontal scroll only for this div
-                paddingBottom: 10,
-                scrollbarWidth: "thin",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "stretch",
-                  gap: 20,
-                  minWidth: 0,
-                }}
-              >
-                {docStats.map((stat, idx) => (
+              {docStats.map((stat, idx) => (
+                <div
+                  key={stat.id}
+                  style={{
+                    minWidth: 220,
+                    maxWidth: 300,
+                    flex: "0 0 auto",
+                    backgroundColor: "white",
+                    borderRadius: 8,
+                    padding: 16,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {/* ...card content... */}
                   <div
-                    key={stat.id}
                     style={{
-                      minWidth: 220,
-                      maxWidth: 300,
-                      flex: "0 0 auto",
-                      backgroundColor: "white",
-                      borderRadius: 8,
-                      padding: 16,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                       display: "flex",
-                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                      gap: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: 40,
+                        width: 40,
+                        borderRadius: 100,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#007F5F33",
+                      }}
+                    >
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <g clipPath="url(#clip0_484_11034)">
+                          <path
+                            d="M11.5 21H6C5.46957 21 4.96086 20.7893 4.58579 20.4142C4.21071 20.0391 4 19.5304 4 19V7C4 6.46957 4.21071 5.96086 4.58579 5.58579C4.96086 5.21071 5.46957 5 6 5H18C18.5304 5 19.0391 5.21071 19.4142 5.58579C19.7893 5.96086 20 6.46957 20 7V11"
+                            stroke="#007F5F"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M16 3V7"
+                            stroke="#007F5F"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M8 3V7"
+                            stroke="#007F5F"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M4 11H20"
+                            stroke="#007F5F"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M18.0001 22.0001L21.3501 18.7161C21.5556 18.5168 21.719 18.2783 21.8307 18.0147C21.9425 17.7512 22.0003 17.4679 22.0007 17.1817C22.0012 16.8954 21.9443 16.612 21.8334 16.3481C21.7225 16.0841 21.5599 15.8451 21.3551 15.6451C20.9373 15.2365 20.3763 15.0071 19.7918 15.006C19.2074 15.0049 18.6455 15.2321 18.2261 15.6391L18.0021 15.8591L17.7791 15.6391C17.3613 15.2307 16.8006 15.0016 16.2163 15.0005C15.6321 14.9994 15.0705 15.2264 14.6511 15.6331C14.4456 15.8324 14.2821 16.0708 14.1703 16.3343C14.0585 16.5978 14.0006 16.8811 14 17.1673C13.9994 17.4536 14.0562 17.7371 14.167 18.001C14.2778 18.265 14.4404 18.504 14.6451 18.7041L18.0001 22.0001Z"
+                            stroke="#007F5F"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </g>
+                        <defs>
+                          <clipPath id="clip0_484_11034">
+                            <rect width="24" height="24" fill="white" />
+                          </clipPath>
+                        </defs>
+                      </svg>
+                    </div>
+                    <p style={{ color: "#6C7688", fontWeight: "500" }}>
+                      {stat.name}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
                       justifyContent: "space-between",
                     }}
                   >
-                    {/* ...card content... */}
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontSize: 24,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {stat.count}
+                    </p>
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: 10,
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        justifyContent: "center",
+                        width: "100%",
                       }}
                     >
                       <div
                         style={{
-                          height: 40,
-                          width: 40,
-                          borderRadius: 100,
+                          backgroundColor: "#27AE60",
+                          height: 20,
+                          width: 49,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          backgroundColor: "#007F5F33",
+                          borderRadius: 6,
                         }}
                       >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <g clipPath="url(#clip0_484_11034)">
-                            <path
-                              d="M11.5 21H6C5.46957 21 4.96086 20.7893 4.58579 20.4142C4.21071 20.0391 4 19.5304 4 19V7C4 6.46957 4.21071 5.96086 4.58579 5.58579C4.96086 5.21071 5.46957 5 6 5H18C18.5304 5 19.0391 5.21071 19.4142 5.58579C19.7893 5.96086 20 6.46957 20 7V11"
-                              stroke="#007F5F"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M16 3V7"
-                              stroke="#007F5F"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M8 3V7"
-                              stroke="#007F5F"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M4 11H20"
-                              stroke="#007F5F"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M18.0001 22.0001L21.3501 18.7161C21.5556 18.5168 21.719 18.2783 21.8307 18.0147C21.9425 17.7512 22.0003 17.4679 22.0007 17.1817C22.0012 16.8954 21.9443 16.612 21.8334 16.3481C21.7225 16.0841 21.5599 15.8451 21.3551 15.6451C20.9373 15.2365 20.3763 15.0071 19.7918 15.006C19.2074 15.0049 18.6455 15.2321 18.2261 15.6391L18.0021 15.8591L17.7791 15.6391C17.3613 15.2307 16.8006 15.0016 16.2163 15.0005C15.6321 14.9994 15.0705 15.2264 14.6511 15.6331C14.4456 15.8324 14.2821 16.0708 14.1703 16.3343C14.0585 16.5978 14.0006 16.8811 14 17.1673C13.9994 17.4536 14.0562 17.7371 14.167 18.001C14.2778 18.265 14.4404 18.504 14.6451 18.7041L18.0001 22.0001Z"
-                              stroke="#007F5F"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </g>
-                          <defs>
-                            <clipPath id="clip0_484_11034">
-                              <rect width="24" height="24" fill="white" />
-                            </clipPath>
-                          </defs>
-                        </svg>
-                      </div>
-                      <p style={{ color: "#6C7688", fontWeight: "500" }}>
-                        {stat.name}
-                      </p>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <p
-                        style={{
-                          color: "#2E2E2E",
-                          fontSize: 24,
-                          fontWeight: "800",
-                        }}
-                      >
-                        {stat.count}
-                      </p>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          justifyContent: "center",
-                          width: "100%",
-                        }}
-                      >
-                        <div
+                        <p
                           style={{
-                            backgroundColor: "#27AE60",
-                            height: 20,
-                            width: 49,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderRadius: 6,
+                            color: "white",
+                            fontSize: 12,
+                            fontWeight: "500",
                           }}
                         >
-                          <p
-                            style={{
-                              color: "white",
-                              fontSize: 12,
-                              fontWeight: "500",
-                            }}
-                          >
-                            {stat.diff}
-                          </p>
-                        </div>
-                        <p style={{ color: "#6C7688", fontSize: 13 }}>
-                          {stat.duration}
+                          {stat.diff}
                         </p>
                       </div>
+                      <p style={{ color: "#6C7688", fontSize: 13 }}>
+                        {stat.duration}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -1505,15 +1496,7 @@ export default function Overview() {
               {/* Medical History */}
               <div style={tableContainer}>
                 <SectionHeader title="Medical History">
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <DatePicker
-                      picker="year"
-                      defaultValue={dayjs("2025", "YYYY")}
-                      suffixIcon={<CalendarOutlined />}
-                      style={{ width: 100 }}
-                    />
-                    <Primarybtn name="Get Appointment" />
-                  </div>
+                  <Primarybtn name="Get Appointment" />
                 </SectionHeader>
 
                 <Table
