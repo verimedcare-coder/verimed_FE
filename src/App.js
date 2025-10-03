@@ -9,6 +9,12 @@ import BillingAndMembership from "./screens/BillingAndMembership";
 import Messages from "./screens/Messages";
 import MyReports from "./screens/MyReports";
 import MyCareTaker from "./screens/MyCareTaker";
+import MyPatients from "./screens/MyPatients";
+import DailyReports from "./screens/DailyReports";
+import HealthMonitoring from "./screens/HealthMonitoring";
+import MyAppointments from "./screens/MyAppointments";
+import ReportsToReview from "./screens/ReportsToReview";
+import Masters from "./screens/Masters";
 
 function App() {
   return (
@@ -26,6 +32,12 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/my_reports" element={<MyReports />} />
         <Route path="/my_care_taker" element={<MyCareTaker />} />
+        <Route path="/my_patients" element={<MyPatients />} />
+        <Route path="/daily_reports" element={<DailyReports />} />
+        <Route path="/health_monitoring" element={<HealthMonitoring />} />
+        <Route path="/my_appointments" element={<MyAppointments />} />
+        <Route path="/reports_to_review" element={<ReportsToReview />} />
+        <Route path="/master" element={<Masters />} />
       </Routes>
     </Router>
   );
