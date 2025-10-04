@@ -118,7 +118,6 @@ export default function MyPatients() {
 
   const appointmentDates = appointments.map((a) => a.date.toDateString());
 
-  // Appointment Details (left)
   const appointmentDetails = [
     {
       date: "Aug 10, 2025 – 10:00 AM",
@@ -364,7 +363,7 @@ export default function MyPatients() {
               }}
             />
             <div>
-              <p style={{ color: "#2E2E2E", fontSize: 18, fontWeight: "600" }}>
+              <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
                 Medical Reports (Doctor Reports)
               </p>
               <div
@@ -378,7 +377,7 @@ export default function MyPatients() {
                 <p
                   style={{
                     color: "#2E2E2E",
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: "500",
                   }}
                 >
@@ -405,7 +404,7 @@ export default function MyPatients() {
                 <p
                   style={{
                     color: "#2E2E2E",
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: "500",
                   }}
                 >
@@ -433,7 +432,7 @@ export default function MyPatients() {
               }}
             />
             <div>
-              <p style={{ color: "#2E2E2E", fontSize: 18, fontWeight: "600" }}>
+              <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
                 Daily Reports (Submitted by Care Taker)
               </p>
               <div
@@ -447,7 +446,7 @@ export default function MyPatients() {
                 <p
                   style={{
                     color: "#2E2E2E",
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: "500",
                   }}
                 >
@@ -474,7 +473,7 @@ export default function MyPatients() {
                 <p
                   style={{
                     color: "#2E2E2E",
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: "500",
                   }}
                 >
@@ -497,15 +496,181 @@ export default function MyPatients() {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
               gap: "20px",
               width: "100%",
               background: "#F9FAFB",
-
               borderRadius: "10px",
             }}
           >
             {/* Left Section */}
+            {/* <div style={appointmentWrapper}>
+              <SectionHeader title="Appointment Details" />
+              <div style={timelineWrapper}>
+                <div style={timelineLine}></div> 
+                {appointmentDetails.map((item, index) => (
+                  <div key={index} style={timelineItem}>
+                    <div style={timelineDot}></div>
+                    <div style={timelineContent}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: -10,
+                        }}
+                      >
+                        <p style={apptDate}>{item.date} </p>
+                        <p>
+                          {item.badge && (
+                            <span style={badge}>{item.badge}</span>
+                          )}
+                        </p>
+                      </div>
+                      {item.type && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Type:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.type}
+                          </span>
+                        </p>
+                      )}
+                      {item.provider && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Assigned Provider:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.provider}
+                          </span>
+                        </p>
+                      )}
+                      {item.status && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Status:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.status}
+                          </span>
+                        </p>
+                      )}
+                      {item.checkin && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Check-in Status:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.checkin}
+                          </span>
+                        </p>
+                      )}
+                      {item.vitals && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Vitals Recorded:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.vitals}
+                          </span>
+                        </p>
+                      )}
+                      {item.comments && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Comments:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.comments}
+                          </span>
+                        </p>
+                      )}
+                      {item.next && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Next Appointment:{" "}
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: "#06152B99",
+                            }}
+                          >
+                            {item.next}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div> */}
             <div style={appointmentWrapper}>
               <SectionHeader title="Appointment Details" />
               <div style={timelineWrapper}>
@@ -686,7 +851,7 @@ export default function MyPatients() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "15px",
-                fontFamily: "Inter, sans-serif",
+                width: "30%",
               }}
             >
               {/* Header */}
@@ -787,9 +952,13 @@ export default function MyPatients() {
                     display: "grid",
                     gridTemplateColumns: "repeat(7, 1fr)",
                     gap: "4px",
-                    marginTop: "5px",
+                    marginTop: "-15px",
                     textAlign: "center",
                     fontSize: "12px",
+                    padding: "10px 10px ",
+                    borderBottomRightRadius: 8,
+                    borderBottomLeftRadius: 8,
+                    background: "#007F5F14",
                   }}
                 >
                   {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
@@ -806,9 +975,14 @@ export default function MyPatients() {
                         key={day.toISOString()}
                         style={{
                           padding: "4px 0",
-                          borderRadius: "4px",
-                          background: isAppointment ? "#FFF8E1" : "transparent",
-                          position: "relative",
+                          borderRadius: "6px",
+                          textAlign: "center",
+                          background: isAppointment
+                            ? "linear-gradient(180deg, #B78520, #F0C330)"
+                            : "transparent",
+                          color: isAppointment ? "white" : "inherit",
+                          fontWeight: isAppointment ? 600 : 400,
+                          transition: "background 0.3s ease",
                         }}
                       >
                         {day.getDate()}
@@ -1086,6 +1260,7 @@ const appointmentWrapper = {
   display: "flex",
   flexDirection: "column",
   gap: 20,
+  width: "70%",
 };
 
 const badge = {
