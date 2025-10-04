@@ -750,8 +750,6 @@ const tableContainer = {
   background: "#fff",
   borderRadius: "12px",
   padding: "20px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-
   display: "flex",
   flexDirection: "column",
   gap: 16,

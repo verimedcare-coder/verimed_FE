@@ -79,6 +79,14 @@ export default function Overview() {
     frequency: "Every 2 weeks",
     specialization:
       "Chronic disease management (hypertension, diabetes), IV therapy, palliative care",
+
+    Condition: "Hypertension, Diabetes",
+    AssignedDoctor: "Dr. Paul M.",
+    CareTaker: "Nurse Clarisse A.",
+    Conditions: "Hypertension, Type 2 Diabetes",
+    AssignedSince: "July 2025",
+    SponsorInfo: "John N. (Toronto, Canada)",
+    SponsorNumber: "+966 558441502",
   };
 
   const medicalHistory = [
@@ -334,9 +342,7 @@ export default function Overview() {
 
           {/* Patient Details */}
           {user?.type !== "doctor" &&
-            (user?.type === "sponsor" ||
-              user?.type === "patient" ||
-              user?.type === "care") && (
+            (user?.type === "sponsor" || user?.type === "patient") && (
               <div style={cardStyle}>
                 <SectionHeader title="Patient Details">
                   <Primarybtn name="View Full Profile" />
@@ -396,6 +402,42 @@ export default function Overview() {
                 </div>
               </div>
             )}
+
+          {user?.type === "care" && (
+            <>
+              {/* cards */}
+              <div style={vitalsGrid}>
+                {vitals.map((item, i) => (
+                  <div key={i} style={vitalCard}>
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      style={{ width: 24, height: 24, flexShrink: 0 }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: 0,
+                      }}
+                    >
+                      <p style={vitalLabel}>{item.label}</p>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <div style={dotStyle(item.color)}></div>
+                        <span style={vitalValue}>{item.value}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Doctor overview stats */}
           {user?.type === "doctor" && (
@@ -547,6 +589,189 @@ export default function Overview() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* my details */}
+          {user?.type === "care" && (
+            <div
+              style={{
+                background: "transparent",
+                border: "1px solid #E5E7EB",
+                borderRadius: "10px",
+                padding: 20,
+                width: "100%",
+              }}
+            >
+              {/* Header Row */}
+
+              <div
+                style={{
+                  borderTop: "1px solid #E5E7EB",
+                  marginBottom: "16px",
+                }}
+              />
+
+              {/* Content Row */}
+              <div style={{ display: "flex", gap: "16px" }}>
+                {/* Left - Avatar */}
+                <img
+                  src={patientdetails}
+                  alt="Profile"
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "12px",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+
+                {/* Right - Info Grid */}
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                  }}
+                >
+                  {/* Row 1 */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: "10px",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Name
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.name}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Condition
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.Condition}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Assigned Doctor
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.AssignedDoctor}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Care Taker
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.CareTaker}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px solid #E5E7EB" }} />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: "10px",
+                    }}
+                  >
+                    {/* Row 3 */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Condition(s)
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.Conditions}
+                      </div>
+                    </div>
+                    <div>
+                      {" "}
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Assigned Since
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.AssignedSince}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Sponsor Info
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.SponsorInfo}
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#2E2E2E",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Sponsor Number
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                        {careTeam.SponsorNumber}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -2287,6 +2512,342 @@ export default function Overview() {
                       </div>
                     );
                   })}
+              </div>
+            </div>
+          )}
+
+          {/* medical history */}
+          {user?.type === "care" && (
+            <div style={tableContainer}>
+              <SectionHeader title="Medical History">
+                <Primarybtn name="Get Appointment" />
+                <SecondaryBtn name="update membership" />
+              </SectionHeader>
+
+              <Table
+                columns={columns}
+                dataSource={dataSource}
+                pagination={{ pageSize: 5 }}
+                scroll={{ x: true }}
+                bordered
+                style={{ width: "100%" }}
+              />
+            </div>
+          )}
+
+          {/* upcoming appoinment */}
+          {user?.type === "care" && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 1fr",
+                gap: 8,
+                width: "100%",
+              }}
+            >
+              <div
+                style={{
+                  background: "#004E890A",
+                  width: "auto",
+                  border: "1px solid #004E89",
+                  borderRadius: 12,
+                  padding: 20,
+                  height: "100%",
+                }}
+              >
+                <SectionHeader title="Recent Reports">
+                  <Primarybtn name="View Full History" />
+                </SectionHeader>
+
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: "8px 0",
+                      borderBottom: "1px solid #D0D5DD",
+                    }}
+                  >
+                    Aug 15, 2025: Vitals stable. Patient doing well.
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: "8px 0",
+                      borderBottom: "1px solid #D0D5DD",
+                    }}
+                  >
+                    Aug 14, 2025: High BP noted. Escalated to physician.
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: "8px 0",
+                    }}
+                  >
+                    Aug 10, 2025: Virtual consult with Dr. Paul completed.
+                  </p>
+                </div>
+              </div>
+
+              {/* right */}
+              <div
+                style={{
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#fff",
+                    width: "300px",
+                    borderRadius: "10px",
+                    border: "1px solid #E5E7EB",
+                    padding: "20px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "15px",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  {/* Header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 500,
+                        color: "#1B1B1B",
+                      }}
+                    >
+                      Upcoming Appointments
+                    </p>
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "#B38C1D",
+                        cursor: "pointer",
+                      }}
+                    >
+                      View All
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      borderTop: "1px solid #E5E7EB",
+                      marginBottom: "8px",
+                    }}
+                  />
+
+                  {/* Month Row */}
+                  <div
+                    style={{
+                      background: "#E8F0EA",
+                      borderRadius: "6px",
+                      padding: "6px 10px",
+                      fontSize: "14px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <button
+                        onClick={handlePrevMonth}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "16px",
+                        }}
+                      >
+                        ‹
+                      </button>
+                      {formatMonthYear(currentMonth)}
+                      <button
+                        onClick={handleNextMonth}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "16px",
+                        }}
+                      >
+                        ›
+                      </button>
+                    </span>
+
+                    <span
+                      style={{ cursor: "pointer", fontSize: "18px" }}
+                      onClick={() => setShowCalendar(!showCalendar)}
+                    >
+                      {showCalendar ? (
+                        <UpOutlined style={{ fontSize: 14 }} />
+                      ) : (
+                        <DownOutlined style={{ fontSize: 14 }} />
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Calendar */}
+                  {showCalendar && (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(7, 1fr)",
+                        gap: "4px",
+                        marginTop: "-15px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        padding: "10px 10px ",
+                        borderBottomRightRadius: 8,
+                        borderBottomLeftRadius: 8,
+                        background: "#007F5F14",
+                      }}
+                    >
+                      {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
+                        <div key={d} style={{ fontWeight: 600 }}>
+                          {d}
+                        </div>
+                      ))}
+                      {monthDays.map((day) => {
+                        const isAppointment = appointmentDates.includes(
+                          day.toDateString()
+                        );
+                        return (
+                          <div
+                            key={day.toISOString()}
+                            style={{
+                              padding: "4px 0",
+                              borderRadius: "6px",
+                              textAlign: "center",
+                              background: isAppointment
+                                ? "linear-gradient(180deg, #B78520, #F0C330)"
+                                : "transparent",
+                              color: isAppointment ? "white" : "inherit",
+                              fontWeight: isAppointment ? 600 : 400,
+                              transition: "background 0.3s ease",
+                            }}
+                          >
+                            {day.getDate()}
+                            {isAppointment && (
+                              <div
+                                style={{
+                                  width: "5px",
+                                  height: "5px",
+                                  background: "#B38C1D",
+                                  borderRadius: "50%",
+                                  position: "absolute",
+                                  bottom: "2px",
+                                  left: "50%",
+                                  transform: "translateX(-50%)",
+                                }}
+                              ></div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Appointment Cards */}
+                  {appointments
+                    .filter(
+                      (a) =>
+                        a.date.getMonth() === currentMonth.getMonth() &&
+                        a.date.getFullYear() === currentMonth.getFullYear()
+                    )
+                    .map((appt, index) => {
+                      const isSelected =
+                        selectedAppointmentId === appt.id ||
+                        (selectedAppointmentId === null && index === 0);
+
+                      return (
+                        <div
+                          key={appt.id}
+                          onClick={() => handleCardClick(appt)}
+                          style={{
+                            display: "flex",
+                            gap: "10px",
+                            alignItems: "center",
+                            background: isSelected ? "#004C91" : "#F3F4F6",
+                            color: isSelected ? "#fff" : "#000",
+                            borderRadius: "8px",
+                            padding: "10px",
+                            cursor: "pointer",
+                            transition:
+                              "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#004E89";
+                              e.currentTarget.style.color = "#fff";
+                              const dateBox =
+                                e.currentTarget.querySelector(".date-box");
+                              dateBox.style.background = "#fff";
+                              dateBox.style.color = "#00396E";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#F3F4F6";
+                              e.currentTarget.style.color = "#000";
+                              const dateBox =
+                                e.currentTarget.querySelector(".date-box");
+                              // dateBox.style.background = "#FFFFFF";
+                              // dateBox.style.color = "#000";
+                              dateBox.style.background = "#004C91"; // keep blue for secondary cards
+                              dateBox.style.color = "#fff"; // white text on blue
+                            }
+                          }}
+                        >
+                          {/* Date Box */}
+                          <div
+                            className="date-box"
+                            style={{
+                              background: isSelected ? "#FFFFFF" : "#FFFFFF",
+                              color: isSelected ? "#000" : "#000",
+                              borderRadius: "6px",
+                              width: "45px",
+                              textAlign: "center",
+                              padding: "5px 0",
+                              transition:
+                                "background 0.2s ease, color 0.2s ease",
+                            }}
+                          >
+                            <div style={{ fontSize: "13px" }}>
+                              {appt.date.toLocaleDateString("en-US", {
+                                weekday: "short",
+                              })}
+                            </div>
+                            <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                              {appt.date.getDate()}
+                            </div>
+                          </div>
+
+                          {/* Appointment Info */}
+                          <div style={{ flexGrow: 1 }}>
+                            <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                              {appt.doctor}
+                            </div>
+                            <div style={{ fontSize: "13px" }}>{appt.time}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             </div>
           )}
