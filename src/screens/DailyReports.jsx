@@ -270,7 +270,7 @@ export default function DailyReports() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gridTemplateColumns: "repeat(4, 1fr)",
                     gap: "10px",
                   }}
                 >
@@ -310,10 +310,10 @@ export default function DailyReports() {
                         marginBottom: 3,
                       }}
                     >
-                      Experience
+                      Assigned Doctor
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Experience}
+                      {careTeam.AssignedDoctor}
                     </div>
                   </div>
                   <div>
@@ -324,44 +324,80 @@ export default function DailyReports() {
                         marginBottom: 3,
                       }}
                     >
-                      Languages
+                      Care Taker
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Languages}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Contact Number
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Contact}
+                      {careTeam.CareTaker}
                     </div>
                   </div>
                 </div>
 
                 {/* Divider */}
                 <div style={{ borderTop: "1px solid #E5E7EB" }} />
-
-                {/* Row 3 */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Specialization
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "10px",
+                  }}
+                >
+                  {/* Row 3 */}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Condition(s)
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Conditions}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.specialization}
+                  <div>
+                    {" "}
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Assigned Since
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.AssignedSince}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Sponsor Info
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.SponsorInfo}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Sponsor Number
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.SponsorNumber}
+                    </div>
                   </div>
                 </div>
               </div>
