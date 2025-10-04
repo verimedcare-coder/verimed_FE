@@ -12,7 +12,13 @@ export default function LoginScreen() {
 
     let userData = null;
 
-    if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
+    if (email === "admin@verimed.com" && password === "Admin@123") {
+      userData = {
+        email,
+        type: "admin",
+      };
+      window.location.href = "/overview";
+    } else if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
       userData = {
         email,
         type: "sponsor",

@@ -32,6 +32,8 @@ export default function HeaderComponent() {
 
   const getTitle = () => {
     switch (user?.type) {
+      case "admin":
+        return "Admin";
       case "sponsor":
         return "Sponsor";
       case "patient":

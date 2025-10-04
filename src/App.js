@@ -14,7 +14,6 @@ import DailyReports from "./screens/DailyReports";
 import HealthMonitoring from "./screens/HealthMonitoring";
 import MyAppointments from "./screens/MyAppointments";
 import ReportsToReview from "./screens/ReportsToReview";
-import Masters from "./screens/Masters";
 
 function App() {
   return (
@@ -37,7 +36,6 @@ function App() {
         <Route path="/health_monitoring" element={<HealthMonitoring />} />
         <Route path="/my_appointments" element={<MyAppointments />} />
         <Route path="/reports_to_review" element={<ReportsToReview />} />
-        <Route path="/master" element={<Masters />} />
       </Routes>
     </Router>
   );

@@ -1,4 +1,3 @@
-import React from "react";
 import { Layout, Menu, Avatar, Button, Typography } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -18,6 +17,7 @@ const { Sider } = Layout;
 const { Text } = Typography;
 
 const menuConfig = {
+  admin: [{ label: "Overview", icon: <HomeOutlined />, path: "/overview" }],
   sponsor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     { label: "My Loved Ones", icon: <UserOutlined />, path: "/my_loved_ones" },
