@@ -14,6 +14,10 @@ import DailyReports from "./screens/DailyReports";
 import HealthMonitoring from "./screens/HealthMonitoring";
 import MyAppointments from "./screens/MyAppointments";
 import ReportsToReview from "./screens/ReportsToReview";
+import UserManagement from "./screens/UserManagement";
+import Departments from "./screens/Departments";
+import MembershipPlans from "./screens/MembershipPlans";
+import Support from "./screens/Support";
 
 function App() {
   return (
@@ -36,6 +40,10 @@ function App() {
         <Route path="/health_monitoring" element={<HealthMonitoring />} />
         <Route path="/my_appointments" element={<MyAppointments />} />
         <Route path="/reports_to_review" element={<ReportsToReview />} />
+        <Route path="/user_management" element={<UserManagement />} />
+        <Route path="/departments" element={<Departments />} />
+        <Route path="/membership_plans" element={<MembershipPlans />} />
+        <Route path="/support" element={<Support />} />
       </Routes>
     </Router>
   );

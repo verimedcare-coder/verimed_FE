@@ -17,7 +17,30 @@ const { Sider } = Layout;
 const { Text } = Typography;
 
 const menuConfig = {
-  admin: [{ label: "Overview", icon: <HomeOutlined />, path: "/overview" }],
+  admin: [
+    { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    {
+      label: "User Management",
+      icon: <UserOutlined />,
+      path: "/user_management",
+    },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    { label: "Departments", icon: <TeamOutlined />, path: "/departments" },
+    {
+      label: "Membership Plans",
+      icon: <DollarOutlined />,
+      path: "/membership_plans",
+    },
+    {
+      label: "Messages / Support",
+      icon: <MessageOutlined />,
+      path: "/support",
+    },
+  ],
   sponsor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     { label: "My Loved Ones", icon: <UserOutlined />, path: "/my_loved_ones" },
