@@ -1,54 +1,49 @@
 import React, { useState } from "react";
+import { Form, Input, Button, Checkbox, Card, Typography, message } from "antd";
+import {
+  EyeInvisibleOutlined,
+  EyeTwoTone,
+  LockOutlined,
+  MailOutlined,
+} from "@ant-design/icons";
 import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+const { Title, Text } = Typography;
 
-  const onSubmit = (e) => {
-    e.preventDefault();
+export default function LoginScreen() {
+  const [loading, setLoading] = useState(false);
+
+  const onFinish = (values) => {
+    const { email, password } = values;
+    setLoading(true);
 
     let userData = null;
 
     if (email === "admin@verimed.com" && password === "Admin@123") {
-      userData = {
-        email,
-        type: "admin",
-      };
+      userData = { email, type: "admin" };
       window.location.href = "/overview";
     } else if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
-      userData = {
-        email,
-        type: "sponsor",
-      };
+      userData = { email, type: "sponsor" };
       window.location.href = "/overview";
     } else if (email === "patient@verimed.com" && password === "Patient@123") {
-      userData = {
-        email,
-        type: "patient",
-      };
+      userData = { email, type: "patient" };
       window.location.href = "/overview";
     } else if (email === "care@verimed.com" && password === "Care@123") {
-      userData = {
-        email,
-        type: "care",
-      };
+      userData = { email, type: "care" };
       window.location.href = "/overview";
     } else if (email === "doctor@verimed.com" && password === "Doctor@123") {
-      userData = {
-        email,
-        type: "doctor",
-      };
+      userData = { email, type: "doctor" };
       window.location.href = "/overview";
     } else {
-      alert("Invalid credentials. Please try again.");
+      message.error("Invalid credentials. Please try again.");
     }
 
     if (userData) {
       localStorage.setItem("userData", JSON.stringify(userData));
     }
+
+    setLoading(false);
   };
 
   return (
@@ -80,25 +75,27 @@ export default function LoginScreen() {
             maxWidth: "80%",
           }}
         >
-          <h1
+          <Title
+            level={1}
             style={{
+              color: "#fff",
               fontSize: 42,
               fontWeight: 700,
               marginBottom: 10,
             }}
           >
             Welcome to Verimed!
-          </h1>
-          <p
+          </Title>
+          <Text
             style={{
+              color: "#f0f0f0",
               fontSize: 16,
               lineHeight: "1.5",
-              fontWeight: 400,
             }}
           >
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vulputate
             ut laoreet velit ma.
-          </p>
+          </Text>
         </div>
       </div>
 
@@ -112,7 +109,7 @@ export default function LoginScreen() {
           padding: "40px 40px",
         }}
       >
-        {/* Logo at the top */}
+        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <img
             src={VerimedLogo}
@@ -123,152 +120,105 @@ export default function LoginScreen() {
           />
         </div>
 
-        {/* Centered Form */}
+        {/* Centered Card with Form */}
         <div
           style={{
             flex: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#FFFFFF",
-            border: "1px solid #E7E8EB",
-            borderRadius: 8,
           }}
         >
-          <div style={{ width: "100%", maxWidth: 400 }}>
-            <h2
+          <Card
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              borderRadius: 8,
+              boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+            }}
+          >
+            <Title
+              level={3}
               style={{
                 fontSize: 24,
-                fontWeight: "bold",
-                marginBottom: 10,
+                fontWeight: 700,
+                color: "#2E2E2E",
+                marginBottom: 8,
+                textAlign: "center",
               }}
             >
               Sign In
-            </h2>
-            <p
+            </Title>
+            <Text
+              type="secondary"
               style={{
-                color: "#666",
-                marginBottom: 30,
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#6C7688",
+                marginBottom: 8,
+                textAlign: "center",
               }}
             >
               Please enter below details to access the dashboard
-            </p>
+            </Text>
 
-            <form onSubmit={onSubmit}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                }}
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="Enter Email Address"
-                style={{
-                  width: "93%",
-                  padding: 12,
-                  marginBottom: 20,
-                  border: "1px solid #ccc",
-                  borderRadius: 6,
-                  fontSize: 14,
-                }}
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            <Form
+              name="login"
+              layout="vertical"
+              style={{ marginTop: 24 }}
+              onFinish={onFinish}
+            >
+              <Form.Item label="Email Address" name="email">
+                <Input prefix={<MailOutlined />} size="large" />
+              </Form.Item>
 
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                }}
-              >
-                Password
-              </label>
-              <div style={{ position: "relative" }}>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter Password"
-                  style={{
-                    width: "93%",
-                    padding: 12,
-                    marginBottom: 20,
-                    border: "1px solid #ccc",
-                    borderRadius: 6,
-                    fontSize: 14,
-                  }}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+              <Form.Item label="Password" name="password">
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  size="large"
+                  iconRender={(visible) =>
+                    visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+                  }
                 />
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 12,
-                    right: 10,
-                    cursor: "pointer",
-                    fontSize: 16,
-                  }}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  title={showPassword ? "Hide Password" : "Show Password"}
-                >
-                  {showPassword ? "🙈" : "👁️"}
-                </span>
-              </div>
+              </Form.Item>
 
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 30,
-                  fontSize: 14,
+                  marginBottom: 20,
                 }}
               >
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 5 }}
-                >
-                  <input type="checkbox" />
-                  Remember Me
-                </label>
-                <a
-                  href="#"
-                  style={{
-                    color: "red",
-                    textDecoration: "none",
-                    cursor: "pointer",
-                  }}
-                >
+                <Form.Item name="remember" valuePropName="checked" noStyle>
+                  <Checkbox>Remember me</Checkbox>
+                </Form.Item>
+                <a href="#" style={{ color: "#f5222d" }}>
                   Forgot password?
                 </a>
               </div>
 
-              <button
-                type="submit"
-                style={{
-                  width: "100%",
-                  padding: 14,
-                  background: "linear-gradient(to right, #f1c40f, #d4a017)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 6,
-                  fontSize: 16,
-                  cursor: "pointer",
-                }}
-              >
-                Login
-              </button>
-            </form>
-          </div>
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  loading={loading}
+                  style={{
+                    background: "linear-gradient(180deg, #F0C330, #B78520)",
+                    border: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Login
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
         </div>
 
-        {/* Footer at the bottom */}
+        {/* Footer */}
         <footer
           style={{
             fontSize: 12,
