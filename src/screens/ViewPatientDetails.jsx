@@ -268,7 +268,10 @@ export default function ViewPatientDetails() {
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <SectionHeader title="My details">
-              <PrimaryBtn name="get appointment" />
+              <PrimaryBtn
+                name="get appointment"
+                onClick={() => navigate("/doctor_form")}
+              />
             </SectionHeader>
             <div style={{ display: "flex", gap: "16px" }}>
               {/* Left - Avatar */}
