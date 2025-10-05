@@ -14,7 +14,9 @@ import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import Primarybtn from "../components/PrimaryBtn";
-import { Table } from "antd";
+import { DatePicker, Table } from "antd";
+import dayjs from "dayjs";
+import { CalendarOutlined } from "@ant-design/icons";
 
 function SectionHeader({ title, children }) {
   return (
@@ -264,226 +266,232 @@ export default function ViewPatientDetails() {
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "16px" }}>
-            {/* Left - Avatar */}
-            <img
-              src={patientdetails}
-              alt="Profile"
-              style={{
-                width: "60px",
-                height: "60px",
-                borderRadius: "12px",
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
-            />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <SectionHeader title="My details">
+              <PrimaryBtn name="get appointment" />
+            </SectionHeader>
+            <div style={{ display: "flex", gap: "16px" }}>
+              {/* Left - Avatar */}
 
-            {/* Right - Info Grid */}
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-              }}
-            >
-              {/* Row 1 */}
+              <img
+                src={patientdetails}
+                alt="Profile"
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "12px",
+                  objectFit: "cover",
+                  flexShrink: 0,
+                }}
+              />
+
+              {/* Right - Info Grid */}
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "10px",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Name
+                {/* Row 1 */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Name
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.name}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.name}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Condition
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Condition}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Assigned Doctor
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.AssignedDoctor}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Care Taker
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.CareTaker}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Condition
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.Condition}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Assigned Doctor
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.AssignedDoctor}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Care Taker
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.CareTaker}
-                  </div>
-                </div>
-              </div>
 
-              {/* Divider */}
-              <div style={{ borderTop: "1px solid #E5E7EB" }} />
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "10px",
-                }}
-              >
-                {/* Row 3 */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Condition(s)
+                {/* Divider */}
+                <div style={{ borderTop: "1px solid #E5E7EB" }} />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "10px",
+                  }}
+                >
+                  {/* Row 3 */}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Condition(s)
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Conditions}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.Conditions}
+                  <div>
+                    {" "}
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Assigned Since
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.AssignedSince}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Sponsor Info
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.SponsorInfo}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Sponsor Number
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.SponsorNumber}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  {" "}
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Assigned Since
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.AssignedSince}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Sponsor Info
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.SponsorInfo}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Sponsor Number
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.SponsorNumber}
-                  </div>
-                </div>
-              </div>
 
-              <div style={{ borderTop: "1px solid #E5E7EB" }} />
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "10px",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Address
+                <div style={{ borderTop: "1px solid #E5E7EB" }} />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Address
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.Address}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.Address}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Primary Care Taker
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.PrimaryCareTaker}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Primary Care Taker
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Assigned Physician
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.AssignedPhysician}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.PrimaryCareTaker}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Assigned Physician
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.AssignedPhysician}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#2E2E2E",
-                      marginBottom: 3,
-                    }}
-                  >
-                    Care Coordinator
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.CareCoordinator}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#2E2E2E",
+                        marginBottom: 3,
+                      }}
+                    >
+                      Care Coordinator
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {careTeam.CareCoordinator}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -492,8 +500,12 @@ export default function ViewPatientDetails() {
           {/* medical history */}
           <div style={tableContainer}>
             <SectionHeader title="Medical History">
-              <Primarybtn name="Get Appointment" />
-              <SecondaryBtn name="update membership" />
+              <DatePicker
+                picker="year"
+                defaultValue={dayjs("2025", "YYYY")}
+                suffixIcon={<CalendarOutlined />}
+                style={{ width: 100 }}
+              />
             </SectionHeader>
 
             <Table
