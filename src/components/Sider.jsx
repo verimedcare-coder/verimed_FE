@@ -105,7 +105,6 @@ const menuConfig = {
       path: "/reports_to_review",
     },
     { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
-    { label: "Masters", icon: <SettingOutlined />, path: "/master" },
   ],
 };
 
