@@ -7,6 +7,7 @@ import patientdetails from "../assets/images/patient-profile.jpg";
 import { Button, DatePicker, Table } from "antd";
 import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 function SectionHeader({ title, children }) {
   return (
@@ -30,6 +31,7 @@ function SectionHeader({ title, children }) {
 
 export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(3);
+  const navigate = useNavigate();
 
   const todaysAppointment = [
     {
@@ -210,8 +212,17 @@ export default function MyAppointments() {
       dataIndex: "action",
       key: "action",
       width: 150,
-      render: (text) => (
-        <a style={{ color: "#D97706", fontWeight: 600 }}>{text}</a>
+      render: (text, record) => (
+        <span
+          style={{
+            color: "#D97706",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+          onClick={() => navigate("/view_patient_details")}
+        >
+          {text}
+        </span>
       ),
     },
   ];

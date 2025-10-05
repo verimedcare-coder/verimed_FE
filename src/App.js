@@ -18,6 +18,8 @@ import UserManagement from "./screens/UserManagement";
 import Departments from "./screens/Departments";
 import MembershipPlans from "./screens/MembershipPlans";
 import Support from "./screens/Support";
+import ViewPatientDetails from "./screens/ViewPatientDetails";
+import DoctorForm from "./screens/DoctorForm";
 
 function App() {
   return (
@@ -44,6 +46,8 @@ function App() {
         <Route path="/departments" element={<Departments />} />
         <Route path="/membership_plans" element={<MembershipPlans />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/view_patient_details" element={<ViewPatientDetails />} />
+        <Route path="/doctor_form" element={<DoctorForm />} />
       </Routes>
     </Router>
   );
