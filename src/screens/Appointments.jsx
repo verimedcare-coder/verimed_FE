@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -26,9 +26,12 @@ import {
   Upload,
   message,
   DatePicker,
+  Spin,
 } from "antd";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
+import { base_url } from "../constants/constants";
+import axios from "axios";
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -36,13 +39,147 @@ const { Option } = Select;
 export default function Appointments() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 7));
-  const [showCalendar, setShowCalendar] = useState(false);
+  const today = new Date();
+  const defaultMonth = today.toLocaleString("default", {
+    month: "short",
+    year: "numeric",
+  });
+
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const [currentMonth, setCurrentMonth] = useState(today);
+  const [showCalendar, setShowCalendar] = useState(true);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
   const [activeTab, setActiveTab] = useState("upcoming");
-  const [selectedMonth, setSelectedMonth] = useState("Aug 2025");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [docList, setDocList] = useState([]);
+  const [bookedDoctor, setBookedDoctor] = useState(null);
+  const [bookedDateTime, setBookedDateTime] = useState(null);
+  const [appointmentList, setAppointmentList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const userListEndpoint = `${base_url}/user_view/`;
+        const headers = {
+          Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        };
+        const userRes = await axios.get(userListEndpoint, { headers });
+        const allusers = userRes.data;
+
+        const docListEndpoint = `${base_url}/doctorprofile_list/`;
+        const res = await axios.get(docListEndpoint);
+        const doctors = res.data;
+
+        const doctorUserIds = doctors.map((doc) => doc.user);
+
+        const filteredAllusers = allusers.filter((user) =>
+          doctorUserIds.includes(user.id)
+        );
+
+        const combinedDoctors = filteredAllusers.map((user) => {
+          const doctorProfile = doctors.find((doc) => doc.user === user.id);
+          return {
+            ...user,
+            doctorProfile,
+          };
+        });
+
+        setDocList(combinedDoctors);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const res = await axios.get(endpoint, { headers });
+      setAppointmentList(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const bookAppointment = async (values) => {
+    setLoading(true);
+    try {
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+
+      const bookappoinment_data = {
+        dep: 1,
+        doc: values.doctor,
+        patient: 1,
+        caretaker: 1,
+        appointment_date: values.date ? values.date.format("YYYY-MM-DD") : null,
+        appointment_time: values.time || null,
+        appointment_type: values.appointmentType || null,
+        treatment_performed: values.treatment || null,
+        care_taker_notes: values.notes || null,
+        amount: values.amount || null,
+        subscription_plan: values.subscription_plan || null,
+        height: values.height || null,
+        weight: values.weight || null,
+        blood_pressure: values.blood_pressure || null,
+        blood_sugar: values.blood_sugar || null,
+        medical_history: values.medical_history || null,
+        appointment_history: values.appointment_history || null,
+        time_line: values.time_line || null,
+        appointment_reason: values.appointment_reason || null,
+        appointment_status: values.appointment_status || null,
+      };
+
+      const formData = new FormData();
+      formData.append(
+        "bookappoinment_data",
+        JSON.stringify(bookappoinment_data)
+      );
+
+      if (values.labReport && values.labReport.length > 0) {
+        values.labReport.forEach((fileObj, idx) => {
+          formData.append("lab_reports", fileObj.originFileObj);
+        });
+      }
+
+      const selectedDoc = docList.find(
+        (doc) => doc.doctorProfile.id === values.doctor
+      );
+      setBookedDoctor(selectedDoc);
+
+      const formattedDate = values.date
+        ? values.date.format("MMM DD, YYYY")
+        : "";
+      const formattedTime = values.time
+        ? `${values.time.slice(0, 5)} ${
+            parseInt(values.time.slice(0, 2), 10) < 12 ? "AM" : "PM"
+          }`
+        : "";
+      setBookedDateTime({ date: formattedDate, time: formattedTime });
+
+      await axios.post(endpoint, formData, { headers });
+      setIsModalOpen(false);
+      setIsSuccessModalOpen(true);
+      setLoading(false);
+      form.resetFields();
+      fetchAppointments();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const appointments = [
     {
@@ -132,15 +269,46 @@ export default function Appointments() {
     }
   };
 
-  const handleSubmit = (values) => {
-    console.log("Form values:", values);
-    setIsModalOpen(false);
-    setIsSuccessModalOpen(true);
-    form.resetFields();
+  const getAppointmentStatus = (appointment) => {
+    const today = new Date();
+    const apptDate = new Date(appointment.appointment_date);
+    if (appointment.appointment_status === "cancelled") return "cancelled";
+    if (apptDate > today) return "upcoming";
+    if (apptDate < today) return "past";
+    return "upcoming";
   };
 
+  const mappedAppointments = appointmentList.map((appt) => ({
+    id: appt.id,
+    date: new Date(appt.appointment_date),
+    doctor:
+      appt.doc && appt.doc.user
+        ? `Dr. ${appt.doc.doctor_id || ""}` // or use doctor's name if available
+        : "Doctor",
+    doctorName:
+      appt.doc && appt.doc.user
+        ? `Dr. ${appt.doc.doctor_id || ""}` // or use doctor's name if available
+        : "Doctor",
+    time: appt.appointment_time
+      ? `${new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString(
+          [],
+          { hour: "2-digit", minute: "2-digit" }
+        )}`
+      : "",
+    status: getAppointmentStatus(appt),
+    name:
+      appt.patient && appt.patient.user
+        ? `Patient ${appt.patient.patient_id || ""}` // or use patient's name if available
+        : "Patient",
+    issue: appt.appointment_reason || appt.appointment_type || "",
+    docs: appt.documents && appt.documents.length > 0,
+    documents: appt.documents || [],
+  }));
+
   const renderAppointments = (status) => {
-    const filtered = allAppointments.filter((appt) => appt.status === status);
+    const filtered = mappedAppointments.filter(
+      (appt) => appt.status === status
+    );
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {filtered.map((appt) => (
@@ -177,13 +345,12 @@ export default function Appointments() {
                     lineHeight: 1.2,
                   }}
                 >
-                  {appt.date.split(" ")[0]}
+                  {appt.date.toLocaleDateString("en-US", { weekday: "short" })}
                   <br />
                   <span style={{ fontSize: "16px", fontWeight: 600 }}>
-                    {appt.date.split(" ")[1]}
+                    {appt.date.getDate()}
                   </span>
                 </div>
-
                 {/* Vertical Divider */}
                 <div
                   style={{
@@ -193,7 +360,6 @@ export default function Appointments() {
                     alignSelf: "stretch",
                   }}
                 />
-
                 {/* Appointment Info */}
                 <div
                   style={{
@@ -228,9 +394,7 @@ export default function Appointments() {
                   </div>
                 </div>
               </div>
-
               {/* Right Actions */}
-
               <div
                 style={{
                   display: "flex",
@@ -250,10 +414,27 @@ export default function Appointments() {
                       textDecoration: "underline",
                       display: "flex",
                       alignItems: "center",
-                      gap: "4px",
+                      gap: 4,
+                      flexDirection: "row",
                     }}
                   >
-                    <FileTextOutlined /> View Documents
+                    <FileTextOutlined />
+                    {appt.documents.map((doc) => (
+                      <a
+                        key={doc.id}
+                        href={doc.view_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#004C91",
+                          textDecoration: "underline",
+                          fontSize: "12px",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {doc.filename.split("/").pop()}
+                      </a>
+                    ))}
                   </span>
                 )}
               </div>
@@ -315,7 +496,7 @@ export default function Appointments() {
     currentMonth.getMonth()
   );
 
-  const appointmentDates = appointments.map((a) => a.date.toDateString());
+  const appointmentDates = mappedAppointments.map((a) => a.date.toDateString());
 
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
@@ -323,6 +504,25 @@ export default function Appointments() {
       <div style={{ width: "240px", flexShrink: 0 }}>
         <Sider />
       </div>
+
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(255,255,255,0.7)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Spin size="large" tip="Loading..." />
+        </div>
+      )}
 
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -572,7 +772,7 @@ export default function Appointments() {
               )}
 
               {/* Appointment Cards */}
-              {appointments
+              {mappedAppointments
                 .filter(
                   (a) =>
                     a.date.getMonth() === currentMonth.getMonth() &&
@@ -615,10 +815,8 @@ export default function Appointments() {
                           e.currentTarget.style.color = "#000";
                           const dateBox =
                             e.currentTarget.querySelector(".date-box");
-                          // dateBox.style.background = "#FFFFFF";
-                          // dateBox.style.color = "#000";
-                          dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                          dateBox.style.color = "#fff"; // white text on blue
+                          dateBox.style.background = "#004C91";
+                          dateBox.style.color = "#fff";
                         }
                       }}
                     >
@@ -693,7 +891,7 @@ export default function Appointments() {
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleSubmit}
+          onFinish={bookAppointment}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -740,9 +938,21 @@ export default function Appointments() {
             }
           >
             <Select placeholder="Select time">
-              <Option value="9am">9:00 AM</Option>
-              <Option value="11am">11:00 AM</Option>
-              <Option value="2pm">2:00 PM</Option>
+              {Array.from({ length: 13 }, (_, i) => {
+                const hour = 9 + i;
+                const value = `${hour.toString().padStart(2, "0")}:00:00`;
+                const display =
+                  hour < 12
+                    ? `${hour}:00 AM`
+                    : hour === 12
+                    ? "12:00 PM"
+                    : `${hour - 12}:00 PM`;
+                return (
+                  <Option key={value} value={value}>
+                    {display}
+                  </Option>
+                );
+              })}
             </Select>
           </Form.Item>
 
@@ -757,8 +967,11 @@ export default function Appointments() {
             }
           >
             <Select placeholder="Select doctor">
-              <Option value="dr_smith">Dr. Smith</Option>
-              <Option value="dr_jones">Dr. Jones</Option>
+              {docList.map((doc) => (
+                <Option key={doc.doctorProfile.id} value={doc.doctorProfile.id}>
+                  {doc.first_name} {doc.last_name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
@@ -824,7 +1037,11 @@ export default function Appointments() {
             }}
           >
             <SecondaryBtn name="cancel" onClick={() => setIsModalOpen(false)} />
-            <Primarybtn name="Book Appointment" onClick={() => form.submit()} />
+            <Primarybtn
+              name="Book Appointment"
+              type="button"
+              onClick={() => form.submit()}
+            />
           </div>
         </Form>
       </Modal>
@@ -862,9 +1079,9 @@ export default function Appointments() {
             textAlign: "center",
           }}
         >
-          Your appointment with Dr. Paul Ekom is scheduled for Aug 20, 2025 at
-          10:00 AM. You will receive reminders 24 hours and 1 hour before your
-          visit.
+          {bookedDoctor
+            ? `Your appointment with Dr. ${bookedDoctor.first_name} ${bookedDoctor.last_name} is scheduled for ${bookedDateTime?.date} at ${bookedDateTime?.time}. You will receive reminders 24 hours and 1 hour before your visit.`
+            : "Your appointment is scheduled. You will receive reminders 24 hours and 1 hour before your visit."}
         </p>
       </Modal>
     </div>

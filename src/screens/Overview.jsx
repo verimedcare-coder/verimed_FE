@@ -33,6 +33,23 @@ export default function Overview() {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
   const scrollRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(3);
+  const [appointmentList, setAppointmentList] = useState([]);
+
+  const fetchAppointments = async () => {
+    try {
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const res = await axios.get(endpoint, { headers });
+      setAppointmentList(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
   // userdata type check
   const data = localStorage.getItem("userData");
@@ -189,14 +206,14 @@ export default function Overview() {
     {
       id: 1,
       name: "Total Appointments",
-      count: 88,
+      count: appointmentList.length,
       diff: "+95%",
       duration: "in last 7 Days",
     },
     {
       id: 2,
       name: "Total Appointments",
-      count: 58,
+      count: appointmentList.length,
       diff: "+95%",
       duration: "in last 7 Days",
     },
@@ -336,107 +353,29 @@ export default function Overview() {
     legend: { position: "bottom" },
   };
 
-  const appointmentListData = [
-    {
-      key: 1,
-      date: "Aug 15, 2025",
-      patient: "Samuel N.",
-      type: "Home Visit",
-      caretaker: "Nurse Clarisse",
-      time: "10:00 AM - 11:00 AM",
-      status: "Ongoing",
-    },
-    {
-      key: 2,
-      date: "Aug 15, 2025",
-      patient: "John D.",
-      type: "Consultation",
-      caretaker: "Nurse Leo",
-      time: "11:30 AM - 12:00 PM",
-      status: "Pending",
-    },
-    {
-      key: 3,
-      date: "Aug 16, 2025",
-      patient: "Sarah T.",
-      type: "Virtual",
-      caretaker: "Nurse Clarisse",
-      time: "09:00 AM - 09:30 AM",
-      status: "Completed",
-    },
-    {
-      key: 4,
-      date: "Aug 16, 2025",
-      patient: "Paul M.",
-      type: "Consultation",
-      caretaker: "Nurse Leo",
-      time: "12:00 PM - 12:30 PM",
-      status: "Cancelled",
-    },
-    {
-      key: 5,
-      date: "Aug 17, 2025",
-      patient: "Robert M.",
-      type: "Home Visit",
-      caretaker: "Nurse Clarisse",
-      time: "10:00 AM - 11:00 AM",
-      status: "Rescheduled",
-    },
-    {
-      key: 6,
-      date: "Aug 17, 2025",
-      patient: "Anna S.",
-      type: "Consultation",
-      caretaker: "Nurse Leo",
-      time: "11:30 AM - 12:00 PM",
-      status: "Ongoing",
-    },
-    {
-      key: 7,
-      date: "Aug 18, 2025",
-      patient: "David P.",
-      type: "Virtual",
-      caretaker: "Nurse Clarisse",
-      time: "09:00 AM - 09:30 AM",
-      status: "Pending",
-    },
-    {
-      key: 8,
-      date: "Aug 18, 2025",
-      patient: "Emily R.",
-      type: "Consultation",
-      caretaker: "Nurse Leo",
-      time: "12:00 PM - 12:30 PM",
-      status: "Completed",
-    },
-    {
-      key: 9,
-      date: "Aug 19, 2025",
-      patient: "Michael B.",
-      type: "Home Visit",
-      caretaker: "Nurse Clarisse",
-      time: "10:00 AM - 11:00 AM",
-      status: "Ongoing",
-    },
-    {
-      key: 10,
-      date: "Aug 19, 2025",
-      patient: "Linda C.",
-      type: "Consultation",
-      caretaker: "Nurse Leo",
-      time: "11:30 AM - 12:00 PM",
-      status: "Pending",
-    },
-    {
-      key: 11,
-      date: "Aug 20, 2025",
-      patient: "Chris F.",
-      type: "Virtual",
-      caretaker: "Nurse Clarisse",
-      time: "09:00 AM - 09:30 AM",
-      status: "Rescheduled",
-    },
-  ];
+  const appointmentListData = appointmentList.map((item, idx) => ({
+    key: item.id,
+    date: item.appointment_date
+      ? new Date(item.appointment_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "",
+    patient: item.patient?.patient_id || "Unknown",
+    type: item.appointment_type || "",
+    caretaker: item.caretaker?.caretaker_id || "",
+    time: item.appointment_time
+      ? `${new Date(`1970-01-01T${item.appointment_time}`).toLocaleTimeString(
+          [],
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )}`
+      : "",
+    status: item.appointment_status || "Pending",
+  }));
 
   const appointmentListColumns = [
     {
@@ -1067,6 +1006,7 @@ export default function Overview() {
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
+                    onClick={() => navigate("/appointments")}
                     style={{
                       background: "white",
                       borderRadius: 8,
