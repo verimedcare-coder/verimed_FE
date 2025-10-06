@@ -8,6 +8,8 @@ import {
 } from "@ant-design/icons";
 import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
+import { base_url } from "../constants/constants";
+import axios from "axios";
 
 const { Title, Text } = Typography;
 
@@ -15,25 +17,31 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const onFinish = (values) => {
-    const { email, password } = values;
+    const { username, password } = values;
     setLoading(true);
 
     let userData = null;
 
-    if (email === "admin@verimed.com" && password === "Admin@123") {
-      userData = { email, type: "admin" };
+    if (username === "admin@verimed.com" && password === "Admin@123") {
+      userData = { username, type: "admin" };
       window.location.href = "/overview";
-    } else if (email === "sponsor@verimed.com" && password === "Sponsor@123") {
-      userData = { email, type: "sponsor" };
+    } else if (
+      username === "sponsor@verimed.com" &&
+      password === "Sponsor@123"
+    ) {
+      userData = { username, type: "sponsor" };
       window.location.href = "/overview";
-    } else if (email === "patient@verimed.com" && password === "Patient@123") {
-      userData = { email, type: "patient" };
+    } else if (
+      username === "patient@verimed.com" &&
+      password === "Patient@123"
+    ) {
+      userData = { username, type: "patient" };
       window.location.href = "/overview";
-    } else if (email === "care@verimed.com" && password === "Care@123") {
-      userData = { email, type: "care" };
+    } else if (username === "care@verimed.com" && password === "Care@123") {
+      userData = { username, type: "care" };
       window.location.href = "/overview";
-    } else if (email === "doctor@verimed.com" && password === "Doctor@123") {
-      userData = { email, type: "doctor" };
+    } else if (username === "doctor@verimed.com" && password === "Doctor@123") {
+      userData = { username, type: "doctor" };
       window.location.href = "/overview";
     } else {
       message.error("Invalid credentials. Please try again.");
@@ -45,6 +53,33 @@ export default function LoginScreen() {
 
     setLoading(false);
   };
+
+  // const onFinish = async (values) => {
+  //   const { username, password } = values;
+  //   setLoading(true);
+  //   try {
+  //     const res = await axios.post(`${base_url}/user_login/`, {
+  //       username,
+  //       password,
+  //     });
+
+  //     const token = res.data.token;
+  //     localStorage.setItem("token", token);
+
+  //     const userRes = await axios.get(`${base_url}/user_view/`, {
+  //       headers: { Authorization: `Token ${token}` },
+  //     });
+
+  //     const userData = userRes.data.find((user) => user.username === username);
+  //     localStorage.setItem("userData", JSON.stringify(userData));
+
+  //     setLoading(false);
+  //   } catch (error) {
+  //     console.log("Login error:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div
@@ -168,7 +203,7 @@ export default function LoginScreen() {
               style={{ marginTop: 24 }}
               onFinish={onFinish}
             >
-              <Form.Item label="Email Address" name="email">
+              <Form.Item label="User Name" name="username">
                 <Input prefix={<MailOutlined />} size="large" />
               </Form.Item>
 
