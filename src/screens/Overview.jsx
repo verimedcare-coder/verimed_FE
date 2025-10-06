@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -23,6 +23,8 @@ import {
   UpOutlined,
 } from "@ant-design/icons";
 import { Pie, Column } from "@ant-design/plots";
+import { base_url } from "../constants/constants";
+import axios from "axios";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -580,6 +582,24 @@ export default function Overview() {
       next: "Aug 24, 2025 – Virtual consult with Dr. Paul",
     },
   ];
+
+  const userToken = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const endpoint = `${base_url}/user_view/`;
+        const headers = {
+          Authorization: `Token ${userToken}`,
+        };
+        const res = await axios.get(endpoint, { headers });
+        console.log("fetchUsers =>", res.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   return (
     <div

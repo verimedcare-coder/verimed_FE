@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Checkbox, Card, Typography, message } from "antd";
 import {
   EyeInvisibleOutlined,
@@ -16,6 +16,7 @@ const { Title, Text } = Typography;
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
+  const userToken = localStorage.getItem("token");
   const onFinish = (values) => {
     const { username, password } = values;
     setLoading(true);
