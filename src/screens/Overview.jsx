@@ -13,9 +13,16 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Table } from "antd";
+import { Button, Table } from "antd";
 import { useNavigate } from "react-router-dom";
-import { DownOutlined, UpOutlined } from "@ant-design/icons";
+import {
+  CalendarOutlined,
+  DownOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  UpOutlined,
+} from "@ant-design/icons";
+import { Pie, Bar } from "@ant-design/charts";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -267,6 +274,218 @@ export default function Overview() {
     },
   ];
 
+  //chart data
+  const revenueData = [
+    { type: "Consultations", value: 35000 },
+    { type: "Home Visits", value: 22000 },
+    { type: "Subscriptions", value: 18000 },
+    { type: "Other", value: 8000 },
+  ];
+
+  const revenuePieConfig = {
+    appendPadding: 10,
+    data: revenueData,
+    angleField: "value",
+    colorField: "type",
+    radius: 0.9,
+    label: {
+      type: "outer",
+      content: (data) => `${data.type}: ${data.value}`,
+    },
+    legend: { position: "bottom" },
+  };
+
+  const statusData = [
+    { status: "Completed", value: 40 },
+    { status: "Ongoing", value: 25 },
+    { status: "Pending", value: 15 },
+    { status: "Rescheduled", value: 10 },
+    { status: "Cancelled", value: 5 },
+  ];
+
+  const statusBarConfig = {
+    data: statusData,
+    xField: "status",
+    yField: "value",
+    colorField: "status",
+    color: ["#27AE60", "#007F5F", "#F2994A", "#B78520", "#EF1E1E"],
+    legend: { position: "bottom" },
+    columnWidthRatio: 0.6,
+    label: { position: "top", style: { fill: "#2E2E2E", fontWeight: 600 } },
+  };
+
+  const appointmentListData = [
+    {
+      key: 1,
+      date: "Aug 15, 2025",
+      patient: "Samuel N.",
+      type: "Home Visit",
+      caretaker: "Nurse Clarisse",
+      time: "10:00 AM - 11:00 AM",
+      status: "Ongoing",
+    },
+    {
+      key: 2,
+      date: "Aug 15, 2025",
+      patient: "John D.",
+      type: "Consultation",
+      caretaker: "Nurse Leo",
+      time: "11:30 AM - 12:00 PM",
+      status: "Pending",
+    },
+    {
+      key: 3,
+      date: "Aug 16, 2025",
+      patient: "Sarah T.",
+      type: "Virtual",
+      caretaker: "Nurse Clarisse",
+      time: "09:00 AM - 09:30 AM",
+      status: "Completed",
+    },
+    {
+      key: 4,
+      date: "Aug 16, 2025",
+      patient: "Paul M.",
+      type: "Consultation",
+      caretaker: "Nurse Leo",
+      time: "12:00 PM - 12:30 PM",
+      status: "Cancelled",
+    },
+    {
+      key: 5,
+      date: "Aug 17, 2025",
+      patient: "Robert M.",
+      type: "Home Visit",
+      caretaker: "Nurse Clarisse",
+      time: "10:00 AM - 11:00 AM",
+      status: "Rescheduled",
+    },
+    {
+      key: 6,
+      date: "Aug 17, 2025",
+      patient: "Anna S.",
+      type: "Consultation",
+      caretaker: "Nurse Leo",
+      time: "11:30 AM - 12:00 PM",
+      status: "Ongoing",
+    },
+    {
+      key: 7,
+      date: "Aug 18, 2025",
+      patient: "David P.",
+      type: "Virtual",
+      caretaker: "Nurse Clarisse",
+      time: "09:00 AM - 09:30 AM",
+      status: "Pending",
+    },
+    {
+      key: 8,
+      date: "Aug 18, 2025",
+      patient: "Emily R.",
+      type: "Consultation",
+      caretaker: "Nurse Leo",
+      time: "12:00 PM - 12:30 PM",
+      status: "Completed",
+    },
+    {
+      key: 9,
+      date: "Aug 19, 2025",
+      patient: "Michael B.",
+      type: "Home Visit",
+      caretaker: "Nurse Clarisse",
+      time: "10:00 AM - 11:00 AM",
+      status: "Ongoing",
+    },
+    {
+      key: 10,
+      date: "Aug 19, 2025",
+      patient: "Linda C.",
+      type: "Consultation",
+      caretaker: "Nurse Leo",
+      time: "11:30 AM - 12:00 PM",
+      status: "Pending",
+    },
+    {
+      key: 11,
+      date: "Aug 20, 2025",
+      patient: "Chris F.",
+      type: "Virtual",
+      caretaker: "Nurse Clarisse",
+      time: "09:00 AM - 09:30 AM",
+      status: "Rescheduled",
+    },
+  ];
+
+  const appointmentListColumns = [
+    {
+      title: "Date & Time",
+      dataIndex: "date",
+      key: "date",
+      render: (text, record) => (
+        <span>
+          {record.date}
+          <br />
+          <span style={{ color: "#888", fontSize: 13 }}>{record.time}</span>
+        </span>
+      ),
+      width: 150,
+    },
+    {
+      title: "Patient Name",
+      dataIndex: "patient",
+      key: "patient",
+      width: 140,
+    },
+    {
+      title: "Type",
+      dataIndex: "type",
+      key: "type",
+      width: 120,
+    },
+    {
+      title: "Care Taker",
+      dataIndex: "caretaker",
+      key: "caretaker",
+      width: 140,
+    },
+    {
+      title: "Time",
+      dataIndex: "time",
+      key: "time",
+      width: 120,
+      responsive: ["md"],
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      render: (status) => {
+        let color = "#888";
+        if (status === "Ongoing") color = "#27AE60";
+        else if (status === "Pending") color = "#F2994A";
+        else if (status === "Completed") color = "#007F5F";
+        else if (status === "Cancelled") color = "#EF1E1E";
+        else if (status === "Rescheduled") color = "#B78520";
+        return <span style={{ color, fontWeight: 600 }}>{status}</span>;
+      },
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 120,
+      render: (_, record) => (
+        <Button
+          type="link"
+          style={{ color: "#B78520", fontWeight: 500, padding: 0 }}
+          onClick={() => alert(`Viewing details for ${record.patient}`)}
+        >
+          View Details
+        </Button>
+      ),
+    },
+  ];
+
   const showMore = () => {
     setVisibleCount((prev) => Math.min(prev + 3, todaysAppointment.length));
   };
@@ -472,7 +691,7 @@ export default function Overview() {
           )}
 
           {/* Doctor overview stats */}
-          {user?.type === "doctor" && (
+          {(user?.type === "doctor" || user?.type === "admin") && (
             <div
               style={{
                 display: "flex",
@@ -627,6 +846,183 @@ export default function Overview() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Charts section */}
+          {user?.type === "admin" && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                gap: 20,
+              }}
+            >
+              {/* Left: Pie Chart */}
+              <div
+                style={{
+                  width: "50%",
+                  backgroundColor: "white",
+                  height: 437,
+                  borderRadius: 8,
+                  padding: 24,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <p
+                    style={{ fontWeight: 600, fontSize: 18, color: "#1B1B1B" }}
+                  >
+                    Revenue Overview
+                  </p>
+                  <span
+                    onClick={() => {}}
+                    style={{
+                      background: "#fff",
+                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#1F2329",
+                      cursor: "pointer",
+                      border: "1px solid #0000001F",
+                    }}
+                  >
+                    Aug 2025 <CalendarOutlined />
+                  </span>
+                </div>
+                <Pie {...revenuePieConfig} style={{ height: 320 }} />
+              </div>
+
+              {/* Right: Bar Chart */}
+              <div
+                style={{
+                  width: "50%",
+                  backgroundColor: "white",
+                  height: 437,
+                  borderRadius: 8,
+                  padding: 24,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <p
+                    style={{ fontWeight: 600, fontSize: 18, color: "#1B1B1B" }}
+                  >
+                    Appointment Status
+                  </p>
+                  <span
+                    onClick={() => {}}
+                    style={{
+                      background: "#fff",
+                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#1F2329",
+                      cursor: "pointer",
+                      border: "1px solid #0000001F",
+                    }}
+                  >
+                    Aug 2025 <CalendarOutlined />
+                  </span>
+                </div>
+                <Bar {...statusBarConfig} style={{ height: 320 }} />
+              </div>
+            </div>
+          )}
+
+          {/* Appointment List */}
+          {user?.type === "admin" && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 24,
+                width: "100%",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                margin: 20,
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 18,
+                  flexWrap: "wrap",
+                  gap: 10,
+                }}
+              >
+                <p style={{ fontSize: 18, fontWeight: 600, color: "#1B1B1B" }}>
+                  Appointment List
+                </p>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    style={{
+                      background: "white",
+                      borderRadius: 8,
+                      fontWeight: 500,
+                      border: "1px solid #F0C330",
+                      color: "#B78520",
+                    }}
+                  >
+                    New Appointment
+                  </Button>
+                  <Button
+                    icon={<CalendarOutlined />}
+                    style={{
+                      background: "#fff",
+                      borderRadius: 8,
+                      fontWeight: 500,
+                      border: "1px solid #0000001F",
+                      color: "#1F2329",
+                    }}
+                  >
+                    Aug 2025
+                  </Button>
+                  <Button
+                    icon={<FilterOutlined />}
+                    style={{
+                      background: "#fff",
+                      borderRadius: 8,
+                      fontWeight: 500,
+                      border: "1px solid #F0C330",
+                      color: "#B78520",
+                    }}
+                  ></Button>
+                </div>
+              </div>
+              {/* Table */}
+              <Table
+                columns={appointmentListColumns}
+                dataSource={appointmentListData}
+                pagination={{ pageSize: 10 }}
+                scroll={{ x: true }}
+                bordered
+                style={{ width: "100%" }}
+              />
             </div>
           )}
 
