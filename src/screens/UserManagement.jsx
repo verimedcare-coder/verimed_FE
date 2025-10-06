@@ -3,10 +3,25 @@ import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
-import { Tabs, Table, Input, Button, Tag, Space } from "antd";
+import {
+  Tabs,
+  Table,
+  Input,
+  Button,
+  Tag,
+  Space,
+  Drawer,
+  Checkbox,
+  Descriptions,
+  Avatar,
+  Form,
+  DatePicker,
+} from "antd";
 import { EllipsisOutlined, PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
-
+import Primarybtn from "../components/PrimaryBtn";
+import { Select } from "antd";
+const { Option } = Select;
 function SectionHeader({ title, children }) {
   return (
     <div
@@ -29,13 +44,28 @@ function SectionHeader({ title, children }) {
 
 export default function UserManagement() {
   const [searchText, setSearchText] = useState("");
+  const [selectedSponsor, setSelectedSponsor] = useState(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [editedData, setEditedData] = useState({});
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [form] = Form.useForm();
+
+  const showDrawer = () => setOpen(true);
+  const onClose = () => setOpen(false);
+
+  const onFinish = (values) => {
+    console.log("Sponsor Info Submitted:", values);
+    form.resetFields();
+    setOpen(false);
+  };
 
   // Sample sponsors data
   const sponsorsData = [
     {
       key: 1,
       name: "John Nelson",
-      avatar: "/path/to/avatar1.jpg", // replace with real path
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
       email: "john.n@verimed.com",
       phone: "+1 416 222 1000",
       country: "Canada",
@@ -46,7 +76,7 @@ export default function UserManagement() {
     {
       key: 2,
       name: "Jane Smith",
-      avatar: "/path/to/avatar2.jpg",
+      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
       email: "jane.s@verimed.com",
       phone: "+1 416 333 1000",
       country: "Canada",
@@ -54,7 +84,6 @@ export default function UserManagement() {
       membership: "Premium",
       status: "Inactive",
     },
-    // Add more data here
   ];
 
   const columns = [
@@ -65,7 +94,12 @@ export default function UserManagement() {
       render: (text, record) => (
         <Space>
           <img
-            src={record.avatar}
+            src={
+              record.avatar ||
+              `https://randomuser.me/api/portraits/${
+                Math.random() > 0.5 ? "men" : "women"
+              }/${Math.floor(Math.random() * 80) + 1}.jpg`
+            }
             alt={text}
             style={{
               width: 32,
@@ -98,8 +132,15 @@ export default function UserManagement() {
     {
       title: "Action",
       key: "action",
-      render: () => (
-        <EllipsisOutlined style={{ fontSize: 18, cursor: "pointer" }} />
+      render: (text, record) => (
+        <EllipsisOutlined
+          style={{ fontSize: 18, cursor: "pointer" }}
+          onClick={() => {
+            setSelectedSponsor(record);
+            setEditedData(record); // Pre-fill form
+            setDrawerVisible(true);
+          }}
+        />
       ),
     },
   ];
@@ -149,33 +190,50 @@ export default function UserManagement() {
     },
   ];
 
+  const linkedPatients = [
+    {
+      id: 1,
+      avatar: "https://randomuser.me/api/portraits/men/44.jpg",
+      name: "Mr. Samuel N. (VM–976–324)",
+      doctor: "Dr. Paul M.",
+      caretaker: "Nurse Clarisse A.",
+    },
+    {
+      id: 2,
+      avatar: "https://randomuser.me/api/portraits/women/65.jpg",
+      name: "Ms. Grace N. (VM–845–123)",
+      doctor: "Dr. Linda S.",
+      caretaker: "Nurse Alex P.",
+    },
+  ];
+
   const tabItems = [
     {
       key: "sponsors",
       label: "Sponsors",
       children: (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: 16,
-            }}
-          >
+        <div style={tableContainer}>
+          <SectionHeader title="Medical History">
             <Input
               placeholder="Search"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 200 }}
             />
-            <Button type="primary" icon={<PlusOutlined />}>
-              Add Sponsor
-            </Button>
-          </div>
+            <Primarybtn
+              name="Add Sponsor"
+              icon={<PlusOutlined />}
+              onClick={showDrawer}
+            />
+          </SectionHeader>
+
           <Table
             columns={columns}
             dataSource={filteredData}
-            pagination={{ pageSize: 10 }}
+            pagination={{ pageSize: 5 }}
+            scroll={{ x: true }}
+            bordered
+            style={{ width: "100%" }}
           />
         </div>
       ),
@@ -183,7 +241,32 @@ export default function UserManagement() {
     {
       key: "doctors",
       label: "Doctors",
-      children: <div>👨‍⚕️ Doctor Management Content goes here</div>,
+      children: (
+        <div style={tableContainer}>
+          <SectionHeader title="Medical History">
+            <Input
+              placeholder="Search"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Primarybtn
+              name="Add Doctor"
+              icon={<PlusOutlined />}
+              onClick={showDrawer}
+            />
+          </SectionHeader>
+
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            pagination={{ pageSize: 5 }}
+            scroll={{ x: true }}
+            bordered
+            style={{ width: "100%" }}
+          />
+        </div>
+      ),
     },
     {
       key: "caretakers",
@@ -196,6 +279,18 @@ export default function UserManagement() {
       children: <div>🏥 Patient Management Content goes here</div>,
     },
   ];
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -396,7 +491,555 @@ export default function UserManagement() {
             />
           </div>
         </div>
+        <Drawer
+          title="Sponsor Detailed View"
+          width={720}
+          onClose={() => setDrawerVisible(false)}
+          open={drawerVisible}
+          bodyStyle={{ padding: 24 }}
+        >
+          {selectedSponsor && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* Profile and Basic Info */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+
+                  gap: 24,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    gap: 10,
+                  }}
+                >
+                  <p style={labelStyle}>Profile Image</p>
+
+                  <div style={{ position: "relative", width: 72, height: 72 }}>
+                    {/* Avatar */}
+                    <Avatar
+                      size={72}
+                      src={uploadedImage || selectedSponsor.avatar}
+                      style={{ borderRadius: "50%", objectFit: "cover" }}
+                    />
+
+                    {/* Upload Icon Overlay */}
+                    <label
+                      htmlFor="image-upload"
+                      style={{
+                        position: "absolute",
+                        bottom: -10,
+                        right: "50%",
+                        transform: "translateX(50%)",
+                        background: "#fff",
+                        borderRadius: "50%",
+                        padding: 4,
+                        cursor: "pointer",
+                        boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <img
+                        src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
+                        alt="Upload"
+                        width={16}
+                        height={16}
+                      />
+                    </label>
+
+                    {/* Hidden File Input */}
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      style={{ display: "none" }}
+                    />
+                  </div>
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                  }}
+                >
+                  <div>
+                    <label style={labelStyle}>Name</label>
+                    <Input
+                      value={editedData.name}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Sponsor ID</label>
+                    <Input value="SP-1021" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone Number</label>
+                    <Input
+                      value={editedData.phone}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, phone: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Email Address</label>
+                    <Input
+                      value={editedData.email}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, email: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Fields */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <label style={labelStyle}>Address</label>
+                  <Input
+                    value={editedData.country}
+                    onChange={(e) =>
+                      setEditedData({ ...editedData, country: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Total Patients</label>
+                  <Input value="2 (Father – Michael N., Mother – Grace N.)" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Gender</label>
+                  <Input
+                    value={editedData.gender || "Male"}
+                    onChange={(e) =>
+                      setEditedData({ ...editedData, gender: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Current Plan</label>
+                  <Input
+                    value={editedData.membership}
+                    onChange={(e) =>
+                      setEditedData({
+                        ...editedData,
+                        membership: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Status</label>
+                  <Select
+                    value={editedData.status}
+                    onChange={(value) =>
+                      setEditedData({ ...editedData, status: value })
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="Active">Active</Option>
+                    <Option value="Inactive">Inactive</Option>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Patients Linked (Static Example) */}
+              <div>
+                <p style={{ fontWeight: 600, fontSize: 16 }}>Patients Linked</p>
+                {linkedPatients.map((patient) => (
+                  <div
+                    key={patient.id}
+                    style={{
+                      background: "#F9F9F9",
+                      padding: 16,
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                      border: "1px solid #eaeaea",
+                    }}
+                  >
+                    {/* Profile Image */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Avatar
+                        size={48}
+                        src={patient.avatar}
+                        style={{ borderRadius: 8, width: 60, height: 62 }}
+                      />
+                    </div>
+
+                    {/* Name */}
+                    <div style={linkedInfoStyle}>
+                      <p style={linkedLabelStyle}>Name</p>
+                      <p style={infoTextStyle}>{patient.name}</p>
+                    </div>
+
+                    {/* Assigned Doctor */}
+                    <div style={linkedInfoStyle}>
+                      <p style={linkedLabelStyle}>Assigned Doctor</p>
+                      <p style={infoTextStyle}>{patient.doctor}</p>
+                    </div>
+
+                    {/* Care Taker */}
+                    <div style={linkedInfoStyle}>
+                      <p style={linkedLabelStyle}>Care Taker</p>
+                      <p style={infoTextStyle}>{patient.caretaker}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: 24,
+                  gap: 20,
+                }}
+              >
+                <Button danger size="large">
+                  Deactivate Account
+                </Button>
+
+                <PrimaryBtn
+                  name="Edit Sponsor"
+                  type="primary"
+                  size="large"
+                  onClick={() => {
+                    console.log("Updated sponsor:", editedData);
+                    // TODO: Send `editedData` to your backend (axios.put/post)
+                    setDrawerVisible(false);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </Drawer>
+
+        <Drawer
+          title="Add Sponsor"
+          width={720}
+          onClose={onClose}
+          open={open}
+          bodyStyle={{ paddingBottom: 80 }}
+        >
+          <Form layout="vertical" form={form} onFinish={onFinish}>
+            {/* Personal Information */}
+            <Form.Item
+              name="fullName"
+              label="Full Name"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="dob"
+              label="Date of Birth"
+              rules={[{ required: true }]}
+            >
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+            <Form.Item
+              name="gender"
+              label="Gender"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="male">Male</Option>
+                <Option value="female">Female</Option>
+                <Option value="other">Other</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="maritalStatus" label="Marital Status">
+              <Select>
+                <Option value="single">Single</Option>
+                <Option value="married">Married</Option>
+                <Option value="divorced">Divorced</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="religion" label="Religion">
+              <Input />
+            </Form.Item>
+            <Form.Item name="fatherName" label="Father's Name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="motherName" label="Mother's Name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="nationalId" label="National Identity Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="passportNumber" label="Passport Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="passportExpiry" label="Passport Expiry Date">
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+            <Form.Item name="placeOfBirth" label="Place of Birth">
+              <Input />
+            </Form.Item>
+            <Form.Item name="countryOfBirth" label="Country of Birth">
+              <Input />
+            </Form.Item>
+            <Form.Item name="nationality" label="Nationality">
+              <Input />
+            </Form.Item>
+            <Form.Item name="countryOfResidence" label="Country of Residence">
+              <Input />
+            </Form.Item>
+
+            {/* Contact Information */}
+            <Form.Item
+              name="email"
+              label="Email Address"
+              rules={[{ type: "email" }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item name="mobile" label="Mobile Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="homePhone" label="Home Phone Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="address1" label="Address Line 1">
+              <Input />
+            </Form.Item>
+            <Form.Item name="address2" label="Address Line 2">
+              <Input />
+            </Form.Item>
+            <Form.Item name="city" label="City">
+              <Input />
+            </Form.Item>
+            <Form.Item name="state" label="State/Province">
+              <Input />
+            </Form.Item>
+            <Form.Item name="zip" label="Zip/Postal Code">
+              <Input />
+            </Form.Item>
+            <Form.Item name="contactCountry" label="Country">
+              <Input />
+            </Form.Item>
+
+            {/* Citizenship Information */}
+            <Form.Item name="citizenshipStatus" label="Current Status">
+              <Select>
+                <Option value="citizen">Citizen</Option>
+                <Option value="resident">Permanent Resident</Option>
+                <Option value="visa">Visa Holder</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="citizenshipCountry" label="Country of Citizenship">
+              <Input />
+            </Form.Item>
+            <Form.Item name="residencyStatus" label="Residency Status">
+              <Input />
+            </Form.Item>
+            <Form.Item name="visaType" label="Visa Type">
+              <Input />
+            </Form.Item>
+            <Form.Item name="visaNumber" label="Visa Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="visaExpiry" label="Visa Expiry Date">
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+
+            {/* Employment Details */}
+            <Form.Item name="employmentStatus" label="Employment Status">
+              <Select>
+                <Option value="employed">Employed</Option>
+                <Option value="unemployed">Unemployed</Option>
+                <Option value="student">Student</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="employerName" label="Employer Name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="occupation" label="Occupation">
+              <Input />
+            </Form.Item>
+            <Form.Item name="workPhone" label="Work Phone Number">
+              <Input />
+            </Form.Item>
+            <Form.Item name="workEmail" label="Work Email Address">
+              <Input />
+            </Form.Item>
+
+            {/* Education Details */}
+            <Form.Item name="educationLevel" label="Highest Level of Education">
+              <Select>
+                <Option value="highschool">High School</Option>
+                <Option value="bachelor">Bachelor's</Option>
+                <Option value="master">Master's</Option>
+                <Option value="phd">PhD</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="fieldOfStudy" label="Field of Study">
+              <Input />
+            </Form.Item>
+            <Form.Item name="schoolName" label="School/University Name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="graduationYear" label="Graduation Year">
+              <Input />
+            </Form.Item>
+
+            {/* Health Information */}
+            <Form.Item name="chronicConditions" label="Chronic Conditions">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="drugAllergies" label="Drug Allergies">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item
+              name="foodAllergies"
+              label="Food/Environmental Allergies"
+            >
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="disabilities" label="Disabilities">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+
+            {/* Family Information */}
+            <Form.Item
+              name="relationship"
+              label="Relationship to Primary Member"
+            >
+              <Select>
+                <Option value="spouse">Spouse</Option>
+                <Option value="child">Child</Option>
+                <Option value="parent">Parent</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="emergencyContactName"
+              label="Emergency Contact Name"
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="emergencyContactPhone"
+              label="Emergency Contact Phone"
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="emergencyContactRelation"
+              label="Emergency Contact Relationship"
+            >
+              <Input />
+            </Form.Item>
+
+            {/* Additional Information */}
+            <Form.Item name="languagesSpoken" label="Languages Spoken">
+              <Input />
+            </Form.Item>
+            <Form.Item name="preferredLanguage" label="Preferred Language">
+              <Input />
+            </Form.Item>
+            <Form.Item name="ethnicity" label="Ethnicity">
+              <Input />
+            </Form.Item>
+            <Form.Item name="militaryService" label="Military Service">
+              <Input />
+            </Form.Item>
+            <Form.Item name="criminalRecord" label="Criminal Record">
+              <Input />
+            </Form.Item>
+            <Form.Item name="specialNeeds" label="Special Needs">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="specialConsiderations"
+              label="Special Considerations for Professionals"
+            >
+              <Input.TextArea rows={2} />
+            </Form.Item>
+
+            {/* Consent & Declaration */}
+            <Form.Item name="consent" valuePropName="checked">
+              <Checkbox>I consent to share this information</Checkbox>
+            </Form.Item>
+            <Form.Item name="declaration" valuePropName="checked">
+              <Checkbox>
+                I declare that the information provided is truthful
+              </Checkbox>
+            </Form.Item>
+            <Form.Item>
+              <Space>
+                <Button onClick={onClose}>Cancel</Button>
+                <Button type="primary" htmlType="submit">
+                  Submit
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Drawer>
       </div>
     </div>
   );
 }
+const tableContainer = {
+  background: "#fff",
+  borderRadius: "12px",
+  padding: "20px",
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
+  minWidth: 0,
+};
+const labelStyle = {
+  fontSize: 14,
+  fontWeight: 500,
+  marginBottom: 4,
+  display: "block",
+  color: "#2E2E2E",
+};
+const linkedLabelStyle = {
+  fontSize: 14,
+  fontWeight: 500,
+  marginBottom: 4,
+  display: "block",
+  color: "#2E2E2E",
+  opacity: "60%",
+};
+
+const linkedInfoStyle = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+};
+
+const infoTextStyle = {
+  margin: 0,
+  fontWeight: 500,
+  fontSize: 16,
+  color: "#2E2E2E",
+  textAlign: "center",
+};
