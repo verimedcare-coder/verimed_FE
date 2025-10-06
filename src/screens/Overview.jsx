@@ -22,7 +22,7 @@ import {
   PlusOutlined,
   UpOutlined,
 } from "@ant-design/icons";
-import { Pie, Bar } from "@ant-design/charts";
+import { Pie, Column } from "@ant-design/plots";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -274,44 +274,66 @@ export default function Overview() {
     },
   ];
 
-  //chart data
-  const revenueData = [
-    { type: "Consultations", value: 35000 },
-    { type: "Home Visits", value: 22000 },
-    { type: "Subscriptions", value: 18000 },
-    { type: "Other", value: 8000 },
-  ];
-
   const revenuePieConfig = {
-    appendPadding: 10,
-    data: revenueData,
+    data: [
+      { type: "Total Revenue", value: 100000 },
+      { type: "Total Transactions", value: 968 },
+      { type: "Average Transaction", value: 8000 },
+      { type: "Refunds / Failures", value: 12 },
+    ],
     angleField: "value",
     colorField: "type",
-    radius: 0.9,
+    color: ["#1E90FF", "#36AC00", "#FFB020", "#EF2412"],
+    radius: 0.8,
     label: {
-      type: "outer",
       content: (data) => `${data.type}: ${data.value}`,
+      style: {
+        fontSize: 12,
+      },
     },
     legend: { position: "bottom" },
+    interactions: [{ type: "element-active" }],
   };
 
-  const statusData = [
-    { status: "Completed", value: 40 },
-    { status: "Ongoing", value: 25 },
-    { status: "Pending", value: 15 },
-    { status: "Rescheduled", value: 10 },
-    { status: "Cancelled", value: 5 },
-  ];
-
   const statusBarConfig = {
-    data: statusData,
-    xField: "status",
+    data: [
+      { month: "01", Completed: 100, Ongoing: 50, Pending: 30 },
+      { month: "02", Completed: 120, Ongoing: 70, Pending: 40 },
+      { month: "03", Completed: 150, Ongoing: 80, Pending: 50 },
+      { month: "04", Completed: 180, Ongoing: 60, Pending: 30 },
+      { month: "05", Completed: 240, Ongoing: 80, Pending: 50 },
+      { month: "06", Completed: 100, Ongoing: 40, Pending: 20 },
+      { month: "07", Completed: 130, Ongoing: 60, Pending: 30 },
+      { month: "08", Completed: 220, Ongoing: 80, Pending: 40 },
+      { month: "09", Completed: 250, Ongoing: 90, Pending: 60 },
+      { month: "10", Completed: 200, Ongoing: 70, Pending: 40 },
+      { month: "11", Completed: 180, Ongoing: 60, Pending: 30 },
+      { month: "12", Completed: 140, Ongoing: 50, Pending: 20 },
+    ],
+    isStack: true,
+    xField: "month",
     yField: "value",
-    colorField: "status",
-    color: ["#27AE60", "#007F5F", "#F2994A", "#B78520", "#EF1E1E"],
+    seriesField: "type",
+  };
+
+  // Transform the data for stacked bars
+  const transformedData = [];
+  statusBarConfig.data.forEach((item) => {
+    transformedData.push(
+      { month: item.month, type: "Completed", value: item.Completed },
+      { month: item.month, type: "Ongoing", value: item.Ongoing },
+      { month: item.month, type: "Pending", value: item.Pending }
+    );
+  });
+
+  const stackedBarConfig = {
+    data: transformedData,
+    isStack: true,
+    xField: "month",
+    yField: "value",
+    seriesField: "type",
+    color: ["#00C49F", "#0088FE", "#FFBB28"],
     legend: { position: "bottom" },
-    columnWidthRatio: 0.6,
-    label: { position: "top", style: { fill: "#2E2E2E", fontWeight: 600 } },
   };
 
   const appointmentListData = [
@@ -850,6 +872,7 @@ export default function Overview() {
           )}
 
           {/* Charts section */}
+
           {user?.type === "admin" && (
             <div
               style={{
@@ -901,7 +924,10 @@ export default function Overview() {
                     Aug 2025 <CalendarOutlined />
                   </span>
                 </div>
-                <Pie {...revenuePieConfig} style={{ height: 320 }} />
+                <Pie
+                  {...revenuePieConfig}
+                  style={{ height: 320, width: "100%" }}
+                />
               </div>
 
               {/* Right: Bar Chart */}
@@ -927,7 +953,7 @@ export default function Overview() {
                   <p
                     style={{ fontWeight: 600, fontSize: 18, color: "#1B1B1B" }}
                   >
-                    Appointment Status
+                    Appointment Statistics
                   </p>
                   <span
                     onClick={() => {}}
@@ -945,11 +971,54 @@ export default function Overview() {
                     Aug 2025 <CalendarOutlined />
                   </span>
                 </div>
-                <Bar {...statusBarConfig} style={{ height: 320 }} />
+
+                {/* Top summary boxes */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 20,
+                  }}
+                >
+                  {[
+                    { label: "All Appointments", value: 6314 },
+                    { label: "Completed", value: 4578 },
+                    { label: "Pending", value: 745 },
+                    { label: "Cancelled", value: 456 },
+                  ].map((stat, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        textAlign: "center",
+                        border: "1px solid #E7E8EB",
+                        borderRadius: 8,
+                        padding: "10px 5px",
+                        background: "#FAFAFA",
+                        marginRight: i !== 3 ? 10 : 0,
+                      }}
+                    >
+                      <p style={{ fontSize: 12, color: "#666" }}>
+                        {stat.label}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "#1B1B1B",
+                          margin: 0,
+                        }}
+                      >
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <Column {...stackedBarConfig} style={{ height: 260 }} />
               </div>
             </div>
           )}
-
           {/* Appointment List */}
           {user?.type === "admin" && (
             <div
