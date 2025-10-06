@@ -286,10 +286,8 @@ export default function Overview() {
     color: ["#1E90FF", "#36AC00", "#FFB020", "#EF2412"],
     radius: 0.8,
     label: {
-      content: (data) => `${data.type}: ${data.value}`,
-      style: {
-        fontSize: 12,
-      },
+      text: "value",
+      style: { fontWeight: "bold" },
     },
     legend: { position: "bottom" },
     interactions: [{ type: "element-active" }],
