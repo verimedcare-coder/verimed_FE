@@ -95,6 +95,7 @@ export default function Appointments() {
   }, []);
 
   const fetchAppointments = async () => {
+    setLoading(true);
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = {
@@ -102,8 +103,11 @@ export default function Appointments() {
       };
       const res = await axios.get(endpoint, { headers });
       setAppointmentList(res.data);
+      setLoading(false);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
