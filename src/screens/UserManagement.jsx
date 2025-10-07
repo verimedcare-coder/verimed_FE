@@ -21,6 +21,15 @@ import { EllipsisOutlined, PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
 import Primarybtn from "../components/PrimaryBtn";
 import { Select } from "antd";
+import bloodPressure from "../assets/icons/blood-pressure.svg";
+import heartRate from "../assets/icons/heart-rate.svg";
+import oxygen from "../assets/icons/oxygen.svg";
+import respiratory from "../assets/icons/respiratory.svg";
+import statusIcon from "../assets/icons/status.svg";
+import sugar from "../assets/icons/sugar.svg";
+import weight from "../assets/icons/weight.svg";
+import temperature from "../assets/icons/temperature.png";
+
 const { Option } = Select;
 function SectionHeader({ title, children }) {
   return (
@@ -42,15 +51,52 @@ function SectionHeader({ title, children }) {
   );
 }
 
+const linkedPatients = [
+  {
+    id: 1,
+    avatar: "https://randomuser.me/api/portraits/men/44.jpg",
+    name: "Mr. Samuel N. (VM–976–324)",
+    doctor: "Dr. Paul M.",
+    caretaker: "Nurse Clarisse A.",
+  },
+  {
+    id: 2,
+    avatar: "https://randomuser.me/api/portraits/women/65.jpg",
+    name: "Ms. Grace N. (VM–845–123)",
+    doctor: "Dr. Linda S.",
+    caretaker: "Nurse Alex P.",
+  },
+];
+const linkedSponsor = [
+  {
+    id: 1,
+    avatar: "https://randomuser.me/api/portraits/men/44.jpg",
+    name: "Name",
+    phone: "+1 416 222 1000",
+    email: "john.n@verimed.com",
+  },
+];
+
 export default function UserManagement() {
-  const [searchText, setSearchText] = useState("");
-  const [selectedSponsor, setSelectedSponsor] = useState(null);
-  const [drawerVisible, setDrawerVisible] = useState(false);
-  const [editedData, setEditedData] = useState({});
-  const [uploadedImage, setUploadedImage] = useState(null);
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
+  const [activeTab, setActiveTab] = useState("sponsors");
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedSponsor, setSelectedSponsor] = useState(null);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [selectedCaretaker, setSelectedCaretaker] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [editedData, setEditedData] = useState({});
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [searchText, setSearchText] = useState("");
 
+  const dotStyle = (color) => ({
+    width: "8px",
+    height: "8px",
+    background: color,
+    borderRadius: "50%",
+    flexShrink: 0,
+  });
   const showDrawer = () => setOpen(true);
   const onClose = () => setOpen(false);
 
@@ -85,6 +131,97 @@ export default function UserManagement() {
       status: "Inactive",
     },
   ];
+  const [doctorsData] = useState([
+    {
+      key: 1,
+      name: "John",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+      email: "john.n@verimed.com",
+      phone: "+1 416 222 1000",
+      gender: "Male",
+      country: "Canada",
+      patientsLinked: 1,
+      Doctor: "mr.paul",
+      CareTaker: "Nurse Clarisse",
+      Sponsor: "John Nelson (Canada)",
+      membership: "Premium",
+      EnrolmentDate: "Feb 12, 2024",
+      Condition: "Hypertension, Diabetes",
+      status: "Active",
+    },
+  ]);
+  const [caretakersData] = useState([
+    { id: 1, name: "Ravi Kumar", shift: "Night", phone: "7777766666" },
+  ]);
+  const [patientsData] = useState([
+    {
+      key: 1,
+      name: "John",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+      email: "john.n@verimed.com",
+      phone: "+1 416 222 1000",
+      gender: "Male",
+      age: 55,
+      country: "Canada",
+      patientsLinked: 1,
+      Doctor: "mr.paul",
+      CareTaker: "Nurse Clarisse",
+      Sponsor: "John Nelson (Canada)",
+      membership: "Premium",
+      EnrolmentDate: "Feb 12, 2024",
+      Condition: "Hypertension, Diabetes",
+      status: "Active",
+    },
+  ]);
+  const vitals = [
+    {
+      icon: bloodPressure,
+      label: "Blood Pressure",
+      value: "100/67 mmHg",
+      color: "#27AE60",
+    },
+    { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
+    { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
+    { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
+    {
+      icon: temperature,
+      label: "Temperature",
+      value: "101 °C",
+      color: "#27AE60",
+    },
+    {
+      icon: respiratory,
+      label: "Respiratory Rate",
+      value: "24 rpm",
+      color: "#EF1E1E",
+    },
+    { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
+    { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
+  ];
+
+  const handleEditClick = (record) => {
+    switch (activeTab) {
+      case "sponsors":
+        setSelectedSponsor(record);
+        setEditedData(record);
+        break;
+      case "doctors":
+        setSelectedDoctor(record);
+        setEditedData(record);
+        break;
+      case "caretakers":
+        setSelectedCaretaker(record);
+        setEditedData(record);
+        break;
+      case "patients":
+        setSelectedPatient(record);
+        setEditedData(record);
+        break;
+      default:
+        break;
+    }
+    setDrawerVisible(true);
+  };
 
   const columns = [
     {
@@ -132,25 +269,604 @@ export default function UserManagement() {
     {
       title: "Action",
       key: "action",
-      render: (text, record) => (
+      render: (_, record) => (
         <EllipsisOutlined
           style={{ fontSize: 18, cursor: "pointer" }}
-          onClick={() => {
-            setSelectedSponsor(record);
-            setEditedData(record); // Pre-fill form
-            setDrawerVisible(true);
-          }}
+          onClick={() => handleEditClick(record)}
         />
       ),
     },
   ];
 
-  // Filter data by search
-  const filteredData = sponsorsData.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.email.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const getFilteredData = () => {
+    const dataMap = {
+      sponsors: sponsorsData,
+      doctors: doctorsData,
+      caretakers: caretakersData,
+      patients: patientsData,
+    };
+    const data = dataMap[activeTab] || [];
+    return data.filter((d) =>
+      d.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+  };
+
+  const drawerTitleMap = {
+    sponsors: "Sponsor Detailed View",
+    doctors: "Doctor Detailed View",
+    caretakers: "Caretaker Detailed View",
+    patients: "Patient Detailed View",
+  };
+
+  const renderDrawerContent = () => {
+    if (activeTab === "sponsors" && selectedSponsor)
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Profile and Basic Info */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+
+              gap: 24,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 10,
+              }}
+            >
+              <p style={labelStyle}>Profile Image</p>
+
+              <div style={{ position: "relative", width: 72, height: 72 }}>
+                {/* Avatar */}
+                <Avatar
+                  size={72}
+                  src={uploadedImage || selectedSponsor.avatar}
+                  style={{ borderRadius: "50%", objectFit: "cover" }}
+                />
+
+                {/* Upload Icon Overlay */}
+                <label
+                  htmlFor="image-upload"
+                  style={{
+                    position: "absolute",
+                    bottom: -10,
+                    right: "50%",
+                    transform: "translateX(50%)",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    padding: 4,
+                    cursor: "pointer",
+                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <img
+                    src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
+                    alt="Upload"
+                    width={16}
+                    height={16}
+                  />
+                </label>
+
+                {/* Hidden File Input */}
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Name</label>
+                <Input
+                  value={editedData.name}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Sponsor ID</label>
+                <Input value="SP-1021" />
+              </div>
+              <div>
+                <label style={labelStyle}>Phone Number</label>
+                <Input
+                  value={editedData.phone}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, phone: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Email Address</label>
+                <Input
+                  value={editedData.email}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, email: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Fields */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Address</label>
+              <Input
+                value={editedData.country}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, country: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Total Patients</label>
+              <Input value="2 (Father – Michael N., Mother – Grace N.)" />
+            </div>
+            <div>
+              <label style={labelStyle}>Gender</label>
+              <Input
+                value={editedData.gender || "Male"}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, gender: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Current Plan</label>
+              <Input
+                value={editedData.membership}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    membership: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Status</label>
+              <Select
+                value={editedData.status}
+                onChange={(value) =>
+                  setEditedData({ ...editedData, status: value })
+                }
+                style={{ width: "100%" }}
+              >
+                <Option value="Active">Active</Option>
+                <Option value="Inactive">Inactive</Option>
+              </Select>
+            </div>
+          </div>
+
+          {/* Patients Linked (Static Example) */}
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 16 }}>Patients Linked</p>
+            {linkedPatients.map((patient) => (
+              <div
+                key={patient.id}
+                style={{
+                  background: "#F9F9F9",
+                  padding: 16,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 12,
+                  border: "1px solid #eaeaea",
+                }}
+              >
+                {/* Profile Image */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Avatar
+                    size={48}
+                    src={patient.avatar}
+                    style={{ borderRadius: 8, width: 60, height: 62 }}
+                  />
+                </div>
+
+                {/* Name */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Name</p>
+                  <p style={infoTextStyle}>{patient.name}</p>
+                </div>
+
+                {/* Assigned Doctor */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Assigned Doctor</p>
+                  <p style={infoTextStyle}>{patient.doctor}</p>
+                </div>
+
+                {/* Care Taker */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Care Taker</p>
+                  <p style={infoTextStyle}>{patient.caretaker}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    if (activeTab === "doctors" && selectedDoctor)
+      return (
+        <div>
+          <p style={labelStyle}>Doctor Name</p>
+          <Input
+            value={editedData.name}
+            onChange={(e) =>
+              setEditedData({ ...editedData, name: e.target.value })
+            }
+          />
+          <p style={labelStyle}>Specialization</p>
+          <Input
+            value={editedData.specialization}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                specialization: e.target.value,
+              })
+            }
+          />
+          <p style={labelStyle}>Phone</p>
+          <Input
+            value={editedData.phone}
+            onChange={(e) =>
+              setEditedData({ ...editedData, phone: e.target.value })
+            }
+          />
+        </div>
+      );
+
+    if (activeTab === "caretakers" && selectedCaretaker)
+      return (
+        <div>
+          <p style={labelStyle}>Caretaker Name</p>
+          <Input
+            value={editedData.name}
+            onChange={(e) =>
+              setEditedData({ ...editedData, name: e.target.value })
+            }
+          />
+          <p style={labelStyle}>Shift</p>
+          <Input
+            value={editedData.shift}
+            onChange={(e) =>
+              setEditedData({ ...editedData, shift: e.target.value })
+            }
+          />
+          <p style={labelStyle}>Phone</p>
+          <Input
+            value={editedData.phone}
+            onChange={(e) =>
+              setEditedData({ ...editedData, phone: e.target.value })
+            }
+          />
+        </div>
+      );
+
+    if (activeTab === "patients" && selectedPatient)
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Profile and Basic Info */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+
+              gap: 24,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 10,
+              }}
+            >
+              <p style={labelStyle}>Profile Image</p>
+
+              <div style={{ position: "relative", width: 72, height: 72 }}>
+                {/* Avatar */}
+                <Avatar
+                  size={72}
+                  src={uploadedImage || selectedPatient.avatar}
+                  style={{ borderRadius: "50%", objectFit: "cover" }}
+                />
+
+                {/* Upload Icon Overlay */}
+                <label
+                  htmlFor="image-upload"
+                  style={{
+                    position: "absolute",
+                    bottom: -10,
+                    right: "50%",
+                    transform: "translateX(50%)",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    padding: 4,
+                    cursor: "pointer",
+                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <img
+                    src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
+                    alt="Upload"
+                    width={16}
+                    height={16}
+                  />
+                </label>
+
+                {/* Hidden File Input */}
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Name</label>
+                <Input
+                  value={editedData.name}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Patient ID</label>
+                <Input value="PT-2094" />
+              </div>
+              <div>
+                <label style={labelStyle}>Age</label>
+                <Input
+                  value={editedData.age}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, age: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Care Taker</label>
+                <Input
+                  value={editedData.caretaker}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, caretaker: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Gender</label>
+                <Input
+                  value={editedData.gender || "Male"}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, gender: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Condition</label>
+                <Input
+                  value={editedData.Condition}
+                  onChange={(e) =>
+                    setEditedData({ ...editedData, Condition: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Fields */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Sponsor</label>
+              <Input value="John Nelson (Canada)" />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Care Taker</label>
+              <Input
+                value={editedData.CareTaker}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, CareTaker: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Status</label>
+              <Select
+                value={editedData.status}
+                onChange={(value) =>
+                  setEditedData({ ...editedData, status: value })
+                }
+                style={{ width: "100%" }}
+              >
+                <Option value="Active">Active</Option>
+                <Option value="Inactive">Inactive</Option>
+              </Select>
+            </div>
+            <div>
+              <label style={labelStyle}>Membership Plan</label>
+              <Input
+                value={editedData.membership}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    membership: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Doctor</label>
+              <Input
+                value={editedData.Doctor}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    Doctor: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Enrollment Date</label>
+              <Input
+                value={editedData.EnrolmentDate}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    EnrolmentDate: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 16 }}>Health Records</p>
+            <div style={vitalsGrid}>
+              {vitals.map((item, i) => (
+                <div key={i} style={vitalCard}>
+                  <img
+                    src={item.icon}
+                    alt={item.label}
+                    style={{ width: 24, height: 24, flexShrink: 0 }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      minWidth: 0,
+                    }}
+                  >
+                    <p style={vitalLabel}>{item.label}</p>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <div style={dotStyle(item.color)}></div>
+                      <span style={vitalValue}>{item.value}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Patients Linked (Static Example) */}
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 16 }}>Sponsor Details</p>
+            {linkedSponsor.map((sponsor) => (
+              <div
+                key={sponsor.id}
+                style={{
+                  background: "#F9F9F9",
+                  padding: 16,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 12,
+                  border: "1px solid #eaeaea",
+                }}
+              >
+                {/* Profile Image */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Avatar
+                    size={48}
+                    src={sponsor.avatar}
+                    style={{ borderRadius: 8, width: 60, height: 62 }}
+                  />
+                </div>
+
+                {/* Name */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Name</p>
+                  <p style={infoTextStyle}>{sponsor.name}</p>
+                </div>
+
+                {/* Assigned Doctor */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Phone</p>
+                  <p style={infoTextStyle}>{sponsor.phone}</p>
+                </div>
+
+                {/* Care Taker */}
+                <div style={linkedInfoStyle}>
+                  <p style={linkedLabelStyle}>Email</p>
+                  <p style={infoTextStyle}>{sponsor.email}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    return null;
+  };
+
+  const tabItems = [
+    { key: "sponsors", label: "Sponsors" },
+    { key: "doctors", label: "Doctors" },
+    { key: "caretakers", label: "Caretakers" },
+    { key: "patients", label: "Patients" },
+  ];
 
   const adminStats = [
     {
@@ -187,96 +903,6 @@ export default function UserManagement() {
       count: 6,
       diff: "+15%",
       duration: "in last 7 Days",
-    },
-  ];
-
-  const linkedPatients = [
-    {
-      id: 1,
-      avatar: "https://randomuser.me/api/portraits/men/44.jpg",
-      name: "Mr. Samuel N. (VM–976–324)",
-      doctor: "Dr. Paul M.",
-      caretaker: "Nurse Clarisse A.",
-    },
-    {
-      id: 2,
-      avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-      name: "Ms. Grace N. (VM–845–123)",
-      doctor: "Dr. Linda S.",
-      caretaker: "Nurse Alex P.",
-    },
-  ];
-
-  const tabItems = [
-    {
-      key: "sponsors",
-      label: "Sponsors",
-      children: (
-        <div style={tableContainer}>
-          <SectionHeader title="Medical History">
-            <Input
-              placeholder="Search"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Primarybtn
-              name="Add Sponsor"
-              icon={<PlusOutlined />}
-              onClick={showDrawer}
-            />
-          </SectionHeader>
-
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            pagination={{ pageSize: 5 }}
-            scroll={{ x: true }}
-            bordered
-            style={{ width: "100%" }}
-          />
-        </div>
-      ),
-    },
-    {
-      key: "doctors",
-      label: "Doctors",
-      children: (
-        <div style={tableContainer}>
-          <SectionHeader title="Medical History">
-            <Input
-              placeholder="Search"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Primarybtn
-              name="Add Doctor"
-              icon={<PlusOutlined />}
-              onClick={showDrawer}
-            />
-          </SectionHeader>
-
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            pagination={{ pageSize: 5 }}
-            scroll={{ x: true }}
-            bordered
-            style={{ width: "100%" }}
-          />
-        </div>
-      ),
-    },
-    {
-      key: "caretakers",
-      label: "Caretakers",
-      children: <div>🧑‍🤝‍🧑 Caretaker Management Content goes here</div>,
-    },
-    {
-      key: "patients",
-      label: "Patients",
-      children: <div>🏥 Patient Management Content goes here</div>,
     },
   ];
 
@@ -484,235 +1110,52 @@ export default function UserManagement() {
             }}
           >
             <Tabs
-              defaultActiveKey="sponsors"
+              activeKey={activeTab}
+              onChange={(key) => {
+                setActiveTab(key);
+                setDrawerVisible(false);
+              }}
               items={tabItems}
-              size="large"
-              tabBarGutter={32}
             />
-          </div>
-        </div>
-        <Drawer
-          title="Sponsor Detailed View"
-          width={720}
-          onClose={() => setDrawerVisible(false)}
-          open={drawerVisible}
-          bodyStyle={{ padding: 24 }}
-        >
-          {selectedSponsor && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Profile and Basic Info */}
+
+            <div style={tableContainer}>
               <div
                 style={{
+                  marginBottom: 16,
                   display: "flex",
-                  flexDirection: "column",
-
-                  gap: 24,
+                  justifyContent: "space-between",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                    gap: 10,
-                  }}
-                >
-                  <p style={labelStyle}>Profile Image</p>
-
-                  <div style={{ position: "relative", width: 72, height: 72 }}>
-                    {/* Avatar */}
-                    <Avatar
-                      size={72}
-                      src={uploadedImage || selectedSponsor.avatar}
-                      style={{ borderRadius: "50%", objectFit: "cover" }}
-                    />
-
-                    {/* Upload Icon Overlay */}
-                    <label
-                      htmlFor="image-upload"
-                      style={{
-                        position: "absolute",
-                        bottom: -10,
-                        right: "50%",
-                        transform: "translateX(50%)",
-                        background: "#fff",
-                        borderRadius: "50%",
-                        padding: 4,
-                        cursor: "pointer",
-                        boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-                      }}
-                    >
-                      <img
-                        src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-                        alt="Upload"
-                        width={16}
-                        height={16}
-                      />
-                    </label>
-
-                    {/* Hidden File Input */}
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      style={{ display: "none" }}
-                    />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    flex: 1,
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 16,
-                  }}
-                >
-                  <div>
-                    <label style={labelStyle}>Name</label>
-                    <Input
-                      value={editedData.name}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Sponsor ID</label>
-                    <Input value="SP-1021" />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Phone Number</label>
-                    <Input
-                      value={editedData.phone}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, phone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Email Address</label>
-                    <Input
-                      value={editedData.email}
-                      onChange={(e) =>
-                        setEditedData({ ...editedData, email: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
+                <Input
+                  placeholder="Search"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 200 }}
+                />
+                <PrimaryBtn
+                  name={`Add ${activeTab.slice(0, -1)}`}
+                  icon={<PlusOutlined />}
+                  onClick={() => setDrawerVisible(true)}
+                />
               </div>
 
-              {/* Additional Fields */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 16,
-                }}
-              >
-                <div>
-                  <label style={labelStyle}>Address</label>
-                  <Input
-                    value={editedData.country}
-                    onChange={(e) =>
-                      setEditedData({ ...editedData, country: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Total Patients</label>
-                  <Input value="2 (Father – Michael N., Mother – Grace N.)" />
-                </div>
-                <div>
-                  <label style={labelStyle}>Gender</label>
-                  <Input
-                    value={editedData.gender || "Male"}
-                    onChange={(e) =>
-                      setEditedData({ ...editedData, gender: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Current Plan</label>
-                  <Input
-                    value={editedData.membership}
-                    onChange={(e) =>
-                      setEditedData({
-                        ...editedData,
-                        membership: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Status</label>
-                  <Select
-                    value={editedData.status}
-                    onChange={(value) =>
-                      setEditedData({ ...editedData, status: value })
-                    }
-                    style={{ width: "100%" }}
-                  >
-                    <Option value="Active">Active</Option>
-                    <Option value="Inactive">Inactive</Option>
-                  </Select>
-                </div>
-              </div>
+              <Table
+                columns={columns}
+                dataSource={getFilteredData()}
+                pagination={{ pageSize: 5 }}
+                rowKey="id"
+                bordered
+              />
+            </div>
 
-              {/* Patients Linked (Static Example) */}
-              <div>
-                <p style={{ fontWeight: 600, fontSize: 16 }}>Patients Linked</p>
-                {linkedPatients.map((patient) => (
-                  <div
-                    key={patient.id}
-                    style={{
-                      background: "#F9F9F9",
-                      padding: 16,
-                      borderRadius: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 12,
-                      border: "1px solid #eaeaea",
-                    }}
-                  >
-                    {/* Profile Image */}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Avatar
-                        size={48}
-                        src={patient.avatar}
-                        style={{ borderRadius: 8, width: 60, height: 62 }}
-                      />
-                    </div>
-
-                    {/* Name */}
-                    <div style={linkedInfoStyle}>
-                      <p style={linkedLabelStyle}>Name</p>
-                      <p style={infoTextStyle}>{patient.name}</p>
-                    </div>
-
-                    {/* Assigned Doctor */}
-                    <div style={linkedInfoStyle}>
-                      <p style={linkedLabelStyle}>Assigned Doctor</p>
-                      <p style={infoTextStyle}>{patient.doctor}</p>
-                    </div>
-
-                    {/* Care Taker */}
-                    <div style={linkedInfoStyle}>
-                      <p style={linkedLabelStyle}>Care Taker</p>
-                      <p style={infoTextStyle}>{patient.caretaker}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Buttons */}
+            <Drawer
+              title={drawerTitleMap[activeTab]}
+              width={720}
+              onClose={() => setDrawerVisible(false)}
+              open={drawerVisible}
+              bodyStyle={{ padding: 24 }}
+            >
+              {renderDrawerContent()}
               <div
                 style={{
                   display: "flex",
@@ -731,276 +1174,13 @@ export default function UserManagement() {
                   size="large"
                   onClick={() => {
                     console.log("Updated sponsor:", editedData);
-                    // TODO: Send `editedData` to your backend (axios.put/post)
                     setDrawerVisible(false);
                   }}
                 />
               </div>
-            </div>
-          )}
-        </Drawer>
-
-        <Drawer
-          title="Add Sponsor"
-          width={720}
-          onClose={onClose}
-          open={open}
-          bodyStyle={{ paddingBottom: 80 }}
-        >
-          <Form layout="vertical" form={form} onFinish={onFinish}>
-            {/* Personal Information */}
-            <Form.Item
-              name="fullName"
-              label="Full Name"
-              rules={[{ required: true }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="dob"
-              label="Date of Birth"
-              rules={[{ required: true }]}
-            >
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-            <Form.Item
-              name="gender"
-              label="Gender"
-              rules={[{ required: true }]}
-            >
-              <Select>
-                <Option value="male">Male</Option>
-                <Option value="female">Female</Option>
-                <Option value="other">Other</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="maritalStatus" label="Marital Status">
-              <Select>
-                <Option value="single">Single</Option>
-                <Option value="married">Married</Option>
-                <Option value="divorced">Divorced</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="religion" label="Religion">
-              <Input />
-            </Form.Item>
-            <Form.Item name="fatherName" label="Father's Name">
-              <Input />
-            </Form.Item>
-            <Form.Item name="motherName" label="Mother's Name">
-              <Input />
-            </Form.Item>
-            <Form.Item name="nationalId" label="National Identity Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="passportNumber" label="Passport Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="passportExpiry" label="Passport Expiry Date">
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-            <Form.Item name="placeOfBirth" label="Place of Birth">
-              <Input />
-            </Form.Item>
-            <Form.Item name="countryOfBirth" label="Country of Birth">
-              <Input />
-            </Form.Item>
-            <Form.Item name="nationality" label="Nationality">
-              <Input />
-            </Form.Item>
-            <Form.Item name="countryOfResidence" label="Country of Residence">
-              <Input />
-            </Form.Item>
-
-            {/* Contact Information */}
-            <Form.Item
-              name="email"
-              label="Email Address"
-              rules={[{ type: "email" }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="mobile" label="Mobile Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="homePhone" label="Home Phone Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="address1" label="Address Line 1">
-              <Input />
-            </Form.Item>
-            <Form.Item name="address2" label="Address Line 2">
-              <Input />
-            </Form.Item>
-            <Form.Item name="city" label="City">
-              <Input />
-            </Form.Item>
-            <Form.Item name="state" label="State/Province">
-              <Input />
-            </Form.Item>
-            <Form.Item name="zip" label="Zip/Postal Code">
-              <Input />
-            </Form.Item>
-            <Form.Item name="contactCountry" label="Country">
-              <Input />
-            </Form.Item>
-
-            {/* Citizenship Information */}
-            <Form.Item name="citizenshipStatus" label="Current Status">
-              <Select>
-                <Option value="citizen">Citizen</Option>
-                <Option value="resident">Permanent Resident</Option>
-                <Option value="visa">Visa Holder</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="citizenshipCountry" label="Country of Citizenship">
-              <Input />
-            </Form.Item>
-            <Form.Item name="residencyStatus" label="Residency Status">
-              <Input />
-            </Form.Item>
-            <Form.Item name="visaType" label="Visa Type">
-              <Input />
-            </Form.Item>
-            <Form.Item name="visaNumber" label="Visa Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="visaExpiry" label="Visa Expiry Date">
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-
-            {/* Employment Details */}
-            <Form.Item name="employmentStatus" label="Employment Status">
-              <Select>
-                <Option value="employed">Employed</Option>
-                <Option value="unemployed">Unemployed</Option>
-                <Option value="student">Student</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="employerName" label="Employer Name">
-              <Input />
-            </Form.Item>
-            <Form.Item name="occupation" label="Occupation">
-              <Input />
-            </Form.Item>
-            <Form.Item name="workPhone" label="Work Phone Number">
-              <Input />
-            </Form.Item>
-            <Form.Item name="workEmail" label="Work Email Address">
-              <Input />
-            </Form.Item>
-
-            {/* Education Details */}
-            <Form.Item name="educationLevel" label="Highest Level of Education">
-              <Select>
-                <Option value="highschool">High School</Option>
-                <Option value="bachelor">Bachelor's</Option>
-                <Option value="master">Master's</Option>
-                <Option value="phd">PhD</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="fieldOfStudy" label="Field of Study">
-              <Input />
-            </Form.Item>
-            <Form.Item name="schoolName" label="School/University Name">
-              <Input />
-            </Form.Item>
-            <Form.Item name="graduationYear" label="Graduation Year">
-              <Input />
-            </Form.Item>
-
-            {/* Health Information */}
-            <Form.Item name="chronicConditions" label="Chronic Conditions">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="drugAllergies" label="Drug Allergies">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item
-              name="foodAllergies"
-              label="Food/Environmental Allergies"
-            >
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="disabilities" label="Disabilities">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-
-            {/* Family Information */}
-            <Form.Item
-              name="relationship"
-              label="Relationship to Primary Member"
-            >
-              <Select>
-                <Option value="spouse">Spouse</Option>
-                <Option value="child">Child</Option>
-                <Option value="parent">Parent</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="emergencyContactName"
-              label="Emergency Contact Name"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="emergencyContactPhone"
-              label="Emergency Contact Phone"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="emergencyContactRelation"
-              label="Emergency Contact Relationship"
-            >
-              <Input />
-            </Form.Item>
-
-            {/* Additional Information */}
-            <Form.Item name="languagesSpoken" label="Languages Spoken">
-              <Input />
-            </Form.Item>
-            <Form.Item name="preferredLanguage" label="Preferred Language">
-              <Input />
-            </Form.Item>
-            <Form.Item name="ethnicity" label="Ethnicity">
-              <Input />
-            </Form.Item>
-            <Form.Item name="militaryService" label="Military Service">
-              <Input />
-            </Form.Item>
-            <Form.Item name="criminalRecord" label="Criminal Record">
-              <Input />
-            </Form.Item>
-            <Form.Item name="specialNeeds" label="Special Needs">
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="specialConsiderations"
-              label="Special Considerations for Professionals"
-            >
-              <Input.TextArea rows={2} />
-            </Form.Item>
-
-            {/* Consent & Declaration */}
-            <Form.Item name="consent" valuePropName="checked">
-              <Checkbox>I consent to share this information</Checkbox>
-            </Form.Item>
-            <Form.Item name="declaration" valuePropName="checked">
-              <Checkbox>
-                I declare that the information provided is truthful
-              </Checkbox>
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button type="primary" htmlType="submit">
-                  Submit
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Drawer>
+            </Drawer>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1043,3 +1223,25 @@ const infoTextStyle = {
   color: "#2E2E2E",
   textAlign: "center",
 };
+const vitalsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: 15,
+  minWidth: 0,
+  width: "100%",
+  background: "rgb(249, 249, 249)",
+};
+
+const vitalCard = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  border: "1px solid #1B1B1B1A",
+  borderRadius: "10px",
+  padding: "10px",
+  minHeight: "80px",
+  minWidth: 0,
+};
+
+const vitalLabel = { fontSize: 14, fontWeight: 600, marginBottom: 2 };
+const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
