@@ -150,10 +150,10 @@ export default function CustomSider() {
           <Avatar src={Profile} size={67} />
           <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>
-              Jennifer Johnson
+              Admin
             </Text>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              jenniferjenni1245@gmail.com
+              admin@verimed.com
             </Text>
           </div>
         </div>

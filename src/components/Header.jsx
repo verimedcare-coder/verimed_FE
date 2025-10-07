@@ -97,9 +97,7 @@ export default function HeaderComponent() {
         }}
       >
         <span style={{ fontSize: 18 }}>{getTitle()} –</span>
-        <span style={{ fontSize: 18, marginLeft: 4 }}>
-          Welcome Back, Jenifer Johnson
-        </span>
+        <span style={{ fontSize: 18, marginLeft: 4 }}>Welcome Back, Admin</span>
       </div>
 
       <Space size="middle" align="center">
