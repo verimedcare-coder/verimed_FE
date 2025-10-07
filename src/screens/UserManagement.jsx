@@ -82,6 +82,7 @@ export default function UserManagement() {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("sponsors");
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [addDrawerVisible, setAddDrawerVisible] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedCaretaker, setSelectedCaretaker] = useState(null);
@@ -297,6 +298,22 @@ export default function UserManagement() {
     caretakers: "Caretaker Detailed View",
     patients: "Patient Detailed View",
   };
+
+  function SponsorForm({ mode, data }) {
+    return <div>Sponsor Form ({mode})</div>;
+  }
+
+  function DoctorForm({ mode, data }) {
+    return <div>Doctor Form ({mode})</div>;
+  }
+
+  function CaretakerForm({ mode, data }) {
+    return <div>Caretaker Form ({mode})</div>;
+  }
+
+  function PatientForm({ mode, data }) {
+    return <div> Patient Form ({mode})</div>;
+  }
 
   const renderDrawerContent = () => {
     if (activeTab === "sponsors" && selectedSponsor)
@@ -1132,11 +1149,28 @@ export default function UserManagement() {
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ width: 200 }}
                 />
-                <PrimaryBtn
+                {/* <PrimaryBtn
                   name={`Add ${activeTab.slice(0, -1)}`}
                   icon={<PlusOutlined />}
                   onClick={() => setDrawerVisible(true)}
+                /> */}
+                <PrimaryBtn
+                  name={`Add ${activeTab.slice(0, -1)}`}
+                  icon={<PlusOutlined />}
+                  onClick={() => setAddDrawerVisible(true)}
                 />
+
+                <Drawer
+                  title={`Add ${activeTab.slice(0, -1)}`}
+                  width={400}
+                  open={addDrawerVisible}
+                  onClose={() => setAddDrawerVisible(false)}
+                >
+                  {activeTab === "sponsors" && <SponsorForm mode="add" />}
+                  {activeTab === "doctors" && <DoctorForm mode="add" />}
+                  {activeTab === "caretakers" && <CaretakerForm mode="add" />}
+                  {activeTab === "patients" && <PatientForm mode="add" />}
+                </Drawer>
               </div>
 
               <Table
