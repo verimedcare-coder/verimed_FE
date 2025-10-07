@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -11,12 +11,11 @@ import {
   Tag,
   Space,
   Drawer,
-  Checkbox,
-  Descriptions,
   Avatar,
   Form,
   DatePicker,
   Upload,
+  Spin,
 } from "antd";
 import {
   EllipsisOutlined,
@@ -35,27 +34,9 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import dayjs from "dayjs";
+import { base_url } from "../constants/constants";
 
 const { Option } = Select;
-function SectionHeader({ title, children }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 10,
-        minWidth: 0,
-      }}
-    >
-      <p style={{ fontSize: 16, fontWeight: 600, color: "#1B1B1B" }}>{title}</p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 const linkedPatients = [
   {
@@ -96,6 +77,166 @@ export default function UserManagement() {
   const [editedData, setEditedData] = useState({});
   const [uploadedImage, setUploadedImage] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [docList, setDocList] = useState([]);
+  const [sponsorList, setSponsorList] = useState([]);
+  const [caretakerList, setCaretakerList] = useState([]);
+  const [patientList, setPatientList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchSponsors = async () => {
+    setLoading(true);
+    try {
+      const userListEndpoint = `${base_url}/user_view/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const userRes = await axios.get(userListEndpoint, { headers });
+      const allusers = userRes.data;
+
+      const sponsorListEndpoint = `${base_url}/sponsorprofile_list/`;
+      const res = await axios.get(sponsorListEndpoint);
+      const sponsors = res.data;
+
+      const sponsorUserIds = sponsors.map((doc) => doc.user);
+
+      const filteredAllusers = allusers.filter((user) =>
+        sponsorUserIds.includes(user.id)
+      );
+
+      const combinedSponsors = filteredAllusers.map((user) => {
+        const sponsorProfile = sponsors.find((doc) => doc.user === user.id);
+        return {
+          ...user,
+          sponsorProfile,
+        };
+      });
+
+      setSponsorList(combinedSponsors);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCareTakers = async () => {
+    setLoading(true);
+    try {
+      const userListEndpoint = `${base_url}/user_view/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const userRes = await axios.get(userListEndpoint, { headers });
+      const allusers = userRes.data;
+
+      const caretakerListEndpoint = `${base_url}/caretakerprofile_list/`;
+      const res = await axios.get(caretakerListEndpoint);
+      const caretakers = res.data;
+
+      const caretakersUserIds = caretakers.map((doc) => doc.user);
+
+      const filteredAllusers = allusers.filter((user) =>
+        caretakersUserIds.includes(user.id)
+      );
+
+      const combinedCaretakers = filteredAllusers.map((user) => {
+        const caretakerProfile = caretakers.find((doc) => doc.user === user.id);
+        return {
+          ...user,
+          caretakerProfile,
+        };
+      });
+
+      setCaretakerList(combinedCaretakers);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPatients = async () => {
+    setLoading(true);
+    try {
+      const userListEndpoint = `${base_url}/user_view/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const userRes = await axios.get(userListEndpoint, { headers });
+      const allusers = userRes.data;
+
+      const patientListEndpoint = `${base_url}/patientprofile_list/`;
+      const res = await axios.get(patientListEndpoint);
+      const patients = res.data;
+
+      const patientUserIds = patients.map((doc) => doc.user);
+
+      const filteredAllusers = allusers.filter((user) =>
+        patientUserIds.includes(user.id)
+      );
+
+      const combinedPatients = filteredAllusers.map((user) => {
+        const patientProfile = patients.find((doc) => doc.user === user.id);
+        return {
+          ...user,
+          patientProfile,
+        };
+      });
+
+      setPatientList(combinedPatients);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDoctors = async () => {
+    setLoading(true);
+    try {
+      const userListEndpoint = `${base_url}/user_view/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+      const userRes = await axios.get(userListEndpoint, { headers });
+      const allusers = userRes.data;
+
+      const docListEndpoint = `${base_url}/doctorprofile_list/`;
+      const res = await axios.get(docListEndpoint);
+      const doctors = res.data;
+
+      const doctorUserIds = doctors.map((doc) => doc.user);
+
+      const filteredAllusers = allusers.filter((user) =>
+        doctorUserIds.includes(user.id)
+      );
+
+      const combinedDoctors = filteredAllusers.map((user) => {
+        const doctorProfile = doctors.find((doc) => doc.user === user.id);
+        return {
+          ...user,
+          doctorProfile,
+        };
+      });
+
+      setDocList(combinedDoctors);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSponsors();
+    fetchCareTakers();
+    fetchPatients();
+    fetchDoctors();
+  }, []);
 
   const dotStyle = (color) => ({
     width: "8px",
@@ -113,7 +254,7 @@ export default function UserManagement() {
     setOpen(false);
   };
 
-  // Sample sponsors data
+  // Sample sponsors data - REMOVED FOR CLARITY AS IT'S REPLACED BY sponsorList
   const sponsorsData = [
     {
       key: 1,
@@ -138,6 +279,7 @@ export default function UserManagement() {
       status: "Inactive",
     },
   ];
+  // Sample doctors data - REMOVED FOR CLARITY AS IT'S REPLACED BY docList
   const [doctorsData] = useState([
     {
       key: 1,
@@ -157,9 +299,11 @@ export default function UserManagement() {
       status: "Active",
     },
   ]);
+  // Sample caretakers data - REMOVED FOR CLARITY AS IT'S REPLACED BY caretakerList
   const [caretakersData] = useState([
     { id: 1, name: "Ravi Kumar", shift: "Night", phone: "7777766666" },
   ]);
+  // Sample patients data - REMOVED FOR CLARITY AS IT'S REPLACED BY patientList
   const [patientsData] = useState([
     {
       key: 1,
@@ -238,12 +382,7 @@ export default function UserManagement() {
       render: (text, record) => (
         <Space>
           <img
-            src={
-              record.avatar ||
-              `https://randomuser.me/api/portraits/${
-                Math.random() > 0.5 ? "men" : "women"
-              }/${Math.floor(Math.random() * 80) + 1}.jpg`
-            }
+            src={record.avatar}
             alt={text}
             style={{
               width: 32,
@@ -287,14 +426,64 @@ export default function UserManagement() {
 
   const getFilteredData = () => {
     const dataMap = {
-      sponsors: sponsorsData,
-      doctors: doctorsData,
-      caretakers: caretakersData,
-      patients: patientsData,
+      sponsors: sponsorList.map((s) => ({
+        ...s,
+        key: s.id,
+        avatar: s.photo,
+        name: s.first_name + " " + s.last_name,
+        email: s.email,
+        phone: s.phone,
+        country: s.country,
+        patientsLinked: s.sponsorProfile?.patients_count || 0,
+        membership: s.sponsorProfile?.membership_plan || "N/A",
+        status: s.is_active ? "Active" : "Inactive",
+      })),
+      doctors: docList.map((d) => ({
+        ...d,
+        key: d.id,
+        avatar: d.photo,
+        name: d.first_name + " " + d.last_name,
+        email: d.email,
+        phone: d.phone,
+        country: d.country,
+        patientsLinked: d.doctorProfile?.patients_count || 0,
+        membership: d.doctorProfile?.membership_plan || "N/A",
+        status: d.is_active ? "Active" : "Inactive",
+      })),
+      caretakers: caretakerList.map((c) => ({
+        ...c,
+        key: c.id,
+        avatar: c.photo,
+        name: c.first_name + " " + c.last_name,
+        email: c.email,
+        phone: c.phone,
+        country: c.country,
+        patientsLinked: c.caretakerProfile?.patients_count || 0,
+        membership: c.caretakerProfile?.membership_plan || "N/A",
+        status: c.is_active ? "Active" : "Inactive",
+      })),
+      patients: patientList.map((p) => ({
+        ...p,
+        key: p.id,
+        avatar: p.photo,
+        name: p.first_name + " " + p.last_name,
+        email: p.email,
+        phone: p.phone,
+        country: p.country,
+        patientsLinked: 0,
+        membership: p.patientProfile?.membership_plan || "N/A",
+        status: p.is_active ? "Active" : "Inactive",
+        age: p.patientProfile?.age,
+        gender: p.gender,
+        Condition: p.patientProfile?.medical_condition || "N/A",
+        CareTaker: "N/A",
+        Doctor: "N/A",
+        EnrolmentDate: "N/A",
+      })),
     };
     const data = dataMap[activeTab] || [];
-    return data.filter((d) =>
-      d.name.toLowerCase().includes(searchText.toLowerCase())
+    return data.filter(
+      (d) => d.name && d.name.toLowerCase().includes(searchText.toLowerCase())
     );
   };
 
@@ -1110,6 +1299,25 @@ export default function UserManagement() {
         <Sider />
       </div>
 
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(255,255,255,0.7)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Spin size="large" tip="Loading..." />
+        </div>
+      )}
+
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ flexShrink: 0 }}>
@@ -1351,7 +1559,7 @@ export default function UserManagement() {
 
               <Table
                 columns={columns}
-                dataSource={getFilteredData()}
+                dataSource={getFilteredData()} // Using the updated function
                 pagination={{ pageSize: 5 }}
                 rowKey="id"
                 bordered
