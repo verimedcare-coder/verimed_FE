@@ -16,8 +16,13 @@ import {
   Avatar,
   Form,
   DatePicker,
+  Upload,
 } from "antd";
-import { EllipsisOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  EllipsisOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import Primarybtn from "../components/PrimaryBtn";
 import { Select } from "antd";
@@ -29,6 +34,7 @@ import statusIcon from "../assets/icons/status.svg";
 import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 function SectionHeader({ title, children }) {
@@ -311,10 +317,171 @@ export default function UserManagement() {
     return <div>Caretaker Form ({mode})</div>;
   }
 
-  function PatientForm({ mode, data }) {
-    return <div> Patient Form ({mode})</div>;
-  }
+  function PatientForm({ mode = "add", data = {}, onCancel, onSave }) {
+    const [formData, setFormData] = useState({
+      profileImage: data.profileImage || null,
+      name: data.name || "",
+      patientId: data.patientId || "PT-2094",
+      age: data.age || "",
+      gender: data.gender || "",
+      condition: data.condition || "",
+      caretaker: data.caretaker || "",
+      sponsor: data.sponsor || "",
+      sponsorId: data.sponsorId || "",
+      sponsorContact: data.sponsorContact || "",
+      doctor: data.doctor || "",
+      membershipPlan: data.membershipPlan || "Premium",
+      enrolmentDate: data.enrolmentDate ? dayjs(data.enrolmentDate) : null,
+      status: data.status || "Active",
+    });
 
+    const handleChange = (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = () => {
+      console.log("Patient form data:", formData);
+      if (onSave) onSave(formData);
+    };
+
+    return (
+      <Form layout="vertical">
+        <Upload
+          beforeUpload={() => false}
+          onChange={(info) => handleChange("profileImage", info.file)}
+          showUploadList={false}
+        >
+          <Button icon={<UploadOutlined />}>Upload Profile Image</Button>
+        </Upload>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+            marginTop: 16,
+          }}
+        >
+          <Form.Item label={<span style={labelStyle}>Name</span>}>
+            <Input
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Patient ID</span>}>
+            <Input value={formData.patientId} disabled />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Age</span>}>
+            <Input
+              value={formData.age}
+              onChange={(e) => handleChange("age", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Gender</span>}>
+            <Select
+              value={formData.gender}
+              onChange={(value) => handleChange("gender", value)}
+              options={[
+                { label: "Male", value: "Male" },
+                { label: "Female", value: "Female" },
+                { label: "Other", value: "Other" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Condition</span>}>
+            <Input
+              value={formData.condition}
+              onChange={(e) => handleChange("condition", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Care Taker</span>}>
+            <Input
+              value={formData.caretaker}
+              onChange={(e) => handleChange("caretaker", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Doctor</span>}>
+            <Input
+              value={formData.doctor}
+              onChange={(e) => handleChange("doctor", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Sponsor Name</span>}>
+            <Input
+              value={formData.sponsor}
+              onChange={(e) => handleChange("sponsor", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Sponsor ID</span>}>
+            <Input
+              value={formData.sponsorId}
+              onChange={(e) => handleChange("sponsorId", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Sponsor Contact</span>}>
+            <Input
+              value={formData.sponsorContact}
+              onChange={(e) => handleChange("sponsorContact", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Membership Plan</span>}>
+            <Select
+              value={formData.membershipPlan}
+              onChange={(value) => handleChange("membershipPlan", value)}
+              options={[
+                { label: "Basic", value: "Basic" },
+                { label: "Standard", value: "Standard" },
+                { label: "Premium", value: "Premium" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Enrolment Date</span>}>
+            <DatePicker
+              value={formData.enrolmentDate}
+              onChange={(date) => handleChange("enrolmentDate", date)}
+              format="MMM DD, YYYY"
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Status</span>}>
+            <Select
+              value={formData.status}
+              onChange={(value) => handleChange("status", value)}
+              options={[
+                { label: "Active", value: "Active" },
+                { label: "Inactive", value: "Inactive" },
+                { label: "Pending", value: "Pending" },
+              ]}
+            />
+          </Form.Item>
+        </div>
+
+        <div
+          style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}
+        >
+          <Space>
+            <SecondaryBtn name="cancel" onClick={onCancel} />
+            <PrimaryBtn
+              type="button"
+              onClick={handleSave}
+              name={mode === "edit" ? "Save Changes" : "Add Patient"}
+            />
+          </Space>
+        </div>
+      </Form>
+    );
+  }
   const renderDrawerContent = () => {
     if (activeTab === "sponsors" && selectedSponsor)
       return (
@@ -1169,7 +1336,16 @@ export default function UserManagement() {
                   {activeTab === "sponsors" && <SponsorForm mode="add" />}
                   {activeTab === "doctors" && <DoctorForm mode="add" />}
                   {activeTab === "caretakers" && <CaretakerForm mode="add" />}
-                  {activeTab === "patients" && <PatientForm mode="add" />}
+                  {activeTab === "patients" && (
+                    <PatientForm
+                      mode="add"
+                      onCancel={() => setAddDrawerVisible(false)}
+                      onSave={(values) => {
+                        console.log("Saved Patient:", values);
+                        setAddDrawerVisible(false);
+                      }}
+                    />
+                  )}
                 </Drawer>
               </div>
 
