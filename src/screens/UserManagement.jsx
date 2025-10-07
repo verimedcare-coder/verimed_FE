@@ -16,6 +16,8 @@ import {
   DatePicker,
   Upload,
   Spin,
+  Image,
+  Modal,
 } from "antd";
 import {
   EllipsisOutlined,
@@ -524,6 +526,49 @@ export default function UserManagement() {
       status: data.status || "Active",
     });
 
+    const getBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState("");
+    const [fileList, setFileList] = useState(
+      data.profileImage
+        ? [
+            {
+              uid: "-1",
+              name: "image.png",
+              status: "done",
+              url: data.profileImage,
+            },
+          ]
+        : []
+    );
+
+    const handlePreview = async (file) => {
+      if (!file.url && !file.preview) {
+        file.preview = await getBase64(file.originFileObj);
+      }
+      setPreviewImage(file.url || file.preview);
+      setPreviewOpen(true);
+    };
+
+    const handleImageChange = ({ fileList: newFileList }) => {
+      // Keep only the last file to allow single image upload
+      setFileList(newFileList.slice(-1));
+    };
+
+    const uploadButton = (
+      <div style={{ textAlign: "center" }}>
+        <PlusOutlined />
+        <div style={{ marginTop: 8 }}>Upload</div>
+      </div>
+    );
+
     const handleChange = (field, value) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
     };
@@ -535,13 +580,44 @@ export default function UserManagement() {
 
     return (
       <Form layout="vertical">
-        <Upload
-          beforeUpload={() => false}
-          onChange={(info) => handleChange("profileImage", info.file)}
-          showUploadList={false}
+        {/* <Upload
+          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+          listType="picture-circle"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleImageChange}
         >
-          <Button icon={<UploadOutlined />}>Upload Profile Image</Button>
+          {fileList.length >= 1 ? null : uploadButton}
         </Upload>
+
+        {previewImage && (
+          <Image
+            wrapperStyle={{ display: "none" }}
+            preview={{
+              visible: previewOpen,
+              onVisibleChange: (visible) => setPreviewOpen(visible),
+              afterOpenChange: (visible) => !visible && setPreviewImage(""),
+            }}
+            src={previewImage}
+          />
+        )} */}
+        <Upload
+          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+          listType="picture-card"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleImageChange}
+        >
+          {fileList.length >= 1 ? null : uploadButton}
+        </Upload>
+
+        <Modal
+          open={previewOpen}
+          footer={null}
+          onCancel={() => setPreviewOpen(false)}
+        >
+          <img alt="preview" style={{ width: "100%" }} src={previewImage} />
+        </Modal>
 
         <div
           style={{
@@ -1537,7 +1613,7 @@ export default function UserManagement() {
 
                 <Drawer
                   title={`Add ${activeTab.slice(0, -1)}`}
-                  width={400}
+                  width={720}
                   open={addDrawerVisible}
                   onClose={() => setAddDrawerVisible(false)}
                 >
