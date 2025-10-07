@@ -504,9 +504,217 @@ export default function UserManagement() {
     return <div>Doctor Form ({mode})</div>;
   }
 
-  function CaretakerForm({ mode, data }) {
-    return <div>Caretaker Form ({mode})</div>;
+  function CaretakerForm({ mode = "add", data = {}, onCancel, onSave }) {
+    const [formData, setFormData] = useState({
+      profileImage: data.profileImage || null,
+      name: data.name || "",
+      caretakerId: data.caretakerId || "CT-1011", // Read-only ID
+      age: data.age || "",
+      gender: data.gender || "",
+      contact: data.contact || "",
+      address: data.address || "",
+      patientAssigned: data.patientAssigned || "",
+      doctor: data.doctor || "",
+      plan: data.plan || "Standard",
+      onboardDate: data.onboardDate ? dayjs(data.onboardDate) : null,
+      status: data.status || "Active",
+    });
+
+    const getBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState("");
+    const [fileList, setFileList] = useState(
+      data.profileImage
+        ? [
+            {
+              uid: "-1",
+              name: "image.png",
+              status: "done",
+              url: data.profileImage,
+            },
+          ]
+        : []
+    );
+
+    const handlePreview = async (file) => {
+      if (!file.url && !file.preview) {
+        file.preview = await getBase64(file.originFileObj);
+      }
+      setPreviewImage(file.url || file.preview);
+      setPreviewOpen(true);
+    };
+
+    const handleImageChange = ({ fileList: newFileList }) => {
+      setFileList(newFileList.slice(-1));
+    };
+
+    const uploadButton = (
+      <div style={{ textAlign: "center" }}>
+        <PlusOutlined />
+        <div style={{ marginTop: 8 }}>Upload</div>
+      </div>
+    );
+
+    const handleChange = (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = () => {
+      console.log("Caretaker form data:", formData);
+      if (onSave) onSave(formData);
+    };
+
+    return (
+      <Form layout="vertical">
+        {/* Profile Image Upload and Preview Logic */}
+        <Upload
+          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+          listType="picture-card"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleImageChange}
+        >
+          {fileList.length >= 1 ? null : uploadButton}
+        </Upload>
+
+        <Modal
+          open={previewOpen}
+          footer={null}
+          onCancel={() => setPreviewOpen(false)}
+        >
+          <img alt="preview" style={{ width: "100%" }} src={previewImage} />
+        </Modal>
+
+        {/* Two-Column Grid for Form Fields */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+            marginTop: 16,
+          }}
+        >
+          <Form.Item label={<span style={labelStyle}>Name</span>}>
+            <Input
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Care Taker ID</span>}>
+            <Input value={formData.caretakerId} disabled />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Age</span>}>
+            <Input
+              value={formData.age}
+              onChange={(e) => handleChange("age", e.target.value)}
+              placeholder="e.g., 35"
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Gender</span>}>
+            <Select
+              value={formData.gender}
+              onChange={(value) => handleChange("gender", value)}
+              options={[
+                { label: "Male", value: "Male" },
+                { label: "Female", value: "Female" },
+                { label: "Other", value: "Other" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Contact</span>}>
+            <Input
+              value={formData.contact}
+              onChange={(e) => handleChange("contact", e.target.value)}
+              placeholder="e.g., +1234567890"
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Address</span>}>
+            <Input
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Patient Assigned</span>}>
+            <Input
+              value={formData.patientAssigned}
+              onChange={(e) => handleChange("patientAssigned", e.target.value)}
+              placeholder="e.g., PT-2094"
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Doctor</span>}>
+            <Input
+              value={formData.doctor}
+              onChange={(e) => handleChange("doctor", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Plan</span>}>
+            <Select
+              value={formData.plan}
+              onChange={(value) => handleChange("plan", value)}
+              options={[
+                { label: "Basic", value: "Basic" },
+                { label: "Standard", value: "Standard" },
+                { label: "Premium", value: "Premium" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Onboard Date</span>}>
+            <DatePicker
+              value={formData.onboardDate}
+              onChange={(date) => handleChange("onboardDate", date)}
+              format="MMM DD, YYYY"
+              style={{ width: "100%" }}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Status</span>}>
+            <Select
+              value={formData.status}
+              onChange={(value) => handleChange("status", value)}
+              options={[
+                { label: "Active", value: "Active" },
+                { label: "Inactive", value: "Inactive" },
+                { label: "Pending", value: "Pending" },
+              ]}
+            />
+          </Form.Item>
+          {/* Filler item to maintain the grid structure if necessary */}
+          <Form.Item></Form.Item>
+        </div>
+
+        {/* Action Buttons */}
+        <div
+          style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}
+        >
+          <Space>
+            <SecondaryBtn name="Cancel" onClick={onCancel} />
+            <PrimaryBtn
+              type="button"
+              onClick={handleSave}
+              name={mode === "edit" ? "Save Changes" : "Add Caretaker"}
+            />
+          </Space>
+        </div>
+      </Form>
+    );
   }
+  care;
 
   function PatientForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
