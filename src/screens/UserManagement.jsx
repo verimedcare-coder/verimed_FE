@@ -714,7 +714,6 @@ export default function UserManagement() {
       </Form>
     );
   }
-  care;
 
   function PatientForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
