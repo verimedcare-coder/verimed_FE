@@ -499,6 +499,13 @@ export default function UserManagement() {
     patients: "Patient Detailed View",
   };
 
+  const createSponsor = async () => {
+    try {
+    } catch (error) {
+      console.log("Error Creating Sponsor: ", error);
+    }
+  };
+
   function SponsorForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
       fullName: data.fullName || "",
