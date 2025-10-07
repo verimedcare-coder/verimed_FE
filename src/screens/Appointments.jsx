@@ -724,6 +724,7 @@ export default function Appointments() {
                     borderBottomRightRadius: 8,
                     borderBottomLeftRadius: 8,
                     background: "#007F5F14",
+                    position: "relative",
                   }}
                 >
                   {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
@@ -731,6 +732,13 @@ export default function Appointments() {
                       {d}
                     </div>
                   ))}
+                  {/* Add empty cells for days before the first day of the month */}
+                  {(() => {
+                    const firstDay = monthDays[0].getDay();
+                    return Array.from({ length: firstDay }).map((_, idx) => (
+                      <div key={`empty-${idx}`} />
+                    ));
+                  })()}
                   {monthDays.map((day) => {
                     const isAppointment = appointmentDates.includes(
                       day.toDateString()
@@ -748,10 +756,11 @@ export default function Appointments() {
                           color: isAppointment ? "white" : "inherit",
                           fontWeight: isAppointment ? 600 : 400,
                           transition: "background 0.3s ease",
+                          position: "relative",
                         }}
                       >
                         {day.getDate()}
-                        {isAppointment && (
+                        {/* {isAppointment && (
                           <div
                             style={{
                               width: "5px",
@@ -764,7 +773,7 @@ export default function Appointments() {
                               transform: "translateX(-50%)",
                             }}
                           ></div>
-                        )}
+                        )} */}
                       </div>
                     );
                   })}
