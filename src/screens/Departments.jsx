@@ -1,15 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
-import Primarybtn from "../components/PrimaryBtn";
-import { Button, Table } from "antd";
+
+import {
+  Button,
+  Table,
+  Drawer,
+  Input,
+  Select,
+  Avatar,
+  Form,
+  DatePicker,
+} from "antd";
 import {
   CalendarOutlined,
   FilterOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
+const { Option } = Select;
+const { TextArea } = Input;
 
 function SectionHeader({ title, children }) {
   return (
@@ -34,35 +45,35 @@ function SectionHeader({ title, children }) {
 const deptStats = [
   {
     id: 1,
-    name: "Total Appointments",
+    name: "Total Departments",
     count: 23,
     diff: "+95%",
     duration: "in last 7 Days",
   },
   {
     id: 2,
-    name: "Total Appointments",
-    count: 23,
-    diff: "+95%",
-    duration: "in last 7 Days",
-  },
-  {
-    id: 3,
-    name: "Completed",
+    name: "Total Doctors",
     count: 20,
     diff: "+95%",
     duration: "in last 7 Days",
   },
   {
-    id: 4,
-    name: "Pending",
+    id: 3,
+    name: "Care Takers",
     count: 24,
     diff: "+25%",
     duration: "in last 7 Days",
   },
   {
+    id: 4,
+    name: "Patients",
+    count: 6,
+    diff: "+15%",
+    duration: "in last 7 Days",
+  },
+  {
     id: 5,
-    name: "Cancelled",
+    name: "Revenue Contribution",
     count: 6,
     diff: "+15%",
     duration: "in last 7 Days",
@@ -81,8 +92,8 @@ const departmentData = [
   },
   {
     departmentId: "002",
-    departmentName: "Internal Medicine",
-    headDoctor: "Dr.kom",
+    departmentName: "Cardiology",
+    headDoctor: "Dr. Kom",
     type: "Clinical",
     totalDoctors: 9,
     patientsAssigned: 15,
@@ -90,8 +101,8 @@ const departmentData = [
   },
   {
     departmentId: "003",
-    departmentName: "Internal Medicine",
-    headDoctor: "Dr.John",
+    departmentName: "Neurology",
+    headDoctor: "Dr. John",
     type: "Clinical",
     totalDoctors: 5,
     patientsAssigned: 15,
@@ -99,86 +110,86 @@ const departmentData = [
   },
 ];
 
-// Status badge styling
-const getStatusTag = (status) => {
-  return (
-    <span
-      style={{
-        padding: "4px 12px",
-        borderRadius: "12px",
-        color: status === "Active" ? "#007F5F" : "#B00020",
-        backgroundColor: status === "Active" ? "#E6F4EA" : "#FDEAEA",
-        fontWeight: 500,
-        fontSize: 12,
-      }}
-    >
-      {status}
-    </span>
-  );
-};
+// ---------- Status Badge ----------
+const getStatusTag = (status) => (
+  <span
+    style={{
+      padding: "4px 12px",
+      borderRadius: "12px",
+      color: status === "Active" ? "#007F5F" : "#B00020",
+      backgroundColor: status === "Active" ? "#E6F4EA" : "#FDEAEA",
+      fontWeight: 500,
+      fontSize: 12,
+    }}
+  >
+    {status}
+  </span>
+);
 
-const columns = [
-  {
-    title: "Department ID",
-    dataIndex: "departmentId",
-    key: "departmentId",
-    width: 120,
-  },
-  {
-    title: "Department Name",
-    dataIndex: "departmentName",
-    key: "departmentName",
-    width: 180,
-  },
-  {
-    title: "Head Doctor",
-    dataIndex: "headDoctor",
-    key: "headDoctor",
-    width: 160,
-  },
-  {
-    title: "Type",
-    dataIndex: "type",
-    key: "type",
-    width: 120,
-  },
-  {
-    title: "Total Doctors",
-    dataIndex: "totalDoctors",
-    key: "totalDoctors",
-    width: 130,
-  },
-  {
-    title: "Patients Assigned",
-    dataIndex: "patientsAssigned",
-    key: "patientsAssigned",
-    width: 150,
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-    width: 120,
-    render: (text) => getStatusTag(text),
-  },
-  {
-    title: "Action",
-    key: "action",
-    width: 100,
-    render: () => (
-      <span style={{ cursor: "pointer" }}>
-        <MoreOutlined />
-      </span>
-    ),
-  },
-];
-
-const dataSource = departmentData.map((item, index) => ({
-  key: index,
-  ...item,
-}));
-
+// ---------- Departments Component ----------
 export default function Departments() {
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [addDrawerOpen, setAddDrawerOpen] = useState(false);
+  const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
+
+  // Columns moved **inside** component so state functions work
+  const columns = [
+    {
+      title: "Department ID",
+      dataIndex: "departmentId",
+      key: "departmentId",
+      width: 120,
+    },
+    {
+      title: "Department Name",
+      dataIndex: "departmentName",
+      key: "departmentName",
+      width: 180,
+    },
+    {
+      title: "Head Doctor",
+      dataIndex: "headDoctor",
+      key: "headDoctor",
+      width: 160,
+    },
+    { title: "Type", dataIndex: "type", key: "type", width: 120 },
+    {
+      title: "Total Doctors",
+      dataIndex: "totalDoctors",
+      key: "totalDoctors",
+      width: 130,
+    },
+    {
+      title: "Patients Assigned",
+      dataIndex: "patientsAssigned",
+      key: "patientsAssigned",
+      width: 150,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      render: (text) => getStatusTag(text),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedDept(record);
+            setViewDrawerOpen(true);
+          }}
+          style={{ cursor: "pointer", color: "#007F5F", fontSize: 18 }}
+        >
+          <MoreOutlined />
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -190,14 +201,11 @@ export default function Departments() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ flexShrink: 0 }}>
-          <Header />
-        </div>
+        <Header />
 
-        {/* Content area with just text */}
         <div
           style={{
-            padding: "20px",
+            padding: 20,
             overflowY: "auto",
             overflowX: "hidden",
             gap: 20,
@@ -206,7 +214,7 @@ export default function Departments() {
             alignItems: "center",
           }}
         >
-          {/* stats */}
+          {/* Stats Section */}
           <div
             style={{
               display: "flex",
@@ -363,17 +371,10 @@ export default function Departments() {
             ))}
           </div>
 
-          {/* daily reports table */}
+          {/* Table */}
           <div style={tableContainer}>
             <SectionHeader title="Department List">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <Button
                   style={{
                     height: 38,
@@ -383,14 +384,17 @@ export default function Departments() {
                 >
                   Aug 2025 <CalendarOutlined />
                 </Button>
-                <Primarybtn name="New Department" />
+                <PrimaryBtn
+                  name="New Department"
+                  onClick={() => setAddDrawerOpen(true)}
+                />
                 <SecondaryBtn name="Filter" icon={<FilterOutlined />} />
               </div>
             </SectionHeader>
 
             <Table
               columns={columns}
-              dataSource={dataSource}
+              dataSource={departmentData}
               pagination={{ pageSize: 10 }}
               scroll={{ x: true }}
               bordered
@@ -399,9 +403,243 @@ export default function Departments() {
           </div>
         </div>
       </div>
+
+      {/* ---------- Add Department Drawer ---------- */}
+      <Drawer
+        title="Add Department"
+        width={720}
+        onClose={() => setAddDrawerOpen(false)}
+        open={addDrawerOpen}
+        destroyOnClose
+      >
+        <Form
+          layout="vertical"
+          onFinish={(values) => {
+            console.log("Department Created:", values);
+            setAddDrawerOpen(false);
+          }}
+        >
+          {/* Two-Column Grid Layout */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginTop: 16,
+            }}
+          >
+            <Form.Item
+              name="departmentName"
+              label="Department Name"
+              rules={[
+                { required: true, message: "Please enter department name" },
+              ]}
+            >
+              <Input placeholder="Enter department name" />
+            </Form.Item>
+
+            <Form.Item label="Department ID">
+              <Input value="DEP-1022" disabled />
+            </Form.Item>
+
+            <Form.Item
+              name="departmentType"
+              label="Department Type"
+              rules={[
+                { required: true, message: "Please select department type" },
+              ]}
+            >
+              <Select placeholder="Select type">
+                <Option value="Clinical">Clinical</Option>
+                <Option value="Non-Clinical">Non-Clinical</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="departmentLocation"
+              label="Department Location"
+              rules={[{ required: true, message: "Please enter location" }]}
+            >
+              <Input placeholder="Enter location" />
+            </Form.Item>
+
+            <Form.Item
+              name="contactEmail"
+              label="Contact Email"
+              rules={[
+                { type: "email", required: true, message: "Enter valid email" },
+              ]}
+            >
+              <Input placeholder="e.g., dept@hospital.com" />
+            </Form.Item>
+
+            <Form.Item
+              name="contactPhone"
+              label="Contact Phone"
+              rules={[{ required: true, message: "Enter phone number" }]}
+            >
+              <Input placeholder="e.g., +91 9876543210" />
+            </Form.Item>
+
+            <Form.Item
+              name="location"
+              label="Location"
+              rules={[{ required: true, message: "Enter location" }]}
+            >
+              <Input placeholder="Building / Floor / Wing" />
+            </Form.Item>
+
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Select status" }]}
+            >
+              <Select placeholder="Select status">
+                <Option value="Active">Active</Option>
+                <Option value="Inactive">Inactive</Option>
+              </Select>
+            </Form.Item>
+
+            {/* Full-width Description */}
+            <Form.Item
+              name="description"
+              label="Description"
+              style={{ gridColumn: "1 / span 2" }}
+            >
+              <TextArea
+                rows={2}
+                placeholder="Brief description of department"
+              />
+            </Form.Item>
+          </div>
+
+          {/* Head Doctor Section */}
+          <h3 style={{ marginTop: 24 }}>Assign Head Doctor</h3>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginTop: 8,
+            }}
+          >
+            <Form.Item
+              name="doctor"
+              label="Select Doctor"
+              rules={[{ required: true, message: "Please select a doctor" }]}
+            >
+              <Select placeholder="Choose doctor">
+                <Option value="dr_smith">Dr. Smith</Option>
+                <Option value="dr_jones">Dr. Jones</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="designation"
+              label="Designation"
+              rules={[{ required: true, message: "Enter designation" }]}
+            >
+              <Input placeholder="e.g., Chief Physician" />
+            </Form.Item>
+
+            <Form.Item
+              name="joiningDate"
+              label="Joining Date"
+              rules={[{ required: true, message: "Select joining date" }]}
+            >
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+
+            <Form.Item
+              name="roleType"
+              label="Role Type"
+              rules={[{ required: true, message: "Select role type" }]}
+            >
+              <Select placeholder="Select role type">
+                <Option value="Full-Time">Full-Time</Option>
+                <Option value="Part-Time">Part-Time</Option>
+                <Option value="Visiting">Visiting</Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          {/* Action Buttons */}
+          <Form.Item style={{ marginBottom: 0 }}>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
+            >
+              <Button
+                onClick={() => setAddDrawerOpen(false)}
+                style={{
+                  height: 40,
+                  border: "1px solid #ccc",
+                  backgroundColor: "#ffffff",
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                style={{
+                  height: 40,
+                  backgroundColor: "#F0C330",
+                  borderColor: "#B78520",
+                  color: "#000",
+                  fontWeight: 500,
+                }}
+              >
+                Create Department
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Drawer>
+
+      {/* ---------- View Department Drawer ---------- */}
+      <Drawer
+        title="Department Details"
+        width={460}
+        onClose={() => setViewDrawerOpen(false)}
+        open={viewDrawerOpen}
+      >
+        {selectedDept && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Avatar
+                size={64}
+                src={`https://ui-avatars.com/api/?name=${selectedDept.departmentName}`}
+              />
+              <div>
+                <p style={{ fontWeight: 600, fontSize: 16 }}>
+                  {selectedDept.departmentName}
+                </p>
+                {getStatusTag(selectedDept.status)}
+              </div>
+            </div>
+            <p>
+              <strong>Department ID:</strong> {selectedDept.departmentId}
+            </p>
+            <p>
+              <strong>Head Doctor:</strong> {selectedDept.headDoctor}
+            </p>
+            <p>
+              <strong>Type:</strong> {selectedDept.type}
+            </p>
+            <p>
+              <strong>Total Doctors:</strong> {selectedDept.totalDoctors}
+            </p>
+            <p>
+              <strong>Patients Assigned:</strong>{" "}
+              {selectedDept.patientsAssigned}
+            </p>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }
+
 const tableContainer = {
   background: "#fff",
   borderRadius: "12px",
