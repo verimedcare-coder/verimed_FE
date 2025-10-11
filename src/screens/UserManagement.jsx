@@ -16,16 +16,14 @@ import {
   DatePicker,
   Upload,
   Spin,
-  Image,
   Modal,
   Checkbox,
-  Divider,
-  Radio,
 } from "antd";
 import {
   EllipsisOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
   PlusOutlined,
-  UploadOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import Primarybtn from "../components/PrimaryBtn";
@@ -259,31 +257,6 @@ export default function UserManagement() {
     setOpen(false);
   };
 
-  // Sample sponsors data - REMOVED FOR CLARITY AS IT'S REPLACED BY sponsorList
-  const sponsorsData = [
-    {
-      key: 1,
-      name: "John Nelson",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      email: "john.n@verimed.com",
-      phone: "+1 416 222 1000",
-      country: "Canada",
-      patientsLinked: 2,
-      membership: "Premium",
-      status: "Active",
-    },
-    {
-      key: 2,
-      name: "Jane Smith",
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-      email: "jane.s@verimed.com",
-      phone: "+1 416 333 1000",
-      country: "Canada",
-      patientsLinked: 3,
-      membership: "Premium",
-      status: "Inactive",
-    },
-  ];
   // Sample doctors data - REMOVED FOR CLARITY AS IT'S REPLACED BY docList
   const [doctorsData] = useState([
     {
@@ -499,70 +472,48 @@ export default function UserManagement() {
     patients: "Patient Detailed View",
   };
 
-  const createSponsor = async () => {
+  const createSponsor = async (values) => {
     try {
+      console.log("sponsor creation form: ", values);
     } catch (error) {
       console.log("Error Creating Sponsor: ", error);
     }
   };
 
+  const createDoctor = async (values) => {
+    try {
+      console.log("Doctor creation form:", values);
+    } catch (error) {
+      console.log("Error Creating Doctor:", error);
+    }
+  };
+
+  const createCareTaker = async (values) => {
+    try {
+      console.log("Care Taker creation form:", values);
+    } catch (error) {
+      console.log("Error Creating Care taker:", error);
+    }
+  };
+
+  const createPatient = async (values) => {
+    try {
+      console.log("Care Taker creation form:", values);
+    } catch (error) {
+      console.log("Error Creating Care taker:", error);
+    }
+  };
+
   function SponsorForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
-      fullName: data.fullName || "",
-      dateOfBirth: data.dateOfBirth ? dayjs(data.dateOfBirth) : null,
-      gender: data.gender || "",
-      homeAddress: data.homeAddress || "",
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      email: data.email || "",
+      address: data.address || "",
+      password: data.password || "",
       phone: data.phone || "",
-      languages: data.languages || [],
-      religion: data.religion || "",
-      escalateToPhysician: data.escalateToPhysician || [],
-      emergencyContact: data.emergencyContact || {
-        name: "",
-        relationship: "",
-        country: "",
-        phone: "",
-        email: "",
-      },
-      localContact: data.localContact || {
-        name: "",
-        relationship: "",
-        phone: "",
-      },
-      enrollmentReason: data.enrollmentReason || [],
-      enrollmentOther: data.enrollmentOther || "",
-      diagnosedConditions: data.diagnosedConditions || [],
-      conditionOther: data.conditionOther || "",
-      cancerType: data.cancerType || "",
-      doctors: data.doctors || "",
-      surgeries: data.surgeries || "",
-      symptoms: data.symptoms || "",
-      medications: data.medications || [],
-      takingMedsIssues: data.takingMedsIssues || false,
-      takingMedsExplain: data.takingMedsExplain || "",
-      allergies: data.allergies || {
-        known: true,
-        drug: "",
-        food: "",
-      },
-      functionalStatus: data.functionalStatus || {},
-      falls: data.falls || false,
-      fallsCount: data.fallsCount || "",
-      memoryProblems: data.memoryProblems || false,
-      routine: data.routine || "",
-      diet: data.diet || "",
-      sleep: data.sleep || "Good",
-      physicalActivity: data.physicalActivity || [],
-      tobaccoAlcoholUse: data.tobaccoAlcoholUse || [],
-      painLevel: data.painLevel || "None",
-      painLocation: data.painLocation || "",
-      emotionalHealth: data.emotionalHealth || [],
-      spiritualNeeds: data.spiritualNeeds || "",
-      hasDecisionSupport: data.hasDecisionSupport || false,
-      decisionSupportName: data.decisionSupportName || "",
-      familyGoals: data.familyGoals || "",
-      carePreferences: data.carePreferences || "",
-      membershipIntent: data.membershipIntent || "",
-      uploads: data.uploads || [],
+      company: data.company || "",
+      found_us: data.fount_us || "",
     });
 
     const handleChange = (field, value) => {
@@ -574,31 +525,14 @@ export default function UserManagement() {
       if (onSave) onSave(formData);
     };
 
-    const genderOptions = ["Male", "Female", "Other"];
-    const yesNoOptions = [
-      { label: "Yes", value: true },
-      { label: "No", value: false },
-    ];
-    const painLevels = ["None", "Mild", "Moderate", "Severe"];
-    const emotionalStates = ["Happy", "Anxious", "Depressed", "Withdrawn"];
-
-    const uploadButton = (
-      <div style={{ textAlign: "center" }}>
-        <PlusOutlined />
-        <div style={{ marginTop: 8 }}>Upload</div>
-      </div>
-    );
-
     return (
       <Form
         layout="vertical"
+        onFinish={createSponsor}
         style={{
           padding: 16,
         }}
       >
-        {/* Section 1: Patient Information */}
-        <Divider orientation="left">1. Patient Information</Divider>
-
         <div
           style={{
             display: "grid",
@@ -607,33 +541,17 @@ export default function UserManagement() {
             marginBottom: 24,
           }}
         >
-          <Form.Item label="Full Name" required>
+          <Form.Item label="First Name" required>
             <Input
-              value={formData.fullName}
-              onChange={(e) => handleChange("fullName", e.target.value)}
+              value={formData.first_name}
+              onChange={(e) => handleChange("first_name", e.target.value)}
             />
           </Form.Item>
 
-          <Form.Item label="Date of Birth" required>
-            <DatePicker
-              style={{ width: "100%" }}
-              value={formData.dateOfBirth}
-              onChange={(date) => handleChange("dateOfBirth", date)}
-            />
-          </Form.Item>
-
-          <Form.Item label="Gender" required>
-            <Select
-              options={genderOptions.map((g) => ({ label: g, value: g }))}
-              value={formData.gender}
-              onChange={(value) => handleChange("gender", value)}
-            />
-          </Form.Item>
-
-          <Form.Item label="Home Address (In Cameroon)">
+          <Form.Item label="Last Name" required>
             <Input
-              value={formData.homeAddress}
-              onChange={(e) => handleChange("homeAddress", e.target.value)}
+              value={formData.last_name}
+              onChange={(e) => handleChange("last_name", e.target.value)}
             />
           </Form.Item>
 
@@ -644,717 +562,79 @@ export default function UserManagement() {
             />
           </Form.Item>
 
-          <Form.Item label="Primary Language(s) Spoken">
-            <Select
-              mode="multiple"
-              placeholder="Select languages"
-              value={formData.languages}
-              onChange={(val) => handleChange("languages", val)}
-            />
-          </Form.Item>
-
-          <Form.Item label="Religion / Spiritual Practices">
+          <Form.Item label="Email Address">
             <Input
-              value={formData.religion}
-              onChange={(e) => handleChange("religion", e.target.value)}
+              value={formData.email}
+              type="email"
+              onChange={(e) => handleChange("email", e.target.value)}
             />
           </Form.Item>
-        </div>
-
-        <Form.Item label="Escalate to Physician?">
-          <Checkbox.Group
-            options={[
-              "Alone",
-              "With spouse",
-              "With children",
-              "With caregiver",
-              "Other relative(s)",
-            ]}
-            value={formData.escalateToPhysician}
-            onChange={(val) => handleChange("escalateToPhysician", val)}
-          />
-        </Form.Item>
-
-        {/* Section 2: Emergency & Family Contact */}
-        <Divider orientation="left">2. Emergency & Family Contact</Divider>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-            marginBottom: 24,
-          }}
-        >
-          {/* Emergency Contact */}
-          <Form.Item label="Name" required>
-            <Input
-              value={formData.emergencyContact.name}
-              onChange={(e) =>
-                handleChange("emergencyContact", {
-                  ...formData.emergencyContact,
-                  name: e.target.value,
-                })
+          <Form.Item label="Password" name="password">
+            <Input.Password
+              value={formData.password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
               }
             />
           </Form.Item>
 
-          <Form.Item label="Relationship To Patient" required>
-            <Select
-              placeholder="Select relationship"
-              value={formData.emergencyContact.relationship}
-              onChange={(val) =>
-                handleChange("emergencyContact", {
-                  ...formData.emergencyContact,
-                  relationship: val,
-                })
-              }
-              options={[
-                { label: "Spouse", value: "Spouse" },
-                { label: "Parent", value: "Parent" },
-                { label: "Child", value: "Child" },
-                { label: "Sibling", value: "Sibling" },
-                { label: "Other Relative", value: "Other Relative" },
-                { label: "Friend", value: "Friend" },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item label="Country Of Residence" required>
-            <Select
-              showSearch
-              placeholder="Select country"
-              value={formData.emergencyContact.country}
-              onChange={(val) =>
-                handleChange("emergencyContact", {
-                  ...formData.emergencyContact,
-                  country: val,
-                })
-              }
-              options={[
-                { label: "Cameroon", value: "Cameroon" },
-                { label: "Nigeria", value: "Nigeria" },
-                { label: "Ghana", value: "Ghana" },
-                { label: "Kenya", value: "Kenya" },
-                { label: "Other", value: "Other" },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item label="Phone & WhatsApp">
-            <Input
-              value={formData.emergencyContact.phone}
-              onChange={(e) =>
-                handleChange("emergencyContact", {
-                  ...formData.emergencyContact,
-                  phone: e.target.value,
-                })
-              }
-            />
-          </Form.Item>
-
-          <Form.Item label="Email">
-            <Input
-              value={formData.emergencyContact.email}
-              onChange={(e) =>
-                handleChange("emergencyContact", {
-                  ...formData.emergencyContact,
-                  email: e.target.value,
-                })
-              }
-            />
-          </Form.Item>
-        </div>
-
-        {/* Local Contact (if any) */}
-        <Divider orientation="left" plain>
-          Local Contact (In Cameroon If Any)
-        </Divider>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-            marginBottom: 24,
-          }}
-        >
-          <Form.Item label="Name">
-            <Input
-              value={formData.localContact.name}
-              onChange={(e) =>
-                handleChange("localContact", {
-                  ...formData.localContact,
-                  name: e.target.value,
-                })
-              }
-            />
-          </Form.Item>
-
-          <Form.Item label="Relationship To Patient">
-            <Select
-              placeholder="Select relationship"
-              value={formData.localContact.relationship}
-              onChange={(val) =>
-                handleChange("localContact", {
-                  ...formData.localContact,
-                  relationship: val,
-                })
-              }
-              options={[
-                { label: "Spouse", value: "Spouse" },
-                { label: "Parent", value: "Parent" },
-                { label: "Child", value: "Child" },
-                { label: "Sibling", value: "Sibling" },
-                { label: "Friend", value: "Friend" },
-                { label: "Other", value: "Other" },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item label="Phone & WhatsApp">
-            <Input
-              value={formData.localContact.phone}
-              onChange={(e) =>
-                handleChange("localContact", {
-                  ...formData.localContact,
-                  phone: e.target.value,
-                })
-              }
-            />
-          </Form.Item>
-        </div>
-
-        {/* Section 3: Reason for Enrollment in VeriMED */}
-        <Divider orientation="left">
-          3. Reason for Enrollment in VeriMED
-        </Divider>
-
-        <Form.Item label="Select All That Apply">
-          <Checkbox.Group
-            options={[
-              "Ongoing Primary Medical Care",
-              "Post-Hospital Follow-Up",
-              "Nursing or Rehabilitation at Home",
-              "Routine Wellness and Aging Support",
-              "Memory or Dementia Support",
-              "Hospice/Palliative Support",
-            ]}
-            value={formData.enrollmentReason}
-            onChange={(val) => handleChange("enrollmentReason", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Other (if any)">
-          <Input
-            placeholder="Specify other reason"
-            value={formData.enrollmentOther}
-            onChange={(e) => handleChange("enrollmentOther", e.target.value)}
-          />
-        </Form.Item>
-        <Divider orientation="left">4. Current Symptoms & Medications</Divider>
-
-        <Form.Item label="Current Symptoms or Concerns">
-          <Input.TextArea
-            rows={4}
-            value={formData.symptoms}
-            onChange={(e) => handleChange("symptoms", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Medications">
-          <Button
-            onClick={() =>
-              handleChange("medications", [
-                ...formData.medications,
-                { name: "", dose: "", frequency: "", reason: "" },
-              ])
-            }
-          >
-            Add Medication
-          </Button>
-          {formData.medications.map((med, index) => (
-            <div key={index} style={{ marginTop: 12 }}>
-              <Input
-                placeholder="Name"
-                value={med.name}
-                onChange={(e) => {
-                  const updated = [...formData.medications];
-                  updated[index].name = e.target.value;
-                  handleChange("medications", updated);
-                }}
-                style={{ marginBottom: 8 }}
-              />
-              <Input
-                placeholder="Dose"
-                value={med.dose}
-                onChange={(e) => {
-                  const updated = [...formData.medications];
-                  updated[index].dose = e.target.value;
-                  handleChange("medications", updated);
-                }}
-                style={{ marginBottom: 8 }}
-              />
-              <Input
-                placeholder="Frequency"
-                value={med.frequency}
-                onChange={(e) => {
-                  const updated = [...formData.medications];
-                  updated[index].frequency = e.target.value;
-                  handleChange("medications", updated);
-                }}
-                style={{ marginBottom: 8 }}
-              />
-              <Input
-                placeholder="Reason"
-                value={med.reason}
-                onChange={(e) => {
-                  const updated = [...formData.medications];
-                  updated[index].reason = e.target.value;
-                  handleChange("medications", updated);
-                }}
-              />
-            </div>
-          ))}
-        </Form.Item>
-
-        <Form.Item label="Any Issues With Taking Medications?">
-          <Select
-            options={yesNoOptions}
-            value={formData.takingMedsIssues}
-            onChange={(val) => handleChange("takingMedsIssues", val)}
-          />
-        </Form.Item>
-
-        {formData.takingMedsIssues && (
-          <Form.Item label="If Yes, Please Explain">
-            <Input.TextArea
-              rows={3}
-              value={formData.takingMedsExplain}
-              onChange={(e) =>
-                handleChange("takingMedsExplain", e.target.value)
-              }
-            />
-          </Form.Item>
-        )}
-
-        <Divider orientation="left">5. Allergies</Divider>
-
-        <Form.Item>
-          <Checkbox
-            checked={!formData.allergies.known}
-            onChange={(e) =>
-              handleChange("allergies", {
-                ...formData.allergies,
-                known: !e.target.checked,
-              })
-            }
-          >
-            No Known Allergies
-          </Checkbox>
-        </Form.Item>
-
-        <Form.Item label="Drug Allergies">
-          <Input
-            value={formData.allergies.drug}
-            onChange={(e) =>
-              handleChange("allergies", {
-                ...formData.allergies,
-                drug: e.target.value,
-              })
-            }
-          />
-        </Form.Item>
-
-        <Form.Item label="Food or Environmental Allergies">
-          <Input
-            value={formData.allergies.food}
-            onChange={(e) =>
-              handleChange("allergies", {
-                ...formData.allergies,
-                food: e.target.value,
-              })
-            }
-          />
-        </Form.Item>
-
-        <Divider orientation="left">
-          6. Functional Status & Daily Living
-        </Divider>
-
-        <Form.Item label="Have You Experienced Falls Recently?">
-          <Select
-            options={yesNoOptions}
-            value={formData.falls}
-            onChange={(val) => handleChange("falls", val)}
-          />
-        </Form.Item>
-
-        {formData.falls && (
-          <Form.Item label="If Yes, How Many Times?">
-            <Input
-              value={formData.fallsCount}
-              onChange={(e) => handleChange("fallsCount", e.target.value)}
-            />
-          </Form.Item>
-        )}
-
-        <Form.Item label="Any Memory Problems?">
-          <Select
-            options={yesNoOptions}
-            value={formData.memoryProblems}
-            onChange={(val) => handleChange("memoryProblems", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Describe Your Daily Routine">
-          <Input.TextArea
-            rows={3}
-            value={formData.routine}
-            onChange={(e) => handleChange("routine", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Diet Preferences">
-          <Input
-            value={formData.diet}
-            onChange={(e) => handleChange("diet", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Sleep Quality">
-          <Select
-            value={formData.sleep}
-            onChange={(val) => handleChange("sleep", val)}
-            options={["Good", "Fair", "Poor"].map((s) => ({
-              label: s,
-              value: s,
-            }))}
-          />
-        </Form.Item>
-
-        <Form.Item label="Physical Activity">
-          <Checkbox.Group
-            options={["Walking", "Stretching", "Strength Training", "None"]}
-            value={formData.physicalActivity}
-            onChange={(val) => handleChange("physicalActivity", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Tobacco / Alcohol Use">
-          <Checkbox.Group
-            options={["Tobacco", "Alcohol", "None"]}
-            value={formData.tobaccoAlcoholUse}
-            onChange={(val) => handleChange("tobaccoAlcoholUse", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Pain Level">
-          <Select
-            options={painLevels.map((p) => ({ label: p, value: p }))}
-            value={formData.painLevel}
-            onChange={(val) => handleChange("painLevel", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Pain Location">
-          <Input
-            value={formData.painLocation}
-            onChange={(e) => handleChange("painLocation", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Emotional Health">
-          <Checkbox.Group
-            options={emotionalStates}
-            value={formData.emotionalHealth}
-            onChange={(val) => handleChange("emotionalHealth", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Spiritual Needs">
-          <Input.TextArea
-            rows={2}
-            value={formData.spiritualNeeds}
-            onChange={(e) => handleChange("spiritualNeeds", e.target.value)}
-          />
-        </Form.Item>
-
-        <Divider orientation="left">7. Functional & Cognitive Status</Divider>
-
-        <Form.Item label="Can the patient independently do the following?">
-          {[
-            "Bathe",
-            "Dress",
-            "Eat / Feed Self",
-            "Walk / Use Assistive Device",
-            "Use Bathroom",
-            "Transfer Between Daily Activities",
-            "Manage Finances / Meds",
-          ].map((task) => (
-            <Form.Item label={task} key={task}>
-              <Select
-                value={formData.functionalStatus[task]}
-                onChange={(val) =>
-                  handleChange("functionalStatus", {
-                    ...formData.functionalStatus,
-                    [task]: val,
-                  })
-                }
-                options={[
-                  { label: "Yes", value: "Yes" },
-                  { label: "Needs Help", value: "Needs Help" },
-                  { label: "Cannot Do", value: "Cannot Do" },
-                ]}
-              />
-            </Form.Item>
-          ))}
-        </Form.Item>
-
-        <Form.Item label="Any Falls in the Last 6 Months?">
-          <Select
-            options={yesNoOptions}
-            value={formData.falls}
-            onChange={(val) => handleChange("falls", val)}
-          />
-        </Form.Item>
-
-        {formData.falls && (
-          <Form.Item label="If Yes, How Many?">
-            <Input
-              value={formData.fallsCount}
-              onChange={(e) => handleChange("fallsCount", e.target.value)}
-            />
-          </Form.Item>
-        )}
-
-        <Form.Item label="Memory Problems Noted?">
-          <Select
-            options={yesNoOptions}
-            value={formData.memoryProblems}
-            onChange={(val) => handleChange("memoryProblems", val)}
-          />
-        </Form.Item>
-
-        <Divider orientation="left">8. Lifestyle and Wellness</Divider>
-
-        <Form.Item label="Typical Daily Routine">
-          <Input.TextArea
-            rows={3}
-            value={formData.routine}
-            onChange={(e) => handleChange("routine", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Dietary Habits / Restrictions">
-          <Input
-            value={formData.diet}
-            onChange={(e) => handleChange("diet", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Sleep Quality">
-          <Select
-            value={formData.sleep}
-            onChange={(val) => handleChange("sleep", val)}
-            options={[
-              { label: "Good", value: "Good" },
-              { label: "Fair", value: "Fair" },
-              { label: "Poor", value: "Poor" },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item label="Physical Activity Level">
-          <Select
-            value={formData.physicalActivityLevel}
-            onChange={(val) => handleChange("physicalActivityLevel", val)}
-            options={[
-              { label: "Active", value: "Active" },
-              { label: "Some Movement", value: "Some Movement" },
-              { label: "Bedbound", value: "Bedbound" },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item label="Tobacco / Alcohol Use">
-          <Select
-            value={formData.tobaccoAlcoholUseLevel}
-            onChange={(val) => handleChange("tobaccoAlcoholUseLevel", val)}
-            options={[
-              { label: "Never", value: "Never" },
-              { label: "Occasionally", value: "Occasionally" },
-              { label: "Regularly", value: "Regularly" },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item label="Pain Complaints">
-          <Input
-            placeholder="If pain, where?"
-            value={formData.painLocation}
-            onChange={(e) => handleChange("painLocation", e.target.value)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Pain Level">
-          <Select
-            value={formData.painLevel}
-            onChange={(val) => handleChange("painLevel", val)}
-            options={painLevels.map((level) => ({
-              label: level,
-              value: level,
-            }))}
-          />
-        </Form.Item>
-
-        {/* Section 9: Social / Emotional / Cultural Considerations */}
-        <Divider orientation="left">
-          9. Social / Emotional / Cultural Considerations
-        </Divider>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(1, 1fr)",
-            gap: "16px",
-            marginBottom: 24,
-          }}
-        >
-          <Form.Item label="Mood & Emotional Health">
-            <Checkbox.Group
-              options={["Happy", "Anxious", "Depressed", "Withdrawn"]}
-              value={formData.emotionalHealth}
-              onChange={(val) => handleChange("emotionalHealth", val)}
-            />
-          </Form.Item>
-
-          <Form.Item label="Spiritual Needs or Beliefs Impacting Care">
-            <Input
-              placeholder="Enter details"
-              value={formData.spiritualNeeds}
-              onChange={(e) => handleChange("spiritualNeeds", e.target.value)}
-            />
-          </Form.Item>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "16px",
-            marginBottom: 24,
-          }}
-        >
-          <Form.Item label="Do They Have a Trusted Person Who Helps Them Make Decisions?">
-            <Radio.Group
-              options={[
-                { label: "Yes", value: true },
-                { label: "No", value: false },
-              ]}
-              value={formData.hasDecisionSupport}
-              onChange={(e) =>
-                handleChange("hasDecisionSupport", e.target.value)
-              }
-            />
-          </Form.Item>
-
-          {formData.hasDecisionSupport && (
-            <Form.Item label="Name of Trusted Person">
-              <Input
-                value={formData.decisionSupportName}
-                onChange={(e) =>
-                  handleChange("decisionSupportName", e.target.value)
-                }
-              />
-            </Form.Item>
-          )}
-        </div>
-
-        {/* Section 10: Goals Of Care & Family Expectations */}
-        <Divider orientation="left">
-          10. Goals Of Care & Family Expectations
-        </Divider>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(1, 1fr)",
-            gap: "16px",
-            marginBottom: 24,
-          }}
-        >
-          <Form.Item label="What Does Your Family Hope To Achieve Through VeriMED?">
-            <Input.TextArea
-              rows={2}
-              value={formData.familyGoals}
-              onChange={(e) => handleChange("familyGoals", e.target.value)}
-            />
-          </Form.Item>
-
-          <Form.Item label="Any Specific Instructions Or Preferences For How Care Is Delivered?">
-            <Input.TextArea
-              rows={2}
-              value={formData.carePreferences}
-              onChange={(e) => handleChange("carePreferences", e.target.value)}
-            />
-          </Form.Item>
-        </div>
-
-        <Form.Item label="Are You Considering Long-Term Membership Or Short-Term Services?">
-          <Radio.Group
-            options={[
+          <Form.Item
+            label="Confirm Password"
+            name="comfirmPassword"
+            dependencies={["password"]}
+            rules={[
               {
-                label: "Long-term Concierge Wellness",
-                value: "Long-term Concierge Wellness",
+                required: true,
+                message: "Please confirm your password!",
               },
-              {
-                label: "Short-Term Recovery Support",
-                value: "Short-Term Recovery Support",
-              },
-              { label: "Not Sure", value: "Not Sure" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      "The two passwords that you entered do not match!"
+                    )
+                  );
+                },
+              }),
             ]}
-            value={formData.membershipIntent}
-            onChange={(e) => handleChange("membershipIntent", e.target.value)}
-          />
-        </Form.Item>
-
-        {/* Section 11: Uploads / Attachments */}
-        <Divider orientation="left">11. Uploads / Attachments</Divider>
-
-        <Form.Item label="Select Attachments to Upload">
-          <Checkbox.Group
-            options={[
-              "Recent lab reports",
-              "Doctor’s notes",
-              "Discharge summary",
-              "Photos of medications",
-              "Health insurance or ID card (if applicable)",
-            ]}
-            value={formData.uploadOptions}
-            onChange={(val) => handleChange("uploadOptions", val)}
-          />
-        </Form.Item>
-
-        <Form.Item label="Upload Attachments">
-          <Upload
-            listType="picture-card"
-            fileList={formData.uploads}
-            onChange={({ fileList }) => handleChange("uploads", fileList)}
           >
-            {formData.uploads.length >= 5 ? null : uploadButton}
-          </Upload>
-        </Form.Item>
+            <Input.Password
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-        <Form.Item
-          name="confirmation"
-          valuePropName="checked"
-          style={{ marginTop: 16 }}
-        >
-          <Checkbox>
-            I confirm that the information provided is true to the best of my
-            knowledge.
-          </Checkbox>
+          <Form.Item label="Address">
+            <Input
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Company Name">
+            <Input
+              value={formData.company}
+              onChange={(e) => handleChange("company", e.target.value)}
+            />
+          </Form.Item>
+        </div>
+
+        <Form.Item label="How Found Us?">
+          <Select
+            value={formData.found_us}
+            onChange={(value) => handleChange("found_us", value)}
+            options={[
+              { label: "Search", value: "Search" },
+              { label: "Social Media", value: "Social Media" },
+              { label: "Friends", value: "Friends" },
+              { label: "Family", value: "Family" },
+              { label: "Other", value: "Other" },
+            ]}
+          />
         </Form.Item>
 
         <div
@@ -1365,7 +645,7 @@ export default function UserManagement() {
             <PrimaryBtn
               type="button"
               onClick={handleSave}
-              name={mode === "edit" ? "Save Changes" : "Add Patient"}
+              name={mode === "edit" ? "Save Changes" : "Add Sponsor"}
             />
           </Space>
         </div>
@@ -1373,25 +653,32 @@ export default function UserManagement() {
     );
   }
 
-  function DoctorForm({ mode, data }) {
-    return <div>Doctor Form ({mode})</div>;
-  }
-
-  function CaretakerForm({ mode = "add", data = {}, onCancel, onSave }) {
+  function DoctorForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
-      profileImage: data.profileImage || null,
-      name: data.name || "",
-      caretakerId: data.caretakerId || "CT-1011", // Read-only ID
-      age: data.age || "",
-      gender: data.gender || "",
-      contact: data.contact || "",
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      email: data.email || "",
       address: data.address || "",
-      patientAssigned: data.patientAssigned || "",
-      doctor: data.doctor || "",
-      plan: data.plan || "Standard",
-      onboardDate: data.onboardDate ? dayjs(data.onboardDate) : null,
-      status: data.status || "Active",
+      password: data.password || "",
+      phone: data.phone || "",
+      license_no: data.license_no || "",
+      city: data.city || "",
+      pincode: data.pincode || "",
+      speciality: data.speciality || "",
+      yr_graduation: data.yr_graduation || "",
+      language: data.language || "",
+      photo: data.photo || "",
     });
+
+    const handleChange = (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = () => {
+      const payload = { ...formData };
+      console.log("Doctor Form Data:", payload);
+      if (onSave) onSave(payload);
+    };
 
     const getBase64 = (file) =>
       new Promise((resolve, reject) => {
@@ -1404,13 +691,13 @@ export default function UserManagement() {
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState("");
     const [fileList, setFileList] = useState(
-      data.profileImage
+      data.photo
         ? [
             {
               uid: "-1",
-              name: "image.png",
+              name: "doctor.png",
               status: "done",
-              url: data.profileImage,
+              url: data.photo,
             },
           ]
         : []
@@ -1424,8 +711,279 @@ export default function UserManagement() {
       setPreviewOpen(true);
     };
 
-    const handleImageChange = ({ fileList: newFileList }) => {
-      setFileList(newFileList.slice(-1));
+    const handleImageChange = async ({ fileList: newFileList }) => {
+      const latest = newFileList.slice(-1);
+      setFileList(latest);
+
+      if (latest.length > 0) {
+        const file = latest[0].originFileObj;
+        if (file) {
+          const base64 = await getBase64(file);
+          handleChange("photo", base64);
+        } else if (latest[0].url) {
+          handleChange("photo", latest[0].url);
+        }
+      } else {
+        handleChange("photo", "");
+      }
+    };
+
+    const uploadButton = (
+      <div style={{ textAlign: "center" }}>
+        <PlusOutlined />
+        <div style={{ marginTop: 8 }}>Upload</div>
+      </div>
+    );
+
+    return (
+      <Form
+        layout="vertical"
+        onFinish={createDoctor(formData)}
+        style={{
+          padding: 16,
+        }}
+      >
+        <Upload
+          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+          listType="picture-card"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleImageChange}
+        >
+          {fileList.length >= 1 ? null : uploadButton}
+        </Upload>
+        <Modal
+          open={previewOpen}
+          footer={null}
+          onCancel={() => setPreviewOpen(false)}
+        >
+          <img alt="preview" style={{ width: "100%" }} src={previewImage} />
+        </Modal>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "16px",
+            marginBottom: 24,
+          }}
+        >
+          <Form.Item label="First Name" required>
+            <Input
+              value={formData.first_name}
+              onChange={(e) => handleChange("first_name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Last Name" required>
+            <Input
+              value={formData.last_name}
+              onChange={(e) => handleChange("last_name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Phone Number">
+            <Input
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Email Address">
+            <Input
+              value={formData.email}
+              type="email"
+              onChange={(e) => handleChange("email", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Password" name="password">
+            <Input.Password
+              value={formData.password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="comfirmPassword"
+            dependencies={["password"]}
+            rules={[
+              {
+                required: true,
+                message: "Please confirm your password!",
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      "The two passwords that you entered do not match!"
+                    )
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
+
+          <Form.Item label="License Number">
+            <Input
+              value={formData.license_no}
+              onChange={(e) => handleChange("license_no", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Speciality">
+            <Input
+              value={formData.speciality}
+              onChange={(e) => handleChange("speciality", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Year of Graduation">
+            <Input
+              value={formData.yr_graduation}
+              onChange={(e) => handleChange("yr_graduation", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="City">
+            <Input
+              value={formData.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Pincode">
+            <Input
+              value={formData.pincode}
+              onChange={(e) => handleChange("pincode", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Address">
+            <Input
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Languages Known">
+            <Select
+              mode="multiple"
+              placeholder="Select languages"
+              value={formData.language || []}
+              onChange={(value) => handleChange("language", value)}
+              options={[
+                { label: "English", value: "English" },
+                { label: "French", value: "French" },
+                { label: "Fulfulde", value: "Fulfulde" },
+                { label: "Ewondo", value: "Ewondo" },
+                { label: "Duala", value: "Duala" },
+                { label: "Bakweri", value: "Bakweri" },
+                { label: "Bassa", value: "Bassa" },
+                { label: "Maka", value: "Maka" },
+                { label: "Tikar", value: "Tikar" },
+                { label: "Arabic", value: "Arabic" },
+              ]}
+            />
+          </Form.Item>
+        </div>
+        <div
+          style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}
+        >
+          <Space>
+            <SecondaryBtn name="cancel" onClick={onCancel} />
+            <PrimaryBtn
+              type="button"
+              onClick={handleSave}
+              name={mode === "edit" ? "Save Changes" : "Add Doctor"}
+            />
+          </Space>
+        </div>
+      </Form>
+    );
+  }
+
+  function CaretakerForm({ mode = "add", data = {}, onCancel, onSave }) {
+    const [formData, setFormData] = useState({
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      email: data.email || "",
+      address: data.address || "",
+      password: data.password || "",
+      phone: data.phone || "",
+      profileImage: data.profileImage || null,
+      name: data.name || "",
+      caretakerId: data.caretakerId || "CT-1011",
+      age: data.age || "",
+      gender: data.gender || "",
+      patientAssigned: data.patientAssigned || "",
+      doctor: data.doctor || "",
+      plan: data.plan || "Standard",
+      onboardDate: data.onboardDate ? dayjs(data.onboardDate) : null,
+      credentials: data.credentials || "",
+      yr_graduation: data.yr_graduation || "",
+      skillset: data.skillset || [],
+      status: data.status || "Active",
+    });
+
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState("");
+    // inside CaretakerForm
+
+    const [fileList, setFileList] = useState(
+      data.profileImage
+        ? [
+            {
+              uid: "-1",
+              name: "caretaker.png",
+              status: "done",
+              url: data.profileImage,
+            },
+          ]
+        : []
+    );
+
+    const getBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+
+    const handlePreview = async (file) => {
+      if (!file.url && !file.preview) {
+        file.preview = await getBase64(file.originFileObj);
+      }
+      setPreviewImage(file.url || file.preview);
+      setPreviewOpen(true);
+    };
+
+    const handleImageChange = async ({ fileList: newFileList }) => {
+      const latest = newFileList.slice(-1);
+      setFileList(latest);
+
+      if (latest.length > 0) {
+        const file = latest[0].originFileObj;
+        if (file) {
+          const base64 = await getBase64(file);
+          handleChange("photo", base64); // store photo in formData
+        } else if (latest[0].url) {
+          handleChange("photo", latest[0].url);
+        }
+      } else {
+        handleChange("photo", "");
+      }
     };
 
     const uploadButton = (
@@ -1445,7 +1003,7 @@ export default function UserManagement() {
     };
 
     return (
-      <Form layout="vertical">
+      <Form layout="vertical" onFinish={createCareTaker}>
         {/* Profile Image Upload and Preview Logic */}
         <Upload
           action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
@@ -1474,10 +1032,71 @@ export default function UserManagement() {
             marginTop: 16,
           }}
         >
-          <Form.Item label={<span style={labelStyle}>Name</span>}>
+          <Form.Item label="First Name" required>
             <Input
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              value={formData.first_name}
+              onChange={(e) => handleChange("first_name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Last Name" required>
+            <Input
+              value={formData.last_name}
+              onChange={(e) => handleChange("last_name", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Phone Number">
+            <Input
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Email Address">
+            <Input
+              value={formData.email}
+              type="email"
+              onChange={(e) => handleChange("email", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Password" name="password">
+            <Input.Password
+              value={formData.password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="comfirmPassword"
+            dependencies={["password"]}
+            rules={[
+              {
+                required: true,
+                message: "Please confirm your password!",
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      "The two passwords that you entered do not match!"
+                    )
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
             />
           </Form.Item>
 
@@ -1505,14 +1124,6 @@ export default function UserManagement() {
             />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Contact</span>}>
-            <Input
-              value={formData.contact}
-              onChange={(e) => handleChange("contact", e.target.value)}
-              placeholder="e.g., +1234567890"
-            />
-          </Form.Item>
-
           <Form.Item label={<span style={labelStyle}>Address</span>}>
             <Input
               value={formData.address}
@@ -1521,28 +1132,77 @@ export default function UserManagement() {
           </Form.Item>
 
           <Form.Item label={<span style={labelStyle}>Patient Assigned</span>}>
-            <Input
+            <Select
+              placeholder="Select Patient"
               value={formData.patientAssigned}
-              onChange={(e) => handleChange("patientAssigned", e.target.value)}
-              placeholder="e.g., PT-2094"
+              onChange={(value) => handleChange("patientAssigned", value)}
+              options={[
+                { label: "Michael N. (PT-2094)", value: "PT-2094" },
+                { label: "Grace N. (PT-2095)", value: "PT-2095" },
+                { label: "Samuel L. (PT-2096)", value: "PT-2096" },
+              ]}
             />
           </Form.Item>
 
           <Form.Item label={<span style={labelStyle}>Doctor</span>}>
-            <Input
+            <Select
+              placeholder="Select Doctor"
               value={formData.doctor}
-              onChange={(e) => handleChange("doctor", e.target.value)}
+              onChange={(value) => handleChange("doctor", value)}
+              options={[
+                { label: "Dr. Paul M.", value: "Dr. Paul M." },
+                { label: "Dr. Linda S.", value: "Dr. Linda S." },
+                { label: "Dr. John D.", value: "Dr. John D." },
+              ]}
             />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Plan</span>}>
+          <Form.Item label={<span style={labelStyle}>Credentials</span>}>
             <Select
-              value={formData.plan}
-              onChange={(value) => handleChange("plan", value)}
+              value={formData.credentials}
+              onChange={(value) => handleChange("credentials", value)}
               options={[
-                { label: "Basic", value: "Basic" },
-                { label: "Standard", value: "Standard" },
-                { label: "Premium", value: "Premium" },
+                { label: "Nurse", value: "Nurse" },
+                { label: "Therapist", value: "Therapist" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Year Of Graduation</span>}>
+            <Input
+              value={formData.yr_graduation}
+              onChange={(e) => handleChange("yr_graduation", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Skill Set">
+            <Select
+              mode="multiple"
+              placeholder="Select"
+              value={formData.skillset || []}
+              onChange={(value) => handleChange("skillset", value)}
+              options={[
+                { label: "Patient Care", value: "Patient Care" },
+                { label: "First Aid", value: "First Aid" },
+                {
+                  label: "Medication Management",
+                  value: "Medication Management",
+                },
+                { label: "Elderly Support", value: "Elderly Support" },
+                {
+                  label: "Physiotherapy Assistance",
+                  value: "Physiotherapy Assistance",
+                },
+                { label: "Meal Preparation", value: "Meal Preparation" },
+                { label: "Hygiene Maintenance", value: "Hygiene Maintenance" },
+                { label: "Vitals Monitoring", value: "Vitals Monitoring" },
+                { label: "Companionship", value: "Companionship" },
+                { label: "Basic Nursing", value: "Basic Nursing" },
+                { label: "Housekeeping", value: "Housekeeping" },
+                { label: "Mobility Assistance", value: "Mobility Assistance" },
+                { label: "Wound Dressing", value: "Wound Dressing" },
+                { label: "CPR Certified", value: "CPR Certified" },
+                { label: "Emergency Response", value: "Emergency Response" },
               ]}
             />
           </Form.Item>
@@ -1567,8 +1227,6 @@ export default function UserManagement() {
               ]}
             />
           </Form.Item>
-          {/* Filler item to maintain the grid structure if necessary */}
-          <Form.Item></Form.Item>
         </div>
 
         {/* Action Buttons */}
@@ -1590,16 +1248,20 @@ export default function UserManagement() {
 
   function PatientForm({ mode = "add", data = {}, onCancel, onSave }) {
     const [formData, setFormData] = useState({
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      email: data.email || "",
+      address: data.address || "",
+      quarter: data.quarter || "",
+      password: data.password || "",
+      phone: data.phone || "",
       profileImage: data.profileImage || null,
-      name: data.name || "",
-      patientId: data.patientId || "PT-2094",
       age: data.age || "",
       gender: data.gender || "",
       condition: data.condition || "",
       caretaker: data.caretaker || "",
+      family_caretaker: data.family_caretaker || "",
       sponsor: data.sponsor || "",
-      sponsorId: data.sponsorId || "",
-      sponsorContact: data.sponsorContact || "",
       doctor: data.doctor || "",
       membershipPlan: data.membershipPlan || "Premium",
       enrolmentDate: data.enrolmentDate ? dayjs(data.enrolmentDate) : null,
@@ -1659,7 +1321,7 @@ export default function UserManagement() {
     };
 
     return (
-      <Form layout="vertical">
+      <Form layout="vertical" onFinish={createPatient}>
         <Upload
           action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
           listType="picture-card"
@@ -1686,21 +1348,85 @@ export default function UserManagement() {
             marginTop: 16,
           }}
         >
-          <Form.Item label={<span style={labelStyle}>Name</span>}>
+          <Form.Item label="First Name" required>
             <Input
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              value={formData.first_name}
+              onChange={(e) => handleChange("first_name", e.target.value)}
             />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Patient ID</span>}>
-            <Input value={formData.patientId} disabled />
+          <Form.Item label="Last Name" required>
+            <Input
+              value={formData.last_name}
+              onChange={(e) => handleChange("last_name", e.target.value)}
+            />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Age</span>}>
+          <Form.Item label="Phone Number">
             <Input
-              value={formData.age}
-              onChange={(e) => handleChange("age", e.target.value)}
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Email Address">
+            <Input
+              value={formData.email}
+              type="email"
+              onChange={(e) => handleChange("email", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Address">
+            <Input
+              value={formData.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Quarter/Neighborhood">
+            <Input
+              value={formData.quarter}
+              onChange={(e) => handleChange("quarter", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Password" name="password">
+            <Input.Password
+              value={formData.password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="comfirmPassword"
+            dependencies={["password"]}
+            rules={[
+              {
+                required: true,
+                message: "Please confirm your password!",
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      "The two passwords that you entered do not match!"
+                    )
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
             />
           </Form.Item>
 
@@ -1723,38 +1449,50 @@ export default function UserManagement() {
             />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Care Taker</span>}>
+          <Form.Item label={<span style={labelStyle}>Family Caretaker</span>}>
             <Input
+              value={formData.family_caretaker}
+              onChange={(e) => handleChange("family_caretaker", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label={<span style={labelStyle}>Care Taker</span>}>
+            <Select
+              placeholder="Select Caretaker"
               value={formData.caretaker}
-              onChange={(e) => handleChange("caretaker", e.target.value)}
+              onChange={(value) => handleChange("caretaker", value)}
+              options={[
+                { label: "Dr. Paul M.", value: "Dr. Paul M." },
+                { label: "Dr. Linda S.", value: "Dr. Linda S." },
+                { label: "Dr. John D.", value: "Dr. John D." },
+              ]}
             />
           </Form.Item>
 
           <Form.Item label={<span style={labelStyle}>Doctor</span>}>
-            <Input
+            <Select
+              placeholder="Select Doctor"
               value={formData.doctor}
-              onChange={(e) => handleChange("doctor", e.target.value)}
+              onChange={(value) => handleChange("doctor", value)}
+              options={[
+                { label: "Dr. Paul M.", value: "Dr. Paul M." },
+                { label: "Dr. Linda S.", value: "Dr. Linda S." },
+                { label: "Dr. John D.", value: "Dr. John D." },
+              ]}
             />
           </Form.Item>
 
-          <Form.Item label={<span style={labelStyle}>Sponsor Name</span>}>
-            <Input
-              value={formData.sponsor}
-              onChange={(e) => handleChange("sponsor", e.target.value)}
-            />
-          </Form.Item>
-
-          <Form.Item label={<span style={labelStyle}>Sponsor ID</span>}>
-            <Input
-              value={formData.sponsorId}
-              onChange={(e) => handleChange("sponsorId", e.target.value)}
-            />
-          </Form.Item>
-
-          <Form.Item label={<span style={labelStyle}>Sponsor Contact</span>}>
-            <Input
-              value={formData.sponsorContact}
-              onChange={(e) => handleChange("sponsorContact", e.target.value)}
+          <Form.Item label={<span style={labelStyle}>Sponsor</span>}>
+            <Select
+              placeholder="Select Sponsor"
+              mode="multiple"
+              value={formData.sponsor || []}
+              onChange={(value) => handleChange("sponsor", value)}
+              options={[
+                { label: "Dr. Paul M.", value: "Dr. Paul M." },
+                { label: "Dr. Linda S.", value: "Dr. Linda S." },
+                { label: "Dr. John D.", value: "Dr. John D." },
+              ]}
             />
           </Form.Item>
 
@@ -1774,6 +1512,7 @@ export default function UserManagement() {
             <DatePicker
               value={formData.enrolmentDate}
               onChange={(date) => handleChange("enrolmentDate", date)}
+              style={{ width: "100%" }}
               format="MMM DD, YYYY"
             />
           </Form.Item>
@@ -1806,6 +1545,7 @@ export default function UserManagement() {
       </Form>
     );
   }
+
   const renderDrawerContent = () => {
     if (activeTab === "sponsors" && selectedSponsor)
       return (
