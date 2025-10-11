@@ -18,6 +18,7 @@ import {
   Spin,
   Modal,
   Checkbox,
+  Divider,
 } from "antd";
 import {
   EllipsisOutlined,
@@ -1261,11 +1262,87 @@ export default function UserManagement() {
       condition: data.condition || "",
       caretaker: data.caretaker || "",
       family_caretaker: data.family_caretaker || "",
-      sponsor: data.sponsor || "",
+      sponsor: data.sponsor || [],
       doctor: data.doctor || "",
       membershipPlan: data.membershipPlan || "Premium",
       enrolmentDate: data.enrolmentDate ? dayjs(data.enrolmentDate) : null,
       status: data.status || "Active",
+
+      // Patient Information
+      primaryLanguages: data.primaryLanguages || [],
+      religion: data.religion || "",
+      escalateToPhysician: data.escalateToPhysician || "",
+
+      // Emergency Contacts
+      emergencyName: data.emergencyName || "",
+      emergencyRelation: data.emergencyRelation || "",
+      emergencyCountry: data.emergencyCountry || "",
+      emergencyPhone: data.emergencyPhone || "",
+      emergencyEmail: data.emergencyEmail || "",
+      localContactName: data.localContactName || "",
+      localContactRelation: data.localContactRelation || "",
+      localContactPhone: data.localContactPhone || "",
+
+      // Enrollment
+      enrollmentReason: data.enrollmentReason || [],
+      additionalComments: data.additionalComments || "",
+
+      // Medical History
+      diagnosedConditions: data.diagnosedConditions || [],
+      cancerType: data.cancerType || "",
+      otherConditions: data.otherConditions || "",
+      recentDoctors: data.recentDoctors || "",
+      majorSurgeries: data.majorSurgeries || "",
+      currentSymptoms: data.currentSymptoms || "",
+
+      // Medications
+      medicationName: data.medicationName || "",
+      medicationDose: data.medicationDose || "",
+      medicationFrequency: data.medicationFrequency || "",
+      medicationReason: data.medicationReason || "",
+      medicationIssues: data.medicationIssues || "",
+      medicationIssueExplanation: data.medicationIssueExplanation || "",
+
+      // Allergies
+      noAllergies: data.noAllergies || "",
+      drugAllergies: data.drugAllergies || "",
+      foodAllergies: data.foodAllergies || "",
+
+      // Functional Status
+      recentFalls: data.recentFalls || "",
+      fallCount: data.fallCount || "",
+      memoryProblems: data.memoryProblems || "",
+      canBathe: data.canBathe || "",
+      canDress: data.canDress || "",
+      canEatFeedSelf: data.canEatFeedSelf || "",
+      canWalkUseAssistiveDevice: data.canWalkUseAssistiveDevice || "",
+      canUseBathroom: data.canUseBathroom || "",
+      canRememberDailyActivities: data.canRememberDailyActivities || "",
+      canManageFinancesMedications: data.canManageFinancesMedications || "",
+
+      // Lifestyle
+      dailyRoutine: data.dailyRoutine || "",
+      dietaryHabits: data.dietaryHabits || "",
+      sleepQuality: data.sleepQuality || "",
+      activityLevel: data.activityLevel || "",
+      tobaccoAlcoholUse: data.tobaccoAlcoholUse || "",
+      painLevel: data.painLevel || "",
+      painLocation: data.painLocation || "",
+
+      // Social/Emotional
+      mood: data.mood || "",
+      spiritualNeeds: data.spiritualNeeds || "",
+      trustedPersonExists: data.trustedPersonExists || "",
+      trustedPersonName: data.trustedPersonName || "",
+
+      // Goals
+      familyGoals: data.familyGoals || "",
+      carePreferences: data.carePreferences || "",
+      preferredCareType: data.preferredCareType || "",
+
+      // Uploads
+      uploadedDocTypes: data.uploadedDocTypes || [],
+      uploadedFiles: data.uploadedFiles || [],
     });
 
     const getBase64 = (file) =>
@@ -1283,7 +1360,7 @@ export default function UserManagement() {
         ? [
             {
               uid: "-1",
-              name: "image.png",
+              name: "profile.png",
               status: "done",
               url: data.profileImage,
             },
@@ -1299,9 +1376,29 @@ export default function UserManagement() {
       setPreviewOpen(true);
     };
 
-    const handleImageChange = ({ fileList: newFileList }) => {
-      // Keep only the last file to allow single image upload
-      setFileList(newFileList.slice(-1));
+    const handleImageChange = async ({ fileList: newFileList }) => {
+      setFileList(newFileList.slice(-1)); // only 1 image
+      const lastFile = newFileList[0];
+      if (lastFile) {
+        const base64 = await getBase64(lastFile.originFileObj);
+        setFormData((prev) => ({
+          ...prev,
+          profileImage: base64,
+        }));
+      }
+    };
+
+    const handleChange = (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = () => {
+      const payload = {
+        ...formData,
+        uploadedFiles: fileList.map((f) => f.url || f.thumbUrl || f.name),
+      };
+      console.log("🩺 Final Patient Payload:", payload);
+      if (onSave) onSave(payload);
     };
 
     const uploadButton = (
@@ -1310,19 +1407,9 @@ export default function UserManagement() {
         <div style={{ marginTop: 8 }}>Upload</div>
       </div>
     );
-
-    const handleChange = (field, value) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleSave = () => {
-      console.log("Patient form data:", formData);
-      if (onSave) onSave(formData);
-    };
-
     return (
       <Form layout="vertical" onFinish={createPatient}>
-        <Upload
+        {/* <Upload
           action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
           listType="picture-card"
           fileList={fileList}
@@ -1338,7 +1425,7 @@ export default function UserManagement() {
           onCancel={() => setPreviewOpen(false)}
         >
           <img alt="preview" style={{ width: "100%" }} src={previewImage} />
-        </Modal>
+        </Modal> */}
 
         <div
           style={{
@@ -1516,19 +1603,618 @@ export default function UserManagement() {
               format="MMM DD, YYYY"
             />
           </Form.Item>
+        </div>
 
-          <Form.Item label={<span style={labelStyle}>Status</span>}>
+        {/* ============================
+  1. PATIENT INFORMATION
+============================ */}
+        <Divider orientation="left">Patient Information</Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Primary Language(s) Spoken">
             <Select
-              value={formData.status}
-              onChange={(value) => handleChange("status", value)}
+              mode="multiple"
+              placeholder="Select languages"
+              value={formData.primaryLanguages || []}
+              onChange={(value) => handleChange("primaryLanguages", value)}
               options={[
-                { label: "Active", value: "Active" },
-                { label: "Inactive", value: "Inactive" },
-                { label: "Pending", value: "Pending" },
+                { label: "English", value: "English" },
+                { label: "French", value: "French" },
+                { label: "Fulfulde", value: "Fulfulde" },
+                { label: "Ewondo", value: "Ewondo" },
+                { label: "Duala", value: "Duala" },
+                { label: "Arabic", value: "Arabic" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Religion / Spiritual Practices">
+            <Input
+              value={formData.religion}
+              onChange={(e) => handleChange("religion", e.target.value)}
+              placeholder="e.g., Christianity, Islam, Traditional"
+            />
+          </Form.Item>
+
+          <Form.Item label="Escalate to Physician?">
+            <Select
+              placeholder="Select"
+              value={formData.escalateToPhysician}
+              onChange={(value) => handleChange("escalateToPhysician", value)}
+              options={[
+                { label: "Alone", value: "Alone" },
+                { label: "With Spouse", value: "With Spouse" },
+                { label: "With Children", value: "With Children" },
+                { label: "With Caregiver", value: "With Caregiver" },
+                {
+                  label: "With Another Relative",
+                  value: "With Another Relative",
+                },
               ]}
             />
           </Form.Item>
         </div>
+
+        {/* ============================
+  2. EMERGENCY & FAMILY CONTACT
+============================ */}
+        <Divider orientation="left">Emergency & Family Contact</Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Contact Name">
+            <Input
+              value={formData.emergencyName}
+              onChange={(e) => handleChange("emergencyName", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Relationship to Patient">
+            <Input
+              value={formData.emergencyRelation}
+              onChange={(e) =>
+                handleChange("emergencyRelation", e.target.value)
+              }
+            />
+          </Form.Item>
+          <Form.Item label="Country of Residence">
+            <Input
+              value={formData.emergencyCountry}
+              onChange={(e) => handleChange("emergencyCountry", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Phone / WhatsApp">
+            <Input
+              value={formData.emergencyPhone}
+              onChange={(e) => handleChange("emergencyPhone", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Email">
+            <Input
+              value={formData.emergencyEmail}
+              onChange={(e) => handleChange("emergencyEmail", e.target.value)}
+            />
+          </Form.Item>
+
+          {/* Local Contact */}
+          <Form.Item label="Local Contact Name (in Cameroon)">
+            <Input
+              value={formData.localContactName}
+              onChange={(e) => handleChange("localContactName", e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Local Contact Relationship">
+            <Input
+              value={formData.localContactRelation}
+              onChange={(e) =>
+                handleChange("localContactRelation", e.target.value)
+              }
+            />
+          </Form.Item>
+          <Form.Item label="Local Contact Phone / WhatsApp">
+            <Input
+              value={formData.localContactPhone}
+              onChange={(e) =>
+                handleChange("localContactPhone", e.target.value)
+              }
+            />
+          </Form.Item>
+        </div>
+
+        {/* ============================
+  3. REASON FOR ENROLLMENT
+============================ */}
+        <Divider orientation="left">Reason for Enrollment in VeriMED</Divider>
+
+        <Form.Item label="Reason for Enrollment">
+          <Select
+            mode="multiple"
+            placeholder="Select reason(s)"
+            value={formData.enrollmentReason || []}
+            onChange={(value) => handleChange("enrollmentReason", value)}
+            options={[
+              {
+                label: "Ongoing Primary Medical Care",
+                value: "Ongoing Primary Medical Care",
+              },
+              {
+                label: "Post-Hospital Follow-Up",
+                value: "Post-Hospital Follow-Up",
+              },
+              {
+                label: "Nursing or Rehabilitation at Home",
+                value: "Nursing or Rehabilitation at Home",
+              },
+              {
+                label: "Routine Wellness and Aging Support",
+                value: "Routine Wellness and Aging Support",
+              },
+              {
+                label: "Memory or Dementia Support",
+                value: "Memory or Dementia Support",
+              },
+              {
+                label: "Hospice / Palliative Support",
+                value: "Hospice / Palliative Support",
+              },
+            ]}
+          />
+        </Form.Item>
+
+        <Form.Item label="Additional Comments">
+          <Input.TextArea
+            rows={3}
+            value={formData.additionalComments}
+            onChange={(e) => handleChange("additionalComments", e.target.value)}
+          />
+        </Form.Item>
+
+        <Divider orientation="left">Medical History</Divider>
+
+        <Form.Item label="Diagnosed Conditions (check all that apply)">
+          <Select
+            mode="multiple"
+            placeholder="Select conditions"
+            value={formData.diagnosedConditions || []}
+            onChange={(value) => handleChange("diagnosedConditions", value)}
+            options={[
+              { label: "Hypertension", value: "Hypertension" },
+              { label: "Diabetes", value: "Diabetes" },
+              { label: "Heart Disease", value: "Heart Disease" },
+              {
+                label: "Memory Loss / Dementia",
+                value: "Memory Loss / Dementia",
+              },
+              { label: "Arthritis", value: "Arthritis" },
+              {
+                label: "Vision or Hearing Loss",
+                value: "Vision or Hearing Loss",
+              },
+              { label: "Parkinson’s", value: "Parkinson’s" },
+              { label: "Kidney Disease", value: "Kidney Disease" },
+              {
+                label: "Respiratory Conditions",
+                value: "Respiratory Conditions",
+              },
+              { label: "Cancer", value: "Cancer" },
+              { label: "Psychiatric Illness", value: "Psychiatric Illness" },
+            ]}
+          />
+        </Form.Item>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Cancer (Type)">
+            <Input
+              value={formData.cancerType}
+              onChange={(e) => handleChange("cancerType", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Other (please list)">
+            <Input
+              value={formData.otherConditions}
+              onChange={(e) => handleChange("otherConditions", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Doctor(s) Providing Recent Care (Name & Phone)">
+            <Input
+              value={formData.recentDoctors}
+              onChange={(e) => handleChange("recentDoctors", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Major Surgeries or Hospitalizations (include year)">
+            <Input.TextArea
+              rows={2}
+              value={formData.majorSurgeries}
+              onChange={(e) => handleChange("majorSurgeries", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Current Symptoms or Concerns">
+            <Input.TextArea
+              rows={2}
+              value={formData.currentSymptoms}
+              onChange={(e) => handleChange("currentSymptoms", e.target.value)}
+            />
+          </Form.Item>
+        </div>
+        <Divider orientation="left">Medications</Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Medication Name">
+            <Input
+              value={formData.medicationName}
+              onChange={(e) => handleChange("medicationName", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Dose">
+            <Input
+              value={formData.medicationDose}
+              onChange={(e) => handleChange("medicationDose", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Frequency">
+            <Input
+              value={formData.medicationFrequency}
+              onChange={(e) =>
+                handleChange("medicationFrequency", e.target.value)
+              }
+            />
+          </Form.Item>
+
+          <Form.Item label="Reason">
+            <Input
+              value={formData.medicationReason}
+              onChange={(e) => handleChange("medicationReason", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Any Issues With Taking Medications?">
+            <Select
+              placeholder="Select"
+              value={formData.medicationIssues}
+              onChange={(value) => handleChange("medicationIssues", value)}
+              options={[
+                { label: "Yes", value: "Yes" },
+                { label: "No", value: "No" },
+              ]}
+            />
+          </Form.Item>
+
+          {formData.medicationIssues === "Yes" && (
+            <Form.Item label="If Yes, Explain">
+              <Input.TextArea
+                rows={2}
+                value={formData.medicationIssueExplanation}
+                onChange={(e) =>
+                  handleChange("medicationIssueExplanation", e.target.value)
+                }
+              />
+            </Form.Item>
+          )}
+        </div>
+        <Divider orientation="left">Allergies</Divider>
+
+        <Form.Item label="No Known Allergies?">
+          <Select
+            value={formData.noAllergies}
+            onChange={(value) => handleChange("noAllergies", value)}
+            options={[
+              { label: "Yes", value: "Yes" },
+              { label: "No", value: "No" },
+            ]}
+          />
+        </Form.Item>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Drug Allergies">
+            <Input
+              value={formData.drugAllergies}
+              onChange={(e) => handleChange("drugAllergies", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Food or Environmental Allergies">
+            <Input
+              value={formData.foodAllergies}
+              onChange={(e) => handleChange("foodAllergies", e.target.value)}
+            />
+          </Form.Item>
+        </div>
+
+        <Divider orientation="left">Functional & Cognitive Status</Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          {[
+            "Bathe",
+            "Dress",
+            "Eat / Feed Self",
+            "Walk / Use Assistive Device",
+            "Use Bathroom",
+            "Remember Daily Activities",
+            "Manage Finances / Medications",
+          ].map((activity) => (
+            <Form.Item key={activity} label={`Can the patient ${activity}?`}>
+              <Select
+                value={formData[`can${activity.replace(/[^a-z]/gi, "")}`]}
+                onChange={(value) =>
+                  handleChange(`can${activity.replace(/[^a-z]/gi, "")}`, value)
+                }
+                options={[
+                  { label: "Yes", value: "Yes" },
+                  { label: "Needs Help", value: "Needs Help" },
+                  { label: "Cannot Do", value: "Cannot Do" },
+                ]}
+              />
+            </Form.Item>
+          ))}
+
+          <Form.Item label="Any Falls in the Last 6 Months?">
+            <Select
+              value={formData.recentFalls}
+              onChange={(value) => handleChange("recentFalls", value)}
+              options={[
+                { label: "Yes", value: "Yes" },
+                { label: "No", value: "No" },
+              ]}
+            />
+          </Form.Item>
+
+          {formData.recentFalls === "Yes" && (
+            <Form.Item label="If Yes, How Many?">
+              <Input
+                value={formData.fallCount}
+                onChange={(e) => handleChange("fallCount", e.target.value)}
+              />
+            </Form.Item>
+          )}
+
+          <Form.Item label="Memory Problems Noted?">
+            <Select
+              value={formData.memoryProblems}
+              onChange={(value) => handleChange("memoryProblems", value)}
+              options={[
+                { label: "Yes", value: "Yes" },
+                { label: "No", value: "No" },
+              ]}
+            />
+          </Form.Item>
+        </div>
+
+        <Divider orientation="left">Lifestyle and Wellness</Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Typical Daily Routine">
+            <Input.TextArea
+              rows={2}
+              value={formData.dailyRoutine}
+              onChange={(e) => handleChange("dailyRoutine", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Dietary Habits / Restrictions">
+            <Input.TextArea
+              rows={2}
+              value={formData.dietaryHabits}
+              onChange={(e) => handleChange("dietaryHabits", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Sleep Quality">
+            <Select
+              value={formData.sleepQuality}
+              onChange={(value) => handleChange("sleepQuality", value)}
+              options={[
+                { label: "Good", value: "Good" },
+                { label: "Fair", value: "Fair" },
+                { label: "Poor", value: "Poor" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Physical Activity Level">
+            <Select
+              value={formData.activityLevel}
+              onChange={(value) => handleChange("activityLevel", value)}
+              options={[
+                { label: "Active", value: "Active" },
+                { label: "Some", value: "Some" },
+                { label: "None", value: "None" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Tobacco / Alcohol Use">
+            <Select
+              value={formData.tobaccoAlcoholUse}
+              onChange={(value) => handleChange("tobaccoAlcoholUse", value)}
+              options={[
+                { label: "Never", value: "Never" },
+                { label: "Occasionally", value: "Occasionally" },
+                { label: "Regularly", value: "Regularly" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Pain Complaints">
+            <Select
+              value={formData.painLevel}
+              onChange={(value) => handleChange("painLevel", value)}
+              options={[
+                { label: "None", value: "None" },
+                { label: "Mild", value: "Mild" },
+                { label: "Moderate", value: "Moderate" },
+                { label: "Severe", value: "Severe" },
+              ]}
+            />
+          </Form.Item>
+
+          {formData.painLevel !== "None" && (
+            <Form.Item label="If Pain, Where?">
+              <Input
+                value={formData.painLocation}
+                onChange={(e) => handleChange("painLocation", e.target.value)}
+              />
+            </Form.Item>
+          )}
+        </div>
+
+        <Divider orientation="left">
+          Social / Emotional / Cultural Considerations
+        </Divider>
+
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item label="Mood & Emotional Health">
+            <Select
+              value={formData.mood}
+              onChange={(value) => handleChange("mood", value)}
+              options={[
+                { label: "Happy", value: "Happy" },
+                { label: "Anxious", value: "Anxious" },
+                { label: "Depressed", value: "Depressed" },
+                { label: "Withdrawn", value: "Withdrawn" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Spiritual Needs or Beliefs Impacting Care">
+            <Input.TextArea
+              rows={2}
+              value={formData.spiritualNeeds}
+              onChange={(e) => handleChange("spiritualNeeds", e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label="Do They Have a Trusted Person Who Helps Make Decisions?">
+            <Select
+              value={formData.trustedPersonExists}
+              onChange={(value) => handleChange("trustedPersonExists", value)}
+              options={[
+                { label: "Yes", value: "Yes" },
+                { label: "No", value: "No" },
+              ]}
+            />
+          </Form.Item>
+
+          {formData.trustedPersonExists === "Yes" && (
+            <Form.Item label="Name of Trusted Person">
+              <Input
+                value={formData.trustedPersonName}
+                onChange={(e) =>
+                  handleChange("trustedPersonName", e.target.value)
+                }
+              />
+            </Form.Item>
+          )}
+        </div>
+
+        <Divider orientation="left">
+          Goals of Care & Family Expectations
+        </Divider>
+
+        <Form.Item label="What Does Your Family Hope To Achieve Through VeriMED?">
+          <Input.TextArea
+            rows={3}
+            value={formData.familyGoals}
+            onChange={(e) => handleChange("familyGoals", e.target.value)}
+          />
+        </Form.Item>
+
+        <Form.Item label="Specific Instructions or Preferences for How Care Is Delivered">
+          <Input.TextArea
+            rows={3}
+            value={formData.carePreferences}
+            onChange={(e) => handleChange("carePreferences", e.target.value)}
+          />
+        </Form.Item>
+
+        <Form.Item label="Preferred Type of Care">
+          <Select
+            value={formData.preferredCareType}
+            onChange={(value) => handleChange("preferredCareType", value)}
+            options={[
+              {
+                label: "Long-Term Concierge Wellness",
+                value: "Long-Term Concierge Wellness",
+              },
+              {
+                label: "Short-Term Recovery Support",
+                value: "Short-Term Recovery Support",
+              },
+              { label: "Not Sure", value: "Not Sure" },
+            ]}
+          />
+        </Form.Item>
+        <Divider orientation="left">Uploads / Attachments</Divider>
+
+        <Form.Item label="Select Documents to Upload">
+          <Select
+            mode="multiple"
+            placeholder="Select documents"
+            value={formData.uploadedDocTypes || []}
+            onChange={(value) => handleChange("uploadedDocTypes", value)}
+            options={[
+              { label: "Recent Lab Reports", value: "Recent Lab Reports" },
+              { label: "Doctor's Notes", value: "Doctor's Notes" },
+              { label: "Discharge Summary", value: "Discharge Summary" },
+              {
+                label: "Photos of Medications",
+                value: "Photos of Medications",
+              },
+              {
+                label: "Health Insurance or ID Card",
+                value: "Health Insurance or ID Card",
+              },
+            ]}
+          />
+        </Form.Item>
+
+        <Upload
+          multiple
+          listType="picture-card"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleImageChange}
+        >
+          {uploadButton}
+        </Upload>
+        <Modal
+          open={previewOpen}
+          footer={null}
+          onCancel={() => setPreviewOpen(false)}
+        >
+          <img alt="preview" style={{ width: "100%" }} src={previewImage} />
+        </Modal>
+
+        <Form.Item label={<span style={labelStyle}>Status</span>}>
+          <Select
+            value={formData.status}
+            onChange={(value) => handleChange("status", value)}
+            options={[
+              { label: "Active", value: "Active" },
+              { label: "Inactive", value: "Inactive" },
+              { label: "Pending", value: "Pending" },
+            ]}
+          />
+        </Form.Item>
 
         <div
           style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}
