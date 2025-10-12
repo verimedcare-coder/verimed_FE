@@ -18,6 +18,7 @@ import {
   CalendarOutlined,
   FilterOutlined,
   MoreOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 const { Option } = Select;
 const { TextArea } = Input;
@@ -77,6 +78,30 @@ const deptStats = [
     count: 6,
     diff: "+15%",
     duration: "in last 7 Days",
+  },
+];
+
+const assignedDoctors = [
+  {
+    id: 1,
+    name: "Dr. Alice Brown",
+    role: "Physician",
+    patients: 20,
+    avatar: "https://randomuser.me/api/portraits/women/45.jpg",
+  },
+  {
+    id: 2,
+    name: "Dr. John Deo",
+    role: "Surgeon",
+    patients: 15,
+    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+  },
+  {
+    id: 3,
+    name: "Dr. Priya Sharma",
+    role: "Cardiologist",
+    patients: 10,
+    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
   },
 ];
 
@@ -385,6 +410,7 @@ export default function Departments() {
                   Aug 2025 <CalendarOutlined />
                 </Button>
                 <PrimaryBtn
+                  icon={<PlusOutlined />}
                   name="New Department"
                   onClick={() => setAddDrawerOpen(true)}
                 />
@@ -406,7 +432,7 @@ export default function Departments() {
 
       {/* ---------- Add Department Drawer ---------- */}
       <Drawer
-        title="Add Department"
+        title="Add / Edit Department"
         width={720}
         onClose={() => setAddDrawerOpen(false)}
         open={addDrawerOpen}
@@ -428,73 +454,39 @@ export default function Departments() {
               marginTop: 16,
             }}
           >
-            <Form.Item
-              name="departmentName"
-              label="Department Name"
-              rules={[
-                { required: true, message: "Please enter department name" },
-              ]}
-            >
-              <Input placeholder="Enter department name" />
+            <Form.Item name="departmentName" label="Department Name">
+              <Input />
             </Form.Item>
 
             <Form.Item label="Department ID">
-              <Input value="DEP-1022" disabled />
+              <Input value="DEP-1022" />
             </Form.Item>
 
-            <Form.Item
-              name="departmentType"
-              label="Department Type"
-              rules={[
-                { required: true, message: "Please select department type" },
-              ]}
-            >
-              <Select placeholder="Select type">
+            <Form.Item name="departmentType" label="Department Type">
+              <Select>
                 <Option value="Clinical">Clinical</Option>
                 <Option value="Non-Clinical">Non-Clinical</Option>
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="departmentLocation"
-              label="Department Location"
-              rules={[{ required: true, message: "Please enter location" }]}
-            >
-              <Input placeholder="Enter location" />
+            <Form.Item name="departmentLocation" label="Department Location">
+              <Input />
             </Form.Item>
 
-            <Form.Item
-              name="contactEmail"
-              label="Contact Email"
-              rules={[
-                { type: "email", required: true, message: "Enter valid email" },
-              ]}
-            >
-              <Input placeholder="e.g., dept@hospital.com" />
+            <Form.Item name="contactEmail" label="Contact Email">
+              <Input />
             </Form.Item>
 
-            <Form.Item
-              name="contactPhone"
-              label="Contact Phone"
-              rules={[{ required: true, message: "Enter phone number" }]}
-            >
-              <Input placeholder="e.g., +91 9876543210" />
+            <Form.Item name="contactPhone" label="Contact Phone">
+              <Input />
             </Form.Item>
 
-            <Form.Item
-              name="location"
-              label="Location"
-              rules={[{ required: true, message: "Enter location" }]}
-            >
-              <Input placeholder="Building / Floor / Wing" />
+            <Form.Item name="location" label="Location">
+              <Input />
             </Form.Item>
 
-            <Form.Item
-              name="status"
-              label="Status"
-              rules={[{ required: true, message: "Select status" }]}
-            >
-              <Select placeholder="Select status">
+            <Form.Item name="status" label="Status">
+              <Select>
                 <Option value="Active">Active</Option>
                 <Option value="Inactive">Inactive</Option>
               </Select>
@@ -506,10 +498,7 @@ export default function Departments() {
               label="Description"
               style={{ gridColumn: "1 / span 2" }}
             >
-              <TextArea
-                rows={2}
-                placeholder="Brief description of department"
-              />
+              <TextArea rows={2} />
             </Form.Item>
           </div>
 
@@ -523,39 +512,23 @@ export default function Departments() {
               marginTop: 8,
             }}
           >
-            <Form.Item
-              name="doctor"
-              label="Select Doctor"
-              rules={[{ required: true, message: "Please select a doctor" }]}
-            >
-              <Select placeholder="Choose doctor">
+            <Form.Item name="doctor" label="Select Doctor">
+              <Select>
                 <Option value="dr_smith">Dr. Smith</Option>
                 <Option value="dr_jones">Dr. Jones</Option>
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="designation"
-              label="Designation"
-              rules={[{ required: true, message: "Enter designation" }]}
-            >
-              <Input placeholder="e.g., Chief Physician" />
+            <Form.Item name="designation" label="Designation">
+              <Input />
             </Form.Item>
 
-            <Form.Item
-              name="joiningDate"
-              label="Joining Date"
-              rules={[{ required: true, message: "Select joining date" }]}
-            >
+            <Form.Item name="joiningDate" label="Joining Date">
               <DatePicker style={{ width: "100%" }} />
             </Form.Item>
 
-            <Form.Item
-              name="roleType"
-              label="Role Type"
-              rules={[{ required: true, message: "Select role type" }]}
-            >
-              <Select placeholder="Select role type">
+            <Form.Item name="roleType" label="Role Type">
+              <Select>
                 <Option value="Full-Time">Full-Time</Option>
                 <Option value="Part-Time">Part-Time</Option>
                 <Option value="Visiting">Visiting</Option>
@@ -599,40 +572,183 @@ export default function Departments() {
       {/* ---------- View Department Drawer ---------- */}
       <Drawer
         title="Department Details"
-        width={460}
+        width={480}
         onClose={() => setViewDrawerOpen(false)}
         open={viewDrawerOpen}
+        destroyOnClose
       >
         {selectedDept && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Avatar
-                size={64}
-                src={`https://ui-avatars.com/api/?name=${selectedDept.departmentName}`}
-              />
-              <div>
-                <p style={{ fontWeight: 600, fontSize: 16 }}>
-                  {selectedDept.departmentName}
-                </p>
-                {getStatusTag(selectedDept.status)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Profile and Basic Info */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* Department Avatar + Upload */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: 10,
+                }}
+              >
+                <p style={labelStyle}>Department Logo</p>
+
+                <div style={{ position: "relative", width: 72, height: 72 }}>
+                  <Avatar
+                    size={72}
+                    src={`https://ui-avatars.com/api/?name=${selectedDept.departmentName}`}
+                    style={{ borderRadius: "50%", objectFit: "cover" }}
+                  />
+
+                  {/* Upload Icon Overlay */}
+                  <label
+                    htmlFor="dept-image-upload"
+                    style={{
+                      position: "absolute",
+                      bottom: -10,
+                      right: "50%",
+                      transform: "translateX(50%)",
+                      background: "#fff",
+                      borderRadius: "50%",
+                      padding: 4,
+                      cursor: "pointer",
+                      boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
+                      alt="Upload"
+                      width={16}
+                      height={16}
+                    />
+                  </label>
+
+                  <input
+                    id="dept-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={() => {}}
+                    style={{ display: "none" }}
+                  />
+                </div>
+              </div>
+
+              {/* Basic Fields */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <label style={labelStyle}>Department ID</label>
+                  <Input value={selectedDept.departmentId} disabled />
+                </div>
+                <div>
+                  <label style={labelStyle}>Department Name</label>
+                  <Input
+                    value={selectedDept.departmentName}
+                    onChange={() => {}}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Head Doctor</label>
+                  <Input value={selectedDept.headDoctor} onChange={() => {}} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Type</label>
+                  <Select
+                    value={selectedDept.type}
+                    onChange={() => {}}
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="Clinical">Clinical</Option>
+                    <Option value="Non-Clinical">Non-Clinical</Option>
+                  </Select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Total Doctors</label>
+                  <Input
+                    type="number"
+                    value={selectedDept.totalDoctors}
+                    onChange={() => {}}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Patients Assigned</label>
+                  <Input
+                    type="number"
+                    value={selectedDept.patientsAssigned}
+                    onChange={() => {}}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Status</label>
+                  <Select
+                    value={selectedDept.status}
+                    onChange={() => {}}
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="Active">Active</Option>
+                    <Option value="Inactive">Inactive</Option>
+                  </Select>
+                </div>
               </div>
             </div>
-            <p>
-              <strong>Department ID:</strong> {selectedDept.departmentId}
-            </p>
-            <p>
-              <strong>Head Doctor:</strong> {selectedDept.headDoctor}
-            </p>
-            <p>
-              <strong>Type:</strong> {selectedDept.type}
-            </p>
-            <p>
-              <strong>Total Doctors:</strong> {selectedDept.totalDoctors}
-            </p>
-            <p>
-              <strong>Patients Assigned:</strong>{" "}
-              {selectedDept.patientsAssigned}
-            </p>
+
+            {/* Assigned Doctors Section */}
+            <div>
+              <p style={{ fontWeight: 600, fontSize: 16 }}>Assigned Doctors</p>
+
+              {assignedDoctors.map((doc) => (
+                <div
+                  key={doc.id}
+                  style={{
+                    background: "#F9F9F9",
+                    padding: 16,
+                    borderRadius: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                    border: "1px solid #eaeaea",
+                  }}
+                >
+                  {/* Avatar */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Avatar
+                      size={48}
+                      src={doc.avatar}
+                      style={{ borderRadius: 8, width: 60, height: 62 }}
+                    />
+                  </div>
+
+                  {/* Name */}
+                  <div style={linkedInfoStyle}>
+                    <p style={linkedLabelStyle}>Name</p>
+                    <p style={infoTextStyle}>{doc.name}</p>
+                  </div>
+
+                  {/* Role */}
+                  <div style={linkedInfoStyle}>
+                    <p style={linkedLabelStyle}>Role</p>
+                    <p style={infoTextStyle}>{doc.role}</p>
+                  </div>
+
+                  {/* Patients */}
+                  <div style={linkedInfoStyle}>
+                    <p style={linkedLabelStyle}>Patients</p>
+                    <p style={infoTextStyle}>{doc.patients}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </Drawer>
@@ -650,4 +766,33 @@ const tableContainer = {
   gap: 16,
   width: "auto",
   minWidth: 0,
+};
+const labelStyle = {
+  fontSize: 14,
+  fontWeight: 500,
+  marginBottom: 4,
+  display: "block",
+  color: "#2E2E2E",
+};
+const linkedLabelStyle = {
+  fontSize: 14,
+  fontWeight: 500,
+  marginBottom: 4,
+  display: "block",
+  color: "#2E2E2E",
+  opacity: "60%",
+};
+
+const linkedInfoStyle = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+};
+
+const infoTextStyle = {
+  margin: 0,
+  fontWeight: 500,
+  fontSize: 16,
+  color: "#2E2E2E",
+  textAlign: "center",
 };
