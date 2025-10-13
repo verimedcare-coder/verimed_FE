@@ -591,6 +591,42 @@ export default function Support() {
             >
               <div
                 style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 18,
+                  flexWrap: "wrap",
+                  gap: 10,
+                }}
+              >
+                <p style={{ fontSize: 18, fontWeight: 600, color: "#1B1B1B" }}>
+                  Chat section{" "}
+                </p>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <PrimaryBtn
+                    icon={<MessageOutlined />}
+                    name="chats"
+                    // onClick={() => setAddDrawerOpen(true)}
+                  />
+                  <span
+                    onClick={() => {}}
+                    style={{
+                      background: "#fff",
+                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#1F2329",
+                      cursor: "pointer",
+                      border: "1px solid #0000001F",
+                    }}
+                  >
+                    Aug 2025 <CalendarOutlined />
+                  </span>
+                </div>
+              </div>
+              <div
+                style={{
                   flex: 1,
                   display: "flex",
                   overflow: "hidden",
