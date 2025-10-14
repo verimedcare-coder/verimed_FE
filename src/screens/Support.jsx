@@ -15,6 +15,7 @@ import { Column, Pie } from "@ant-design/plots";
 import Primarybtn from "../components/PrimaryBtn";
 import newMessage from "../assets/icons/new-message.svg";
 import { Button, Table, Tag } from "antd";
+import { useNavigate } from "react-router-dom";
 
 function SectionHeader({ title, children }) {
   return (
@@ -291,6 +292,7 @@ export default function Support() {
   const [searchTerm, setSearchTerm] = useState("");
   const [messages, setMessages] = useState(initialMessages);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [newSearchTerm, setNewSearchTerm] = useState("");
 
   const filteredUsers = users.filter((user) =>
@@ -606,7 +608,7 @@ export default function Support() {
                   <PrimaryBtn
                     icon={<MessageOutlined />}
                     name="chats"
-                    // onClick={() => setAddDrawerOpen(true)}
+                    onClick={() => navigate("/messages")}
                   />
                   <span
                     onClick={() => {}}
@@ -645,32 +647,6 @@ export default function Support() {
                     minWidth: 0,
                   }}
                 >
-                  <div style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                    <div style={{ position: "relative" }}>
-                      <SearchOutlined
-                        style={{
-                          position: "absolute",
-                          top: 10,
-                          left: 10,
-                          color: "#999",
-                        }}
-                      />
-
-                      <input
-                        placeholder="Search"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "8px 8px 8px 30px",
-                          border: "1px solid #ccc",
-                          borderRadius: 5,
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  </div>
-
                   {/* USER LIST */}
                   {filteredUsers.map((user) => (
                     <div
@@ -857,7 +833,11 @@ export default function Support() {
                 Recent Conversations Table
               </p>
               <div style={{ display: "flex", gap: 10 }}>
-                <PrimaryBtn icon={<MessageOutlined />} name="Chats" />
+                <PrimaryBtn
+                  icon={<MessageOutlined />}
+                  name="Chats"
+                  onClick={() => navigate("/messages")}
+                />
                 <SecondaryBtn icon={<FilterOutlined />} name="Filter" />
               </div>
             </div>
