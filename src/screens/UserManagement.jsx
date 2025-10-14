@@ -18,6 +18,7 @@ import {
   Spin,
   Modal,
   Checkbox,
+  notification,
   Divider,
 } from "antd";
 import {
@@ -98,7 +99,7 @@ export default function UserManagement() {
       const allusers = userRes.data;
 
       const sponsorListEndpoint = `${base_url}/sponsorprofile_list/`;
-      const res = await axios.get(sponsorListEndpoint);
+      const res = await axios.get(sponsorListEndpoint, { headers });
       const sponsors = res.data;
 
       const sponsorUserIds = sponsors.map((doc) => doc.user);
@@ -114,6 +115,8 @@ export default function UserManagement() {
           sponsorProfile,
         };
       });
+
+      console.log("Sponsors API:", res.data);
 
       setSponsorList(combinedSponsors);
       setLoading(false);
@@ -172,7 +175,7 @@ export default function UserManagement() {
       const allusers = userRes.data;
 
       const patientListEndpoint = `${base_url}/patientprofile_list/`;
-      const res = await axios.get(patientListEndpoint);
+      const res = await axios.get(patientListEndpoint, { headers });
       const patients = res.data;
 
       const patientUserIds = patients.map((doc) => doc.user);
@@ -209,7 +212,7 @@ export default function UserManagement() {
       const allusers = userRes.data;
 
       const docListEndpoint = `${base_url}/doctorprofile_list/`;
-      const res = await axios.get(docListEndpoint);
+      const res = await axios.get(docListEndpoint, { headers });
       const doctors = res.data;
 
       const doctorUserIds = doctors.map((doc) => doc.user);
@@ -256,6 +259,100 @@ export default function UserManagement() {
     console.log("Sponsor Info Submitted:", values);
     form.resetFields();
     setOpen(false);
+  };
+
+  const handleUpdateClick = async () => {
+    if (!editedData) return;
+
+    console.log(`🧾 Submitting edited data for ${activeTab}:`, editedData);
+
+    try {
+      let endpoint = "";
+      let payload = {};
+      let headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        "Content-Type": "application/json",
+      };
+
+      switch (activeTab) {
+        case "sponsors":
+          endpoint = `${base_url}/verimed/sponsorprofile_update/`;
+          payload = {
+            spon_profile_updateid: selectedSponsor?.sponsorProfile?.id,
+            sponsor_address: editedData.sponsorProfile?.sponsor_address || "",
+            sponsor_gender: editedData.sponsorProfile?.sponsor_gender || "",
+            work_employment: editedData.sponsorProfile?.work_employment || "",
+            how_found_us: editedData.sponsorProfile?.how_found_us || "",
+          };
+          break;
+
+        case "doctors":
+          endpoint = `${base_url}/verimed/doctorprofile_update/`;
+          payload = {
+            doctor_profile_updateid: selectedDoctor?.doctorProfile?.id,
+            doctor_address: editedData.address,
+            doctor_gender: editedData.gender,
+            specialization: editedData.speciality,
+            year_of_graduation: editedData.yr_graduation,
+          };
+          break;
+
+        case "patients":
+          endpoint = `${base_url}/verimed/patientprofile_update/`;
+          payload = {
+            patient_profile_updateid: selectedPatient?.patientProfile?.id,
+            patient_address: editedData.address,
+            patient_gender: editedData.gender,
+            condition: editedData.condition,
+          };
+          break;
+
+        case "caretakers":
+          endpoint = `${base_url}/verimed/caretakerprofile_update/`;
+          payload = {
+            caretaker_profile_updateid: selectedCaretaker?.caretakerProfile?.id,
+            caretaker_address: editedData.address,
+            caretaker_gender: editedData.gender,
+            credentials: editedData.credentials,
+            skillset: editedData.skillset,
+          };
+          break;
+
+        default:
+          console.warn("⚠️ Unknown user type:", activeTab);
+          return;
+      }
+
+      console.log("🚀 Sending PATCH to:", endpoint);
+      console.log("📦 Payload:", payload);
+
+      const res = await axios.patch(endpoint, payload, { headers });
+      console.log("✅ Update Success:", res.data);
+
+      notification.success({
+        message: `${activeTab.slice(0, -1).toUpperCase()} PROFILE UPDATED`,
+        description: `The ${activeTab.slice(
+          0,
+          -1
+        )} profile was updated successfully.`,
+        placement: "topRight",
+      });
+
+      // Refresh data based on tab
+      if (activeTab === "sponsors") fetchSponsors();
+      if (activeTab === "doctors") fetchDoctors();
+      if (activeTab === "patients") fetchPatients();
+      if (activeTab === "caretakers") fetchCareTakers();
+
+      setDrawerVisible(false);
+    } catch (error) {
+      console.error("❌ Update failed:", error);
+      notification.error({
+        message: "UPDATE FAILED",
+        description: `Unable to update ${activeTab.slice(0, -1)} profile.`,
+        placement: "topRight",
+      });
+    }
   };
 
   // Sample doctors data - REMOVED FOR CLARITY AS IT'S REPLACED BY docList
@@ -334,6 +431,7 @@ export default function UserManagement() {
       case "sponsors":
         setSelectedSponsor(record);
         setEditedData(record);
+        console.log(editedData, "edit");
         break;
       case "doctors":
         setSelectedDoctor(record);
@@ -3151,10 +3249,7 @@ export default function UserManagement() {
                   name="Edit Sponsor"
                   type="primary"
                   size="large"
-                  onClick={() => {
-                    console.log("Updated sponsor:", editedData);
-                    setDrawerVisible(false);
-                  }}
+                  onClick={handleUpdateClick}
                 />
               </div>
             </Drawer>
