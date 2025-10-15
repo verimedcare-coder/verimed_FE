@@ -271,7 +271,6 @@ export default function UserManagement() {
         patients: "patient",
       };
 
-      // Step 1: Create the user_signup object
       const user_signup = {
         first_name: values.first_name,
         last_name: values.last_name,
@@ -317,53 +316,58 @@ export default function UserManagement() {
 
     try {
       let endpoint = "";
-      let payload = {};
-      let headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
-        "Content-Type": "application/json",
-      };
+      let formData = new FormData();
+      let keyName = "";
+      let updateData = {};
 
       switch (activeTab) {
         case "sponsors":
-          endpoint = `${base_url}/verimed/sponsorprofile_update/`;
-          payload = {
+          endpoint = `${base_url}/sponsorprofile_update/`;
+          keyName = "sponsorprofile_update_data";
+          updateData = {
             spon_profile_updateid: selectedSponsor?.sponsorProfile?.id,
-            sponsor_address: editedData.sponsorProfile?.sponsor_address || "",
-            sponsor_gender: editedData.sponsorProfile?.sponsor_gender || "",
-            work_employment: editedData.sponsorProfile?.work_employment || "",
-            how_found_us: editedData.sponsorProfile?.how_found_us || "",
+            sponsor_address: editedData.sponsor_address || "",
+            sponsor_gender: editedData.sponsor_gender || "",
+            work_employment: editedData.work_employment || "",
+            how_found_us: editedData.how_found_us || "",
           };
           break;
 
         case "doctors":
-          endpoint = `${base_url}/verimed/doctorprofile_update/`;
-          payload = {
+          endpoint = `${base_url}/doctorprofile_update/`;
+          keyName = "doctorprofile_update_data";
+          updateData = {
             doctor_profile_updateid: selectedDoctor?.doctorProfile?.id,
-            doctor_address: editedData.address,
-            doctor_gender: editedData.gender,
-            specialization: editedData.speciality,
-            year_of_graduation: editedData.yr_graduation,
+            doctor_address: editedData.address || "",
+            doctor_gender: editedData.gender || "",
+            specialization: editedData.speciality || "",
+            year_of_graduation: editedData.yr_graduation || "",
           };
           break;
 
         case "patients":
-          endpoint = `${base_url}/verimed/patientprofile_update/`;
-          payload = {
+          endpoint = `${base_url}/patientprofile_update/`;
+          keyName = "patientprofile_update_data";
+          updateData = {
             patient_profile_updateid: selectedPatient?.patientProfile?.id,
-            patient_address: editedData.address,
-            patient_gender: editedData.gender,
-            condition: editedData.condition,
+            patient_address: editedData.address || "",
+            patient_gender: editedData.gender || "",
+            condition: editedData.condition || "",
           };
           break;
 
         case "caretakers":
-          endpoint = `${base_url}/verimed/caretakerprofile_update/`;
-          payload = {
-            caretaker_profile_updateid: selectedCaretaker?.caretakerProfile?.id,
-            caretaker_address: editedData.address,
-            caretaker_gender: editedData.gender,
-            credentials: editedData.credentials,
-            skillset: editedData.skillset,
+          endpoint = `${base_url}/caretakerprofile_update/`;
+          keyName = "caretakerprofile_update_data";
+          updateData = {
+            caretaker_profile_updateid:
+              selectedCaretaker?.caretakerProfile?.id || "",
+            caretaker_address: editedData.address || "",
+            caretaker_exprience: editedData.experience || 0,
+            care_gender: editedData.gender || "",
+            credentials: editedData.credentials || "",
+            yr_of_graduation: editedData.yr_graduation || "",
+            skillset: editedData.skillset || "",
           };
           break;
 
@@ -372,10 +376,23 @@ export default function UserManagement() {
           return;
       }
 
-      console.log("🚀 Sending PATCH to:", endpoint);
-      console.log("📦 Payload:", payload);
+      // Append JSON payload to FormData
+      formData.append(keyName, JSON.stringify(updateData));
 
-      const res = await axios.patch(endpoint, payload, { headers });
+      // If a photo is being edited/uploaded
+      if (editedData.photo) {
+        formData.append("photo", editedData.photo);
+      }
+
+      console.log("🚀 Sending PATCH to:", endpoint);
+      console.log("📦 FormData content:", updateData);
+
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        "Content-Type": "multipart/form-data",
+      };
+
+      const res = await axios.patch(endpoint, formData, { headers });
       console.log("✅ Update Success:", res.data);
 
       notification.success({
@@ -387,7 +404,6 @@ export default function UserManagement() {
         placement: "topRight",
       });
 
-      // Refresh data based on tab
       if (activeTab === "sponsors") fetchSponsors();
       if (activeTab === "doctors") fetchDoctors();
       if (activeTab === "patients") fetchPatients();
@@ -395,60 +411,17 @@ export default function UserManagement() {
 
       setDrawerVisible(false);
     } catch (error) {
-      console.error("❌ Update failed:", error);
+      console.error(" Update failed:", error);
       notification.error({
         message: "UPDATE FAILED",
-        description: `Unable to update ${activeTab.slice(0, -1)} profile.`,
+        description:
+          error.response?.data?.detail ||
+          `Unable to update ${activeTab.slice(0, -1)} profile.`,
         placement: "topRight",
       });
     }
   };
 
-  // Sample doctors data - REMOVED FOR CLARITY AS IT'S REPLACED BY docList
-  const [doctorsData] = useState([
-    {
-      key: 1,
-      name: "John",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      email: "john.n@verimed.com",
-      phone: "+1 416 222 1000",
-      gender: "Male",
-      country: "Canada",
-      patientsLinked: 1,
-      Doctor: "mr.paul",
-      CareTaker: "Nurse Clarisse",
-      Sponsor: "John Nelson (Canada)",
-      membership: "Premium",
-      EnrolmentDate: "Feb 12, 2024",
-      Condition: "Hypertension, Diabetes",
-      status: "Active",
-    },
-  ]);
-  // Sample caretakers data - REMOVED FOR CLARITY AS IT'S REPLACED BY caretakerList
-  const [caretakersData] = useState([
-    { id: 1, name: "Ravi Kumar", shift: "Night", phone: "7777766666" },
-  ]);
-  // Sample patients data - REMOVED FOR CLARITY AS IT'S REPLACED BY patientList
-  const [patientsData] = useState([
-    {
-      key: 1,
-      name: "John",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      email: "john.n@verimed.com",
-      phone: "+1 416 222 1000",
-      gender: "Male",
-      age: 55,
-      country: "Canada",
-      patientsLinked: 1,
-      Doctor: "mr.paul",
-      CareTaker: "Nurse Clarisse",
-      Sponsor: "John Nelson (Canada)",
-      membership: "Premium",
-      EnrolmentDate: "Feb 12, 2024",
-      Condition: "Hypertension, Diabetes",
-      status: "Active",
-    },
-  ]);
   const vitals = [
     {
       icon: bloodPressure,
@@ -479,24 +452,43 @@ export default function UserManagement() {
     switch (activeTab) {
       case "sponsors":
         setSelectedSponsor(record);
-        setEditedData(record);
-        console.log(editedData, "edit");
+        setEditedData({
+          ...record,
+          sponsor_address: record.sponsorProfile?.sponsor_address || "",
+          sponsor_gender: record.sponsorProfile?.sponsor_gender || "",
+          work_employment: record.sponsorProfile?.work_employment || "",
+          how_found_us: record.sponsorProfile?.how_found_us || "",
+        });
         break;
+
       case "doctors":
         setSelectedDoctor(record);
         setEditedData(record);
         break;
+
       case "caretakers":
         setSelectedCaretaker(record);
-        setEditedData(record);
+        setEditedData({
+          ...record,
+          name: record.name || "",
+          address: record.caretakerProfile?.caretaker_address || "",
+          gender: record.caretakerProfile?.care_gender || "",
+          experience: record.caretakerProfile?.caretaker_exprience || "",
+          yr_graduation: record.caretakerProfile?.yr_of_graduation || "",
+          credentials: record.caretakerProfile?.credentials || "",
+          skillset: record.caretakerProfile?.skillset || "",
+        });
         break;
+
       case "patients":
         setSelectedPatient(record);
         setEditedData(record);
         break;
+
       default:
         break;
     }
+
     setDrawerVisible(true);
   };
 
@@ -800,6 +792,56 @@ export default function UserManagement() {
               }}
             >
               <div>
+                <label style={labelStyle}>Address</label>
+                <Input
+                  value={editedData.sponsor_address}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      sponsor_address: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Gender</label>
+                <Input
+                  value={editedData.sponsor_gender}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      sponsor_gender: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Work Employment</label>
+
+                <Input
+                  value={editedData.work_employment}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      work_employment: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>How found us</label>
+
+                <Input
+                  value={editedData.how_found_us}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      how_found_us: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div>
                 <label style={labelStyle}>Name</label>
                 <Input
                   value={editedData.name}
@@ -977,28 +1019,87 @@ export default function UserManagement() {
 
     if (activeTab === "caretakers" && selectedCaretaker)
       return (
-        <div>
-          <p style={labelStyle}>Caretaker Name</p>
-          <Input
-            value={editedData.name}
-            onChange={(e) =>
-              setEditedData({ ...editedData, name: e.target.value })
-            }
-          />
-          <p style={labelStyle}>Shift</p>
-          <Input
-            value={editedData.shift}
-            onChange={(e) =>
-              setEditedData({ ...editedData, shift: e.target.value })
-            }
-          />
-          <p style={labelStyle}>Phone</p>
-          <Input
-            value={editedData.phone}
-            onChange={(e) =>
-              setEditedData({ ...editedData, phone: e.target.value })
-            }
-          />
+        <div
+          style={{
+            flex: 1,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+          }}
+        >
+          <div>
+            <p style={labelStyle}>Caretaker Name</p>
+            <Input
+              value={editedData.name}
+              onChange={(e) =>
+                setEditedData({ ...editedData, name: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Caretaker Address</p>
+            <Input
+              rows={2}
+              value={editedData.address}
+              onChange={(e) =>
+                setEditedData({ ...editedData, address: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Caretaker Gender</p>
+            <Select
+              value={editedData.gender}
+              style={{ width: "100%" }}
+              onChange={(value) =>
+                setEditedData({ ...editedData, gender: value })
+              }
+            >
+              <Select.Option value="Male">Male</Select.Option>
+              <Select.Option value="Female">Female</Select.Option>
+              <Select.Option value="Other">Other</Select.Option>
+            </Select>
+          </div>
+          <div>
+            <p style={labelStyle}>Experience (in years)</p>
+            <Input
+              type="number"
+              min={0}
+              value={editedData.experience}
+              onChange={(e) =>
+                setEditedData({ ...editedData, experience: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Year of Graduation</p>
+            <Input
+              value={editedData.yr_graduation}
+              onChange={(e) =>
+                setEditedData({ ...editedData, yr_graduation: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Credentials</p>
+            <Input.TextArea
+              rows={2}
+              value={editedData.credentials}
+              onChange={(e) =>
+                setEditedData({ ...editedData, credentials: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Skillset</p>
+            <Input.TextArea
+              rows={3}
+              value={editedData.skillset}
+              onChange={(e) =>
+                setEditedData({ ...editedData, skillset: e.target.value })
+              }
+            />
+          </div>
         </div>
       );
 
@@ -1580,11 +1681,7 @@ export default function UserManagement() {
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ width: 200 }}
                 />
-                {/* <PrimaryBtn
-                  name={`Add ${activeTab.slice(0, -1)}`}
-                  icon={<PlusOutlined />}
-                  onClick={() => setDrawerVisible(true)}
-                /> */}
+
                 <PrimaryBtn
                   name={`Add ${activeTab.slice(0, -1)}`}
                   icon={<PlusOutlined />}
@@ -1633,7 +1730,10 @@ export default function UserManagement() {
                 </Button>
 
                 <PrimaryBtn
-                  name="Edit Sponsor"
+                  name={`Edit ${
+                    activeTab.slice(0, -1).charAt(0).toUpperCase() +
+                    activeTab.slice(1, -1)
+                  }`}
                   type="primary"
                   size="large"
                   onClick={handleUpdateClick}
