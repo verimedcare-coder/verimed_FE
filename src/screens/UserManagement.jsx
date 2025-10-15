@@ -216,14 +216,14 @@ export default function UserManagement() {
       const res = await axios.get(docListEndpoint, { headers });
       const doctors = res.data;
 
-      const doctorUserIds = doctors.map((doc) => doc.user);
+      const doctorUserIds = doctors.map((doc) => doc.user.id);
 
       const filteredAllusers = allusers.filter((user) =>
         doctorUserIds.includes(user.id)
       );
 
       const combinedDoctors = filteredAllusers.map((user) => {
-        const doctorProfile = doctors.find((doc) => doc.user === user.id);
+        const doctorProfile = doctors.find((doc) => doc.user.id === user.id);
         return {
           ...user,
           doctorProfile,
