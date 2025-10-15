@@ -350,10 +350,96 @@ export default function UserManagement() {
           keyName = "patientprofile_update_data";
           updateData = {
             patient_profile_updateid: selectedPatient?.patientProfile?.id,
-            patient_address: editedData.address || "",
-            patient_gender: editedData.gender || "",
-            condition: editedData.condition || "",
+            sponsorid: editedData.sponsorid || "",
+            doctorid: editedData.doctorid || "",
+            caretakerid: editedData.caretakerid || "",
+            patient_dob: editedData.patient_dob || "",
+            patient_gender: editedData.patient_gender || "",
+            blood_group: editedData.blood_group || "",
+            patient_home_address: editedData.patient_home_address || "",
+            primary_language: editedData.primary_language || "",
+            religion: editedData.religion || "",
+            escalate_to_physician: editedData.escalate_to_physician || "",
+            emer_con_name: editedData.emer_con_name || "",
+            emer_con_relation: editedData.emer_con_relation || "",
+            emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
+            emer_con_country_code: editedData.emer_con_country_code || "",
+            emer_con_phone: editedData.emer_con_phone || "",
+            emer_con_email: editedData.emer_con_email || "",
+            local_con_name: editedData.local_con_name || "",
+            local_con_relation: editedData.local_con_relation || "",
+            local_con_country_code: editedData.local_con_country_code || "",
+            local_con_phone: editedData.local_con_phone || "",
+            reason_enrollment: editedData.reason_enrollment || "",
+            reason_other: editedData.reason_other || "",
+            medical_his_diagnosis: editedData.medical_his_diagnosis || "",
+            medical_his_cancer: editedData.medical_his_cancer || "",
+            medical_his_other: editedData.medical_his_other || "",
+            medical_his_provided_medi_care:
+              editedData.medical_his_provided_medi_care || "",
+            medical_his_major_surgeries:
+              editedData.medical_his_major_surgeries || "",
+            medical_his_curr_symp: editedData.medical_his_curr_symp || "",
+            medication_name: editedData.medication_name || "",
+            medication_dose: editedData.medication_dose || "",
+            medication_frequency: editedData.medication_frequency || "",
+            medication_reason: editedData.medication_reason || "",
+            medication_issues: editedData.medication_issues || false,
+            medication_issues_explain:
+              editedData.medication_issues_explain || "",
+            allergies_issues: editedData.allergies_issues || false,
+            allergies_drug: editedData.allergies_drug || "",
+            allergies_food: editedData.allergies_food || "",
+            functional_bathe: editedData.functional_bathe || "",
+            functional_dress: editedData.functional_dress || "",
+            functional_eat: editedData.functional_eat || "",
+            functional_walk: editedData.functional_walk || "",
+            functional_use_bathroom: editedData.functional_use_bathroom || "",
+            functional_daily_activity:
+              editedData.functional_daily_activity || "",
+            functional_manage_finance:
+              editedData.functional_manage_finance || "",
+            functional_any_falls: editedData.functional_any_falls || false,
+            functional_how_many: editedData.functional_how_many || "",
+            functional_memory_pbms: editedData.functional_memory_pbms || false,
+            lifestyle_daily_routine: editedData.lifestyle_daily_routine || "",
+            lifestyle_dietary_habits: editedData.lifestyle_dietary_habits || "",
+            lifestyle_sleep_quality: editedData.lifestyle_sleep_quality || "",
+            lifestyle_physical_activity:
+              editedData.lifestyle_physical_activity || "",
+            lifestyle_alcohol_use: editedData.lifestyle_alcohol_use || "",
+            lifestyle_pain_complaints:
+              editedData.lifestyle_pain_complaints || "",
+            lifestyle_pain_where: editedData.lifestyle_pain_where || "",
+            social_emotion_health: editedData.social_emotion_health || "",
+            social_spiritual_needs: editedData.social_spiritual_needs || "",
+            social_trusted_person: editedData.social_trusted_person || false,
+            social_name: editedData.social_name || "",
+            goals_family_hope: editedData.goals_family_hope || "",
+            goals_special_instructions:
+              editedData.goals_special_instructions || "",
+            goals_term_membership: editedData.goals_term_membership || "",
           };
+
+          // append JSON payload
+          formData.append(keyName, JSON.stringify(updateData));
+
+          // handle uploaded files (multiple)
+          if (editedData.patient_upload_files?.length > 0) {
+            editedData.patient_upload_files.forEach((file) => {
+              formData.append("patient_upload_files", file);
+            });
+          }
+
+          // include file IDs and names
+          formData.append(
+            "patient_files_ids",
+            editedData.patient_files_ids || ""
+          );
+          formData.append(
+            "patient_files_name",
+            editedData.patient_files_name || ""
+          );
           break;
 
         case "caretakers":
@@ -482,7 +568,113 @@ export default function UserManagement() {
 
       case "patients":
         setSelectedPatient(record);
-        setEditedData(record);
+        setEditedData({
+          ...record,
+          patient_profile_updateid: record.patientProfile?.id || "",
+          sponsorid: record.patientProfile?.sponsorid || "",
+          doctorid: record.patientProfile?.doctorid || "",
+          caretakerid: record.patientProfile?.caretakerid || "",
+          patient_dob: record.patientProfile?.patient_dob || "",
+          patient_gender: record.patientProfile?.patient_gender || "",
+          blood_group: record.patientProfile?.blood_group || "",
+          patient_home_address:
+            record.patientProfile?.patient_home_address || "",
+          primary_language: record.patientProfile?.primary_language || "",
+          religion: record.patientProfile?.religion || "",
+          escalate_to_physician:
+            record.patientProfile?.escalate_to_physician || "",
+
+          emer_con_name: record.patientProfile?.emer_con_name || "",
+          emer_con_relation: record.patientProfile?.emer_con_relation || "",
+          emer_con_coun_of_residen:
+            record.patientProfile?.emer_con_coun_of_residen || "",
+          emer_con_country_code:
+            record.patientProfile?.emer_con_country_code || "",
+          emer_con_phone: record.patientProfile?.emer_con_phone || "",
+          emer_con_email: record.patientProfile?.emer_con_email || "",
+
+          local_con_name: record.patientProfile?.local_con_name || "",
+          local_con_relation: record.patientProfile?.local_con_relation || "",
+          local_con_country_code:
+            record.patientProfile?.local_con_country_code || "",
+          local_con_phone: record.patientProfile?.local_con_phone || "",
+
+          reason_enrollment: record.patientProfile?.reason_enrollment || "",
+          reason_other: record.patientProfile?.reason_other || "",
+
+          medical_his_diagnosis:
+            record.patientProfile?.medical_his_diagnosis || "",
+          medical_his_cancer: record.patientProfile?.medical_his_cancer || "",
+          medical_his_other: record.patientProfile?.medical_his_other || "",
+          medical_his_provided_medi_care:
+            record.patientProfile?.medical_his_provided_medi_care || "",
+          medical_his_major_surgeries:
+            record.patientProfile?.medical_his_major_surgeries || "",
+          medical_his_curr_symp:
+            record.patientProfile?.medical_his_curr_symp || "",
+
+          medication_name: record.patientProfile?.medication_name || "",
+          medication_dose: record.patientProfile?.medication_dose || "",
+          medication_frequency:
+            record.patientProfile?.medication_frequency || "",
+          medication_reason: record.patientProfile?.medication_reason || "",
+          medication_issues: record.patientProfile?.medication_issues || false,
+          medication_issues_explain:
+            record.patientProfile?.medication_issues_explain || "",
+
+          allergies_issues: record.patientProfile?.allergies_issues || false,
+          allergies_drug: record.patientProfile?.allergies_drug || "",
+          allergies_food: record.patientProfile?.allergies_food || "",
+
+          functional_bathe: record.patientProfile?.functional_bathe || "",
+          functional_dress: record.patientProfile?.functional_dress || "",
+          functional_eat: record.patientProfile?.functional_eat || "",
+          functional_walk: record.patientProfile?.functional_walk || "",
+          functional_use_bathroom:
+            record.patientProfile?.functional_use_bathroom || "",
+          functional_daily_activity:
+            record.patientProfile?.functional_daily_activity || "",
+          functional_manage_finance:
+            record.patientProfile?.functional_manage_finance || "",
+          functional_any_falls:
+            record.patientProfile?.functional_any_falls || false,
+          functional_how_many: record.patientProfile?.functional_how_many || "",
+          functional_memory_pbms:
+            record.patientProfile?.functional_memory_pbms || false,
+
+          lifestyle_daily_routine:
+            record.patientProfile?.lifestyle_daily_routine || "",
+          lifestyle_dietary_habits:
+            record.patientProfile?.lifestyle_dietary_habits || "",
+          lifestyle_sleep_quality:
+            record.patientProfile?.lifestyle_sleep_quality || "",
+          lifestyle_physical_activity:
+            record.patientProfile?.lifestyle_physical_activity || "",
+          lifestyle_alcohol_use:
+            record.patientProfile?.lifestyle_alcohol_use || "",
+          lifestyle_pain_complaints:
+            record.patientProfile?.lifestyle_pain_complaints || "",
+          lifestyle_pain_where:
+            record.patientProfile?.lifestyle_pain_where || "",
+
+          social_emotion_health:
+            record.patientProfile?.social_emotion_health || "",
+          social_spiritual_needs:
+            record.patientProfile?.social_spiritual_needs || "",
+          social_trusted_person:
+            record.patientProfile?.social_trusted_person || false,
+          social_name: record.patientProfile?.social_name || "",
+
+          goals_family_hope: record.patientProfile?.goals_family_hope || "",
+          goals_special_instructions:
+            record.patientProfile?.goals_special_instructions || "",
+          goals_term_membership:
+            record.patientProfile?.goals_term_membership || "",
+
+          patient_files_ids: record.patientProfile?.patient_files_ids || "",
+          patient_files_name: record.patientProfile?.patient_files_name || "",
+          patient_upload_files: [],
+        });
         break;
 
       default:
@@ -1103,288 +1295,660 @@ export default function UserManagement() {
         </div>
       );
 
+    // if (activeTab === "patients" && selectedPatient)
+    //   return (
+    //     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    //       {/* Profile and Basic Info */}
+    //       <div
+    //         style={{
+    //           display: "flex",
+    //           flexDirection: "column",
+
+    //           gap: 24,
+    //         }}
+    //       >
+    //         <div
+    //           style={{
+    //             display: "flex",
+    //             alignItems: "center",
+    //             justifyContent: "flex-start",
+    //             gap: 10,
+    //           }}
+    //         >
+    //           <p style={labelStyle}>Profile Image</p>
+
+    //           <div style={{ position: "relative", width: 72, height: 72 }}>
+    //             {/* Avatar */}
+    //             <Avatar
+    //               size={72}
+    //               src={uploadedImage || selectedPatient.avatar}
+    //               style={{ borderRadius: "50%", objectFit: "cover" }}
+    //             />
+
+    //             {/* Upload Icon Overlay */}
+    //             <label
+    //               htmlFor="image-upload"
+    //               style={{
+    //                 position: "absolute",
+    //                 bottom: -10,
+    //                 right: "50%",
+    //                 transform: "translateX(50%)",
+    //                 background: "#fff",
+    //                 borderRadius: "50%",
+    //                 padding: 4,
+    //                 cursor: "pointer",
+    //                 boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+    //               }}
+    //             >
+    //               <img
+    //                 src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
+    //                 alt="Upload"
+    //                 width={16}
+    //                 height={16}
+    //               />
+    //             </label>
+
+    //             {/* Hidden File Input */}
+    //             <input
+    //               id="image-upload"
+    //               type="file"
+    //               accept="image/*"
+    //               onChange={handleImageChange}
+    //               style={{ display: "none" }}
+    //             />
+    //           </div>
+    //         </div>
+    //         <div
+    //           style={{
+    //             flex: 1,
+    //             display: "grid",
+    //             gridTemplateColumns: "1fr 1fr",
+    //             gap: 16,
+    //           }}
+    //         >
+    //           <div>
+    //             <label style={labelStyle}>Name</label>
+    //             <Input
+    //               value={editedData.name}
+    //               onChange={(e) =>
+    //                 setEditedData({ ...editedData, name: e.target.value })
+    //               }
+    //             />
+    //           </div>
+    //           <div>
+    //             <label style={labelStyle}>Patient ID</label>
+    //             <Input value="PT-2094" />
+    //           </div>
+    //           <div>
+    //             <label style={labelStyle}>Age</label>
+    //             <Input
+    //               value={editedData.age}
+    //               onChange={(e) =>
+    //                 setEditedData({ ...editedData, age: e.target.value })
+    //               }
+    //             />
+    //           </div>
+    //           <div>
+    //             <label style={labelStyle}>Care Taker</label>
+    //             <Input
+    //               value={editedData.caretaker}
+    //               onChange={(e) =>
+    //                 setEditedData({ ...editedData, caretaker: e.target.value })
+    //               }
+    //             />
+    //           </div>
+    //           <div>
+    //             <label style={labelStyle}>Gender</label>
+    //             <Input
+    //               value={editedData.gender || "Male"}
+    //               onChange={(e) =>
+    //                 setEditedData({ ...editedData, gender: e.target.value })
+    //               }
+    //             />
+    //           </div>
+    //           <div>
+    //             <label style={labelStyle}>Condition</label>
+    //             <Input
+    //               value={editedData.Condition}
+    //               onChange={(e) =>
+    //                 setEditedData({ ...editedData, Condition: e.target.value })
+    //               }
+    //             />
+    //           </div>
+    //         </div>
+    //       </div>
+
+    //       {/* Additional Fields */}
+    //       <div
+    //         style={{
+    //           display: "grid",
+    //           gridTemplateColumns: "1fr 1fr",
+    //           gap: 16,
+    //         }}
+    //       >
+    //         <div>
+    //           <label style={labelStyle}>Sponsor</label>
+    //           <Input value="John Nelson (Canada)" />
+    //         </div>
+
+    //         <div>
+    //           <label style={labelStyle}>Care Taker</label>
+    //           <Input
+    //             value={editedData.CareTaker}
+    //             onChange={(e) =>
+    //               setEditedData({ ...editedData, CareTaker: e.target.value })
+    //             }
+    //           />
+    //         </div>
+    //         <div>
+    //           <label style={labelStyle}>Status</label>
+    //           <Select
+    //             value={editedData.status}
+    //             onChange={(value) =>
+    //               setEditedData({ ...editedData, status: value })
+    //             }
+    //             style={{ width: "100%" }}
+    //           >
+    //             <Option value="Active">Active</Option>
+    //             <Option value="Inactive">Inactive</Option>
+    //           </Select>
+    //         </div>
+    //         <div>
+    //           <label style={labelStyle}>Membership Plan</label>
+    //           <Input
+    //             value={editedData.membership}
+    //             onChange={(e) =>
+    //               setEditedData({
+    //                 ...editedData,
+    //                 membership: e.target.value,
+    //               })
+    //             }
+    //           />
+    //         </div>
+    //         <div>
+    //           <label style={labelStyle}>Doctor</label>
+    //           <Input
+    //             value={editedData.Doctor}
+    //             onChange={(e) =>
+    //               setEditedData({
+    //                 ...editedData,
+    //                 Doctor: e.target.value,
+    //               })
+    //             }
+    //           />
+    //         </div>
+
+    //         <div>
+    //           <label style={labelStyle}>Enrollment Date</label>
+    //           <Input
+    //             value={editedData.EnrolmentDate}
+    //             onChange={(e) =>
+    //               setEditedData({
+    //                 ...editedData,
+    //                 EnrolmentDate: e.target.value,
+    //               })
+    //             }
+    //           />
+    //         </div>
+    //       </div>
+    //       <div>
+    //         <p style={{ fontWeight: 600, fontSize: 16 }}>Health Records</p>
+    //         <div style={vitalsGrid}>
+    //           {vitals.map((item, i) => (
+    //             <div key={i} style={vitalCard}>
+    //               <img
+    //                 src={item.icon}
+    //                 alt={item.label}
+    //                 style={{ width: 24, height: 24, flexShrink: 0 }}
+    //               />
+    //               <div
+    //                 style={{
+    //                   display: "flex",
+    //                   flexDirection: "column",
+    //                   minWidth: 0,
+    //                 }}
+    //               >
+    //                 <p style={vitalLabel}>{item.label}</p>
+    //                 <div
+    //                   style={{
+    //                     display: "flex",
+    //                     alignItems: "center",
+    //                     gap: 5,
+    //                   }}
+    //                 >
+    //                   <div style={dotStyle(item.color)}></div>
+    //                   <span style={vitalValue}>{item.value}</span>
+    //                 </div>
+    //               </div>
+    //             </div>
+    //           ))}
+    //         </div>
+    //       </div>
+
+    //       {/* Patients Linked (Static Example) */}
+    //       <div>
+    //         <p style={{ fontWeight: 600, fontSize: 16 }}>Sponsor Details</p>
+    //         {linkedSponsor.map((sponsor) => (
+    //           <div
+    //             key={sponsor.id}
+    //             style={{
+    //               background: "#F9F9F9",
+    //               padding: 16,
+    //               borderRadius: 12,
+    //               display: "flex",
+    //               alignItems: "center",
+    //               justifyContent: "space-between",
+    //               marginBottom: 12,
+    //               border: "1px solid #eaeaea",
+    //             }}
+    //           >
+    //             {/* Profile Image */}
+    //             <div
+    //               style={{
+    //                 display: "flex",
+    //                 flexDirection: "column",
+    //                 alignItems: "center",
+    //               }}
+    //             >
+    //               <Avatar
+    //                 size={48}
+    //                 src={sponsor.avatar}
+    //                 style={{ borderRadius: 8, width: 60, height: 62 }}
+    //               />
+    //             </div>
+
+    //             {/* Name */}
+    //             <div style={linkedInfoStyle}>
+    //               <p style={linkedLabelStyle}>Name</p>
+    //               <p style={infoTextStyle}>{sponsor.name}</p>
+    //             </div>
+
+    //             {/* Assigned Doctor */}
+    //             <div style={linkedInfoStyle}>
+    //               <p style={linkedLabelStyle}>Phone</p>
+    //               <p style={infoTextStyle}>{sponsor.phone}</p>
+    //             </div>
+
+    //             {/* Care Taker */}
+    //             <div style={linkedInfoStyle}>
+    //               <p style={linkedLabelStyle}>Email</p>
+    //               <p style={infoTextStyle}>{sponsor.email}</p>
+    //             </div>
+    //           </div>
+    //         ))}
+    //       </div>
+    //     </div>
+    //   );
     if (activeTab === "patients" && selectedPatient)
       return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {/* Profile and Basic Info */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
+        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 10 }}>
+          {/* ---------- PERSONAL INFO ---------- */}
+          <h3 style={sectionTitleStyle}>Personal Information</h3>
+          <p style={labelStyle}>Date of Birth</p>
+          <Input
+            value={editedData.patient_dob}
+            onChange={(e) =>
+              setEditedData({ ...editedData, patient_dob: e.target.value })
+            }
+            placeholder="YYYY-MM-DD"
+          />
 
-              gap: 24,
-            }}
+          <p style={labelStyle}>Gender</p>
+          <Select
+            value={editedData.patient_gender}
+            style={{ width: "100%" }}
+            onChange={(val) =>
+              setEditedData({ ...editedData, patient_gender: val })
+            }
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                gap: 10,
-              }}
-            >
-              <p style={labelStyle}>Profile Image</p>
+            <Select.Option value="Male">Male</Select.Option>
+            <Select.Option value="Female">Female</Select.Option>
+            <Select.Option value="Other">Other</Select.Option>
+          </Select>
 
-              <div style={{ position: "relative", width: 72, height: 72 }}>
-                {/* Avatar */}
-                <Avatar
-                  size={72}
-                  src={uploadedImage || selectedPatient.avatar}
-                  style={{ borderRadius: "50%", objectFit: "cover" }}
-                />
+          <p style={labelStyle}>Blood Group</p>
+          <Input
+            value={editedData.blood_group}
+            onChange={(e) =>
+              setEditedData({ ...editedData, blood_group: e.target.value })
+            }
+          />
 
-                {/* Upload Icon Overlay */}
-                <label
-                  htmlFor="image-upload"
-                  style={{
-                    position: "absolute",
-                    bottom: -10,
-                    right: "50%",
-                    transform: "translateX(50%)",
-                    background: "#fff",
-                    borderRadius: "50%",
-                    padding: 4,
-                    cursor: "pointer",
-                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-                  }}
-                >
-                  <img
-                    src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-                    alt="Upload"
-                    width={16}
-                    height={16}
-                  />
-                </label>
+          <p style={labelStyle}>Home Address</p>
+          <Input.TextArea
+            rows={2}
+            value={editedData.patient_home_address}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                patient_home_address: e.target.value,
+              })
+            }
+          />
 
-                {/* Hidden File Input */}
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  style={{ display: "none" }}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}
-            >
-              <div>
-                <label style={labelStyle}>Name</label>
-                <Input
-                  value={editedData.name}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Patient ID</label>
-                <Input value="PT-2094" />
-              </div>
-              <div>
-                <label style={labelStyle}>Age</label>
-                <Input
-                  value={editedData.age}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, age: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Care Taker</label>
-                <Input
-                  value={editedData.caretaker}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, caretaker: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Gender</label>
-                <Input
-                  value={editedData.gender || "Male"}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, gender: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Condition</label>
-                <Input
-                  value={editedData.Condition}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, Condition: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
+          <p style={labelStyle}>Primary Language</p>
+          <Input
+            value={editedData.primary_language}
+            onChange={(e) =>
+              setEditedData({ ...editedData, primary_language: e.target.value })
+            }
+          />
 
-          {/* Additional Fields */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 16,
-            }}
+          <p style={labelStyle}>Religion</p>
+          <Input
+            value={editedData.religion}
+            onChange={(e) =>
+              setEditedData({ ...editedData, religion: e.target.value })
+            }
+          />
+
+          <p style={labelStyle}>Escalate to Physician</p>
+          <Select
+            value={editedData.escalate_to_physician}
+            style={{ width: "100%" }}
+            onChange={(val) =>
+              setEditedData({ ...editedData, escalate_to_physician: val })
+            }
           >
-            <div>
-              <label style={labelStyle}>Sponsor</label>
-              <Input value="John Nelson (Canada)" />
-            </div>
+            <Select.Option value="Yes">Yes</Select.Option>
+            <Select.Option value="No">No</Select.Option>
+          </Select>
 
-            <div>
-              <label style={labelStyle}>Care Taker</label>
-              <Input
-                value={editedData.CareTaker}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, CareTaker: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Status</label>
-              <Select
-                value={editedData.status}
-                onChange={(value) =>
-                  setEditedData({ ...editedData, status: value })
-                }
-                style={{ width: "100%" }}
-              >
-                <Option value="Active">Active</Option>
-                <Option value="Inactive">Inactive</Option>
-              </Select>
-            </div>
-            <div>
-              <label style={labelStyle}>Membership Plan</label>
-              <Input
-                value={editedData.membership}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    membership: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Doctor</label>
-              <Input
-                value={editedData.Doctor}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    Doctor: e.target.value,
-                  })
-                }
-              />
-            </div>
+          {/* ---------- EMERGENCY CONTACT ---------- */}
+          <h3 style={sectionTitleStyle}>Emergency Contact</h3>
+          <Input
+            placeholder="Name"
+            value={editedData.emer_con_name}
+            onChange={(e) =>
+              setEditedData({ ...editedData, emer_con_name: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Relation"
+            value={editedData.emer_con_relation}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                emer_con_relation: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Country of Residence"
+            value={editedData.emer_con_coun_of_residen}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                emer_con_coun_of_residen: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Country Code"
+            value={editedData.emer_con_country_code}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                emer_con_country_code: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Phone"
+            value={editedData.emer_con_phone}
+            onChange={(e) =>
+              setEditedData({ ...editedData, emer_con_phone: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Email"
+            value={editedData.emer_con_email}
+            onChange={(e) =>
+              setEditedData({ ...editedData, emer_con_email: e.target.value })
+            }
+          />
 
-            <div>
-              <label style={labelStyle}>Enrollment Date</label>
-              <Input
-                value={editedData.EnrolmentDate}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    EnrolmentDate: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div>
-            <p style={{ fontWeight: 600, fontSize: 16 }}>Health Records</p>
-            <div style={vitalsGrid}>
-              {vitals.map((item, i) => (
-                <div key={i} style={vitalCard}>
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    style={{ width: 24, height: 24, flexShrink: 0 }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      minWidth: 0,
-                    }}
-                  >
-                    <p style={vitalLabel}>{item.label}</p>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 5,
-                      }}
-                    >
-                      <div style={dotStyle(item.color)}></div>
-                      <span style={vitalValue}>{item.value}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* ---------- LOCAL CONTACT ---------- */}
+          <h3 style={sectionTitleStyle}>Local Contact</h3>
+          <Input
+            placeholder="Name"
+            value={editedData.local_con_name}
+            onChange={(e) =>
+              setEditedData({ ...editedData, local_con_name: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Relation"
+            value={editedData.local_con_relation}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                local_con_relation: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Country Code"
+            value={editedData.local_con_country_code}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                local_con_country_code: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Phone"
+            value={editedData.local_con_phone}
+            onChange={(e) =>
+              setEditedData({ ...editedData, local_con_phone: e.target.value })
+            }
+          />
 
-          {/* Patients Linked (Static Example) */}
-          <div>
-            <p style={{ fontWeight: 600, fontSize: 16 }}>Sponsor Details</p>
-            {linkedSponsor.map((sponsor) => (
-              <div
-                key={sponsor.id}
-                style={{
-                  background: "#F9F9F9",
-                  padding: 16,
-                  borderRadius: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 12,
-                  border: "1px solid #eaeaea",
-                }}
-              >
-                {/* Profile Image */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <Avatar
-                    size={48}
-                    src={sponsor.avatar}
-                    style={{ borderRadius: 8, width: 60, height: 62 }}
-                  />
-                </div>
+          {/* ---------- MEDICAL HISTORY ---------- */}
+          <h3 style={sectionTitleStyle}>Medical History</h3>
+          <Input.TextArea
+            rows={2}
+            placeholder="Diagnosis"
+            value={editedData.medical_his_diagnosis}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                medical_his_diagnosis: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Major Surgeries"
+            value={editedData.medical_his_major_surgeries}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                medical_his_major_surgeries: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Current Symptoms"
+            value={editedData.medical_his_curr_symp}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                medical_his_curr_symp: e.target.value,
+              })
+            }
+          />
 
-                {/* Name */}
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Name</p>
-                  <p style={infoTextStyle}>{sponsor.name}</p>
-                </div>
+          {/* ---------- MEDICATIONS ---------- */}
+          <h3 style={sectionTitleStyle}>Medications & Allergies</h3>
+          <Input
+            placeholder="Medication Name"
+            value={editedData.medication_name}
+            onChange={(e) =>
+              setEditedData({ ...editedData, medication_name: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Dose"
+            value={editedData.medication_dose}
+            onChange={(e) =>
+              setEditedData({ ...editedData, medication_dose: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Frequency"
+            value={editedData.medication_frequency}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                medication_frequency: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Medication Reason"
+            value={editedData.medication_reason}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                medication_reason: e.target.value,
+              })
+            }
+          />
 
-                {/* Assigned Doctor */}
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Phone</p>
-                  <p style={infoTextStyle}>{sponsor.phone}</p>
-                </div>
+          <p style={labelStyle}>Allergy Issues</p>
+          <Select
+            value={editedData.allergies_issues ? "Yes" : "No"}
+            onChange={(val) =>
+              setEditedData({
+                ...editedData,
+                allergies_issues: val === "Yes",
+              })
+            }
+          >
+            <Select.Option value="Yes">Yes</Select.Option>
+            <Select.Option value="No">No</Select.Option>
+          </Select>
 
-                {/* Care Taker */}
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Email</p>
-                  <p style={infoTextStyle}>{sponsor.email}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Input
+            placeholder="Drug Allergies"
+            value={editedData.allergies_drug}
+            onChange={(e) =>
+              setEditedData({ ...editedData, allergies_drug: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Food Allergies"
+            value={editedData.allergies_food}
+            onChange={(e) =>
+              setEditedData({ ...editedData, allergies_food: e.target.value })
+            }
+          />
+
+          {/* ---------- FUNCTIONAL / LIFESTYLE ---------- */}
+          <h3 style={sectionTitleStyle}>Functional & Lifestyle</h3>
+          <Input.TextArea
+            rows={2}
+            placeholder="Daily Routine"
+            value={editedData.lifestyle_daily_routine}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                lifestyle_daily_routine: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Dietary Habits"
+            value={editedData.lifestyle_dietary_habits}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                lifestyle_dietary_habits: e.target.value,
+              })
+            }
+          />
+          <Input
+            placeholder="Physical Activity"
+            value={editedData.lifestyle_physical_activity}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                lifestyle_physical_activity: e.target.value,
+              })
+            }
+          />
+
+          {/* ---------- SOCIAL & GOALS ---------- */}
+          <h3 style={sectionTitleStyle}>Social & Goals</h3>
+          <Input.TextArea
+            rows={2}
+            placeholder="Emotional Health"
+            value={editedData.social_emotion_health}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                social_emotion_health: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Spiritual Needs"
+            value={editedData.social_spiritual_needs}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                social_spiritual_needs: e.target.value,
+              })
+            }
+          />
+          <Input.TextArea
+            rows={2}
+            placeholder="Goals or Hopes"
+            value={editedData.goals_family_hope}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                goals_family_hope: e.target.value,
+              })
+            }
+          />
+
+          {/* ---------- FILE UPLOAD ---------- */}
+          <h3 style={sectionTitleStyle}>Upload Documents</h3>
+          <p style={labelStyle}>File Names (comma separated)</p>
+          <Input
+            placeholder="xray, scan"
+            value={editedData.patient_files_name}
+            onChange={(e) =>
+              setEditedData({
+                ...editedData,
+                patient_files_name: e.target.value,
+              })
+            }
+          />
+
+          <Upload
+            multiple
+            beforeUpload={(file) => {
+              setEditedData((prev) => ({
+                ...prev,
+                patient_upload_files: [
+                  ...(prev.patient_upload_files || []),
+                  file,
+                ],
+              }));
+              return false;
+            }}
+            showUploadList
+          >
+            <Button icon={<UploadOutlined />}>Choose Files</Button>
+          </Upload>
         </div>
       );
 
@@ -1806,3 +2370,11 @@ const vitalCard = {
 
 const vitalLabel = { fontSize: 14, fontWeight: 600, marginBottom: 2 };
 const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
+
+const sectionTitleStyle = {
+  marginTop: 16,
+  marginBottom: 8,
+  fontWeight: 600,
+  fontSize: 16,
+  color: "#1762A6",
+};
