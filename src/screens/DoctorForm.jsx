@@ -4,8 +4,10 @@ import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Form, Input, Select, Button, Modal } from "antd";
 import Success from "../assets/icons/success.svg";
+import { Form, Input, Select, Button, Modal, message } from "antd";
+import axios from "axios";
+import { base_url } from "../constants/constants";
 
 const { Option } = Select;
 
@@ -29,13 +31,63 @@ function SectionHeader({ title, children }) {
   );
 }
 
-export default function DoctorForm() {
+export default function DoctorForm(doc_reports_data, base_url) {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const onFinish = (values) => {
-    console.log("Form Submitted:", values);
-    setIsSuccessModalOpen(true);
-    form.resetFields();
+
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      // const endpoint = `${base_url}/doctor_reports_curd/`;
+      const endpoint = `https://verimedramja.pythonanywhere.com/verimed/doctor_reports_curd/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
+
+      // Fixed payload
+      const payload = {
+        doc_reports_data: {
+          doc_report_updateid: doc_reports_data.doc_report_updateid,
+          patient: doc_reports_data.patient,
+          doc: doc_reports_data.doc,
+          sponsor: doc_reports_data.sponsor,
+          caretaker: doc_reports_data.caretaker,
+          patient_name: values.patientName,
+          patient_age: values.age,
+          patient_gender: values.gender,
+          nationality: values.nationality,
+          blood_group: values.bloodGroup,
+          bp: values.bp,
+          heart_rate: values.heartRate,
+          sugar: values.sugar,
+          oxygen: values.oxygen,
+          temperature: values.temperature,
+          respiratory_rate: values.respiratoryRate,
+          weight: values.weight,
+          status: values.status,
+          address_1: values.address1,
+          address_2: values.address2,
+          city: values.city,
+          state: values.state,
+          country: values.country,
+          pincode: values.pincode,
+          doctor_notes: values.doctorNotes,
+        },
+      };
+
+      const response = await axios.post(endpoint, payload, { headers });
+      console.log("API Response:", response.data);
+
+      message.success("Report submitted successfully!");
+      setIsSuccessModalOpen(true);
+      form.resetFields();
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      message.error("Failed to submit report. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const careTeam = {
@@ -325,58 +377,66 @@ export default function DoctorForm() {
               layout="vertical"
               onFinish={onFinish}
               style={{ width: "100%" }}
+              initialValues={{
+                patientName: doc_reports_data.patient_name,
+                age: doc_reports_data.patient_age,
+                gender: doc_reports_data.patient_gender,
+                nationality: doc_reports_data.nationality,
+                bloodGroup: doc_reports_data.blood_group,
+                bp: doc_reports_data.bp,
+                heartRate: doc_reports_data.heart_rate,
+                sugar: doc_reports_data.sugar,
+                oxygen: doc_reports_data.oxygen,
+                temperature: doc_reports_data.temperature,
+                respiratoryRate: doc_reports_data.respiratory_rate,
+                weight: doc_reports_data.weight,
+                status: doc_reports_data.status,
+                address1: doc_reports_data.address_1,
+                address2: doc_reports_data.address_2,
+                city: doc_reports_data.city,
+                state: doc_reports_data.state,
+                country: doc_reports_data.country,
+                pincode: doc_reports_data.pincode,
+                doctorNotes: doc_reports_data.doctor_notes,
+              }}
             >
-              {/* Row 1 */}
+              {/* Patient Info */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
+                  gap: 16,
                 }}
               >
-                <Form.Item label="Patient ID" name="patientId">
-                  <Input placeholder="#22515" disabled />
-                </Form.Item>
-
                 <Form.Item label="Patient Name" name="patientName">
                   <Input />
                 </Form.Item>
-
                 <Form.Item label="Age" name="age">
                   <Input type="number" />
                 </Form.Item>
-
                 <Form.Item label="Gender" name="gender">
-                  <Select placeholder="Select">
-                    <Option value="male">Male</Option>
-                    <Option value="female">Female</Option>
-                    <Option value="other">Other</Option>
+                  <Select>
+                    <Option value="Male">Male</Option>
+                    <Option value="Female">Female</Option>
+                    <Option value="Other">Other</Option>
                   </Select>
+                </Form.Item>
+                <Form.Item label="Nationality" name="nationality">
+                  <Input />
                 </Form.Item>
               </div>
 
-              {/* Row 2 */}
+              {/* Vitals */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
+                  gap: 16,
+                  marginTop: 16,
                 }}
               >
-                <Form.Item label="Consultant" name="consultant1">
-                  <Input />
-                </Form.Item>
-
-                <Form.Item label="Company" name="company1">
-                  <Input />
-                </Form.Item>
-
-                <Form.Item label="Nationality" name="nationality1">
-                  <Input />
-                </Form.Item>
-
-                <Form.Item label="Blood Group" name="bloodGroup1">
-                  <Select placeholder="Select">
+                <Form.Item label="Blood Group" name="bloodGroup">
+                  <Select>
                     <Option value="A+">A+</Option>
                     <Option value="A-">A-</Option>
                     <Option value="B+">B+</Option>
@@ -387,88 +447,84 @@ export default function DoctorForm() {
                     <Option value="AB-">AB-</Option>
                   </Select>
                 </Form.Item>
+                <Form.Item label="BP" name="bp">
+                  <Input />
+                </Form.Item>
+                <Form.Item label="Heart Rate" name="heartRate">
+                  <Input />
+                </Form.Item>
+                <Form.Item label="Sugar" name="sugar">
+                  <Input />
+                </Form.Item>
               </div>
 
-              {/* Row 3 */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
+                  gap: 16,
+                  marginTop: 16,
                 }}
               >
-                <Form.Item label="Consultant" name="consultant2">
+                <Form.Item label="Oxygen" name="oxygen">
                   <Input />
                 </Form.Item>
-
-                <Form.Item label="Company" name="company2">
+                <Form.Item label="Temperature" name="temperature">
                   <Input />
                 </Form.Item>
-
-                <Form.Item label="Nationality" name="nationality2">
+                <Form.Item label="Respiratory Rate" name="respiratoryRate">
                   <Input />
                 </Form.Item>
-
-                <Form.Item label="Blood Group" name="bloodGroup2">
-                  <Select placeholder="Select">
-                    <Option value="A+">A+</Option>
-                    <Option value="A-">A-</Option>
-                    <Option value="B+">B+</Option>
-                    <Option value="B-">B-</Option>
-                    <Option value="O+">O+</Option>
-                    <Option value="O-">O-</Option>
-                    <Option value="AB+">AB+</Option>
-                    <Option value="AB-">AB-</Option>
-                  </Select>
+                <Form.Item label="Weight" name="weight">
+                  <Input />
                 </Form.Item>
               </div>
 
-              <h3 style={{ marginTop: 30, marginBottom: 20, color: "#007F5F" }}>
+              <Form.Item label="Status" name="status" style={{ marginTop: 16 }}>
+                <Input />
+              </Form.Item>
+
+              {/* Address */}
+              <h3 style={{ marginTop: 20, color: "#007F5F" }}>
                 Address Information
               </h3>
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
+                  gap: 16,
                 }}
               >
                 <Form.Item label="Address Line 1" name="address1">
                   <Input />
                 </Form.Item>
-
                 <Form.Item label="Address Line 2" name="address2">
                   <Input />
                 </Form.Item>
-
                 <Form.Item label="City" name="city">
-                  <Select placeholder="Select" />
+                  <Input />
                 </Form.Item>
-
                 <Form.Item label="State" name="state">
-                  <Select placeholder="Select" />
+                  <Input />
                 </Form.Item>
               </div>
-
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: 16,
                 }}
               >
                 <Form.Item label="Country" name="country">
-                  <Select placeholder="Select" />
+                  <Input />
                 </Form.Item>
-
                 <Form.Item label="Pincode" name="pincode">
                   <Input />
                 </Form.Item>
               </div>
 
-              <h3 style={{ marginTop: 30, marginBottom: 20, color: "#007F5F" }}>
-                Doctor Notes
-              </h3>
+              {/* Doctor Notes */}
+              <h3 style={{ marginTop: 20, color: "#007F5F" }}>Doctor Notes</h3>
               <Form.Item name="doctorNotes">
                 <Input.TextArea rows={4} placeholder="Add your comments here" />
               </Form.Item>
@@ -476,20 +532,20 @@ export default function DoctorForm() {
               <div
                 style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
               >
-                <SecondaryBtn
-                  name="Cancel"
+                <Button
                   onClick={() => {
                     form.resetFields();
                     setIsSuccessModalOpen(false);
                   }}
-                />
-                <PrimaryBtn
-                  name="Submit Report"
-                  type="primary"
-                  htmlType="submit"
-                />
+                >
+                  Cancel
+                </Button>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  Submit Report
+                </Button>
               </div>
             </Form>
+
             <Modal
               open={isSuccessModalOpen}
               onCancel={() => setIsSuccessModalOpen(false)}

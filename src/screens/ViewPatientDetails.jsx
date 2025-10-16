@@ -269,7 +269,7 @@ export default function ViewPatientDetails() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <SectionHeader title="My details">
               <PrimaryBtn
-                name="get appointment"
+                name="submit reports"
                 onClick={() => navigate("/doctor_form")}
               />
             </SectionHeader>
