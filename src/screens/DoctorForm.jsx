@@ -36,6 +36,8 @@ export default function DoctorForm(doc_reports_data, base_url) {
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+  const token = localStorage.getItem("token");
+
   const onFinish = async (values) => {
     setLoading(true);
     try {
