@@ -30,23 +30,6 @@ export default function HeaderComponent() {
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
 
-  const getTitle = () => {
-    switch (user?.type) {
-      case "admin":
-        return "Admin";
-      case "sponsor":
-        return "Sponsor";
-      case "patient":
-        return "Patient";
-      case "care":
-        return "Care Taker";
-      case "doctor":
-        return "Doctor";
-      default:
-        return "";
-    }
-  };
-
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
   };
@@ -66,6 +49,7 @@ export default function HeaderComponent() {
   const unreadCount = 3;
 
   const handleLogout = () => {
+    localStorage.clear();
     navigate("/");
   };
 
@@ -96,8 +80,10 @@ export default function HeaderComponent() {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: 18 }}>{getTitle()} –</span>
-        <span style={{ fontSize: 18, marginLeft: 4 }}>Welcome Back, Admin</span>
+        <span style={{ fontSize: 18 }}>{user?.username} –</span>
+        <span style={{ fontSize: 18, marginLeft: 4 }}>
+          Welcome Back, {user?.first_name}
+        </span>
       </div>
 
       <Space size="middle" align="center">

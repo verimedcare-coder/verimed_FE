@@ -58,12 +58,14 @@ export default function Appointments() {
   const [appointmentList, setAppointmentList] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         const userListEndpoint = `${base_url}/user_view/`;
         const headers = {
-          Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+          Authorization: `Token ${token}`,
         };
         const userRes = await axios.get(userListEndpoint, { headers });
         const allusers = userRes.data;
@@ -99,7 +101,7 @@ export default function Appointments() {
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        Authorization: `Token ${token}`,
       };
       const res = await axios.get(endpoint, { headers });
       setAppointmentList(res.data);
@@ -119,7 +121,7 @@ export default function Appointments() {
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        Authorization: `Token ${token}`,
       };
 
       const bookappoinment_data = {

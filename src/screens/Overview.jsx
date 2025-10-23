@@ -35,11 +35,13 @@ export default function Overview() {
   const [visibleCount, setVisibleCount] = useState(3);
   const [appointmentList, setAppointmentList] = useState([]);
 
+  const token = localStorage.getItem("token");
+
   const fetchAppointments = async () => {
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        Authorization: `Token ${token}`,
       };
       const res = await axios.get(endpoint, { headers });
       setAppointmentList(res.data);
@@ -521,7 +523,6 @@ export default function Overview() {
       next: "Aug 24, 2025 – Virtual consult with Dr. Paul",
     },
   ];
-
   const userToken = localStorage.getItem("token");
 
   useEffect(() => {
@@ -568,11 +569,12 @@ export default function Overview() {
           }}
         >
           {/* Banner */}
-          {user?.type === "sponsor" && <Banner />}
+          {user?.user_role === "sponsor" && <Banner />}
 
           {/* Patient Details */}
-          {user?.type !== "doctor" &&
-            (user?.type === "sponsor" || user?.type === "patient") && (
+          {user?.user_role !== "doctor" &&
+            (user?.user_role === "sponsor" ||
+              user?.user_role === "patient") && (
               <div style={cardStyle}>
                 <SectionHeader title="Patient Details">
                   <Primarybtn name="View Full Profile" />
@@ -633,7 +635,7 @@ export default function Overview() {
               </div>
             )}
 
-          {user?.type === "care" && (
+          {user?.user_role === "care_taker" && (
             <>
               {/* cards */}
               <div style={vitalsGrid}>
@@ -670,7 +672,7 @@ export default function Overview() {
           )}
 
           {/* Doctor overview stats */}
-          {(user?.type === "doctor" || user?.type === "admin") && (
+          {(user?.user_role === "doctor" || user?.user_role === "admin") && (
             <div
               style={{
                 display: "flex",
@@ -830,7 +832,7 @@ export default function Overview() {
 
           {/* Charts section */}
 
-          {user?.type === "admin" && (
+          {user?.user_role === "admin" && (
             <div
               style={{
                 display: "flex",
@@ -977,7 +979,7 @@ export default function Overview() {
             </div>
           )}
           {/* Appointment List */}
-          {user?.type === "admin" && (
+          {user?.user_role === "admin" && (
             <div
               style={{
                 background: "#fff",
@@ -1054,7 +1056,7 @@ export default function Overview() {
           )}
 
           {/* my details */}
-          {user?.type === "care" && (
+          {user?.user_role === "care_taker" && (
             <div
               style={{
                 background: "transparent",
@@ -1237,7 +1239,7 @@ export default function Overview() {
           )}
 
           {/* Today's Schedule */}
-          {user?.type === "doctor" && (
+          {user?.user_role === "doctor" && (
             <div style={{ width: "100%" }}>
               <div
                 style={{
@@ -1456,7 +1458,7 @@ export default function Overview() {
           )}
 
           {/* Medical Reports & Daily Reports */}
-          {user?.type === "doctor" && (
+          {user?.user_role === "doctor" && (
             <div
               style={{
                 display: "flex",
@@ -1737,7 +1739,7 @@ export default function Overview() {
           )}
 
           {/* careTeam */}
-          {user?.type === "sponsor" && (
+          {user?.user_role === "sponsor" && (
             <>
               <div
                 style={{
@@ -2230,7 +2232,7 @@ export default function Overview() {
           )}
 
           {/* Care Taker Details */}
-          {user?.type === "patient" && (
+          {user?.user_role === "patient" && (
             <>
               <div
                 style={{
@@ -2410,7 +2412,7 @@ export default function Overview() {
           )}
 
           {/* My Reports - Patient */}
-          {user?.type === "patient" && (
+          {user?.user_role === "patient" && (
             <div
               style={{
                 borderWidth: 1,
@@ -2583,7 +2585,7 @@ export default function Overview() {
           )}
 
           {/* Appointment Details */}
-          {user?.type === "patient" && (
+          {user?.user_role === "patient" && (
             <div
               style={{
                 display: "flex",
@@ -3010,7 +3012,7 @@ export default function Overview() {
           )}
 
           {/* medical history */}
-          {user?.type === "care" && (
+          {user?.user_role === "care_taker" && (
             <div style={tableContainer}>
               <SectionHeader title="Medical History">
                 <Primarybtn name="Get Appointment" />
@@ -3029,7 +3031,7 @@ export default function Overview() {
           )}
 
           {/* upcoming appoinment */}
-          {user?.type === "care" && (
+          {user?.user_role === "care_taker" && (
             <div
               style={{
                 display: "grid",

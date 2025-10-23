@@ -114,7 +114,8 @@ export default function CustomSider() {
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
 
-  const filteredMenuItems = menuConfig[user?.type] || menuConfig["patient"];
+  const filteredMenuItems =
+    menuConfig[user?.user_role] || menuConfig["patient"];
 
   const activeItem =
     filteredMenuItems.find((item) => location.pathname.startsWith(item.path))
@@ -150,10 +151,10 @@ export default function CustomSider() {
           <Avatar src={Profile} size={67} />
           <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>
-              Admin
+              {user?.first_name} {user?.last_name}
             </Text>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              admin@verimed.com
+              {user?.email}
             </Text>
           </div>
         </div>

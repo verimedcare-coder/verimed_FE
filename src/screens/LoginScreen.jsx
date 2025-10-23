@@ -17,70 +17,65 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const userToken = localStorage.getItem("token");
-  const onFinish = (values) => {
+
+  const onFinish = async (values) => {
     const { username, password } = values;
     setLoading(true);
 
-    let userData = null;
+    try {
+      const res = await axios.post(`${base_url}/user_login/`, {
+        username,
+        password,
+      });
 
-    if (username === "admin@verimed.com" && password === "Admin@123") {
-      userData = { username, type: "admin" };
-      window.location.href = "/overview";
-    } else if (
-      username === "sponsor@verimed.com" &&
-      password === "Sponsor@123"
-    ) {
-      userData = { username, type: "sponsor" };
-      window.location.href = "/overview";
-    } else if (
-      username === "patient@verimed.com" &&
-      password === "Patient@123"
-    ) {
-      userData = { username, type: "patient" };
-      window.location.href = "/overview";
-    } else if (username === "care@verimed.com" && password === "Care@123") {
-      userData = { username, type: "care" };
-      window.location.href = "/overview";
-    } else if (username === "doctor@verimed.com" && password === "Doctor@123") {
-      userData = { username, type: "doctor" };
-      window.location.href = "/overview";
-    } else {
-      message.error("Invalid credentials. Please try again.");
-    }
+      const token = res.data.token;
+      localStorage.setItem("token", token);
 
-    if (userData) {
+      const userRes = await axios.get(`${base_url}/user_view/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      const userData = userRes.data.find((user) => user.username === username);
+
+      if (!userData) {
+        message.error("User not found. Please check credentials.");
+        setLoading(false);
+        return;
+      }
+
+      const userRole = userData.user_role;
+
       localStorage.setItem("userData", JSON.stringify(userData));
+
+      message.success("Login successful!");
+
+      switch (userRole) {
+        case "admin":
+          window.location.href = "/overview";
+          break;
+        case "sponsor":
+          window.location.href = "/overview";
+          break;
+        case "doctor":
+          window.location.href = "/overview";
+          break;
+        case "patient":
+          window.location.href = "/overview";
+          break;
+        case "care_taker":
+          window.location.href = "/overview";
+          break;
+        default:
+          message.error("Invalid user role.");
+          break;
+      }
+    } catch (error) {
+      console.log("Login error:", error);
+      message.error("Invalid username or password. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
-  // const onFinish = async (values) => {
-  //   const { username, password } = values;
-  //   setLoading(true);
-  //   try {
-  //     const res = await axios.post(`${base_url}/user_login/`, {
-  //       username,
-  //       password,
-  //     });
-
-  //     const token = res.data.token;
-  //     localStorage.setItem("token", token);
-
-  //     const userRes = await axios.get(`${base_url}/user_view/`, {
-  //       headers: { Authorization: `Token ${token}` },
-  //     });
-
-  //     const userData = userRes.data.find((user) => user.username === username);
-  //     localStorage.setItem("userData", JSON.stringify(userData));
-
-  //     setLoading(false);
-  //   } catch (error) {
-  //     console.log("Login error:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   return (
     <div

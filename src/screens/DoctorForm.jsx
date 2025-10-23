@@ -42,7 +42,7 @@ export default function DoctorForm(doc_reports_data, base_url) {
       // const endpoint = `${base_url}/doctor_reports_curd/`;
       const endpoint = `https://verimedramja.pythonanywhere.com/verimed/doctor_reports_curd/`;
       const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        Authorization: `Token ${token}`,
       };
 
       // Fixed payload

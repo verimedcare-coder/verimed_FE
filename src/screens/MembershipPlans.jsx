@@ -52,11 +52,13 @@ export default function MembershipPlans() {
   const [appointmentList, setAppointmentList] = useState([]);
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
 
+  const token = localStorage.getItem("token");
+
   const fetchAppointments = async () => {
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+        Authorization: `Token ${token}`,
       };
       const res = await axios.get(endpoint, { headers });
       setAppointmentList(res.data);
