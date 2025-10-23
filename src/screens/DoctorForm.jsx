@@ -31,7 +31,7 @@ function SectionHeader({ title, children }) {
   );
 }
 
-export default function DoctorForm(doc_reports_data, base_url) {
+export default function DoctorForm(doc_reports_data) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -41,8 +41,7 @@ export default function DoctorForm(doc_reports_data, base_url) {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // const endpoint = `${base_url}/doctor_reports_curd/`;
-      const endpoint = `https://verimedramja.pythonanywhere.com/verimed/doctor_reports_curd/`;
+      const endpoint = `${base_url}/doctor_reports_curd/`;
       const headers = {
         Authorization: `Token ${token}`,
       };
