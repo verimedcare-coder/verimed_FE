@@ -13,11 +13,12 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Button, Table } from "antd";
+import { Button, Empty, Table } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarOutlined,
   DownOutlined,
+  FileOutlined,
   FilterOutlined,
   PlusOutlined,
   UpOutlined,
@@ -1853,97 +1854,72 @@ export default function Overview() {
                   </p>
                   <Primarybtn name="View Full Reports" onClick={() => {}} />
                 </div>
-                <div
-                  style={{
-                    height: 1,
-                    width: "100%",
-                    backgroundColor: "#1B1B1B",
-                    opacity: 0.1,
-                    marginTop: 10,
-                    marginBottom: 10,
-                  }}
-                />
                 <div>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontWeight: "500",
-                    }}
-                  >
-                    - Patient stable, continue medication, BP to be checked
-                    daily.
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontWeight: "500",
-                      }}
-                    >
-                      - Diabetes under control, advised diet adjustment.
-                    </p>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      Aug 15, 2025 – Dr. Paul
-                    </p>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    height: 1,
-                    width: "100%",
-                    backgroundColor: "#1B1B1B",
-                    opacity: 0.1,
-                    marginTop: 10,
-                    marginBottom: 10,
-                  }}
-                />
-                <div>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontWeight: "500",
-                    }}
-                  >
-                    - BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontWeight: "500",
-                      }}
-                    >
-                      - BP: 150/92 | Status: ⚠ Escalated to Physician
-                    </p>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontSize: 16,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      Aug 16, 2025 – Nurse Clarisse
-                    </p>
-                  </div>
+                  {/* {[
+                    {
+                      note: "Patient stable, continue medication, BP to be checked daily.",
+                      subNote:
+                        "- Diabetes under control, advised diet adjustment.",
+                      author: "Dr. Paul",
+                      date: "Aug 15, 2025",
+                    },
+                    {
+                      note: "- BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable",
+                      subNote:
+                        "- BP: 150/92 | Status: ⚠ Escalated to Physician",
+                      author: "Nurse Clarisse",
+                      date: "Aug 16, 2025",
+                    },
+                  ].map((entry, index) => (
+                    <div key={index}>
+                      <div
+                        style={{
+                          height: 1,
+                          width: "100%",
+                          backgroundColor: "#1B1B1B",
+                          opacity: 0.1,
+                          marginTop: 10,
+                          marginBottom: 10,
+                        }}
+                      />
+                      <div>
+                        <p
+                          style={{
+                            color: "#2E2E2E",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {entry.note}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <p
+                            style={{
+                              color: "#2E2E2E",
+                              fontWeight: "500",
+                            }}
+                          >
+                            {entry.subNote}
+                          </p>
+                          <p
+                            style={{
+                              color: "#2E2E2E",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {entry.date} – {entry.author}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))} */}
+                  <Empty description="No Data" />
                 </div>
               </div>
               <div
@@ -1974,122 +1950,76 @@ export default function Overview() {
                     marginBottom: 10,
                   }}
                 />
-                <div>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Alerts Requiring Attention
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                    }}
-                  >
-                    Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
-                    Nurse Clarisse)
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
+
+                {/* {[
+                  {
+                    id: 1,
+                    title: "Alerts Requiring Attention",
+                    description:
+                      "Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by Nurse Clarisse)",
+                    timestamp: "Aug 15, 2025 – Dr. Paul",
+                  },
+                  {
+                    id: 2,
+                    title: "Alerts Requiring Attention",
+                    description:
+                      "Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by Nurse Clarisse)",
+                    timestamp: "Aug 15, 2025 – Dr. Paul",
+                  },
+                ].map((alert) => (
+                  <div key={alert.id} style={{ marginBottom: 16 }}>
+                    <p
+                      style={{
+                        color: "#2E2E2E",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {alert.title}
+                    </p>
                     <p
                       style={{
                         color: "#2E2E2E",
                       }}
                     >
-                      Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
-                      Nurse Clarisse)
+                      {alert.description}
                     </p>
-                    <p
+                    <div
                       style={{
-                        color: "#2E2E2E",
-                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                       }}
                     >
-                      Aug 15, 2025 – Dr. Paul
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <SecondaryBtn name="Review" onClick={() => {}} />
-                    <Primarybtn name="Adjust Medication" onClick={() => {}} />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    height: 1,
-                    width: "100%",
-                    backgroundColor: "#1B1B1B",
-                    opacity: 0.1,
-                    marginTop: 10,
-                    marginBottom: 10,
-                  }}
-                />
-                <div>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Alerts Requiring Attention
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                    }}
-                  >
-                    Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
-                    Nurse Clarisse)
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <p
+                      <p style={{ color: "#2E2E2E" }}>{alert.description}</p>
+                      <p style={{ color: "#2E2E2E", fontStyle: "italic" }}>
+                        {alert.timestamp}
+                      </p>
+                    </div>
+                    <div
                       style={{
-                        color: "#2E2E2E",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginTop: 8,
                       }}
                     >
-                      Patient: Samuel N. – High BP 150/92 (Reported Aug 14 by
-                      Nurse Clarisse)
-                    </p>
-                    <p
+                      <SecondaryBtn name="Review" onClick={() => {}} />
+                      <Primarybtn name="Adjust Medication" onClick={() => {}} />
+                    </div>
+                    <div
                       style={{
-                        color: "#2E2E2E",
-                        fontStyle: "italic",
+                        height: 1,
+                        width: "100%",
+                        backgroundColor: "#1B1B1B",
+                        opacity: 0.1,
+                        marginTop: 10,
+                        marginBottom: 10,
                       }}
-                    >
-                      Aug 15, 2025 – Dr. Paul
-                    </p>
+                    />
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <SecondaryBtn name="Review" onClick={() => {}} />
-                    <Primarybtn name="Adjust Medication" onClick={() => {}} />
-                  </div>
-                </div>
+                ))} */}
+                <Empty description="No Data" />
               </div>
             </div>
           )}
