@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-
+import { base_url } from "../constants/constants";
+import axios from "axios";
 const actions = [
   {
     date: "Aug 15, 2025 — 10:00 AM",
@@ -23,15 +24,53 @@ const actions = [
 ];
 
 export default function CareTeam() {
-  const careTeam = {
-    name: "Clarisse A.",
-    role: "Primary Care Taker / Skilled Nurse",
-    Experience: "15+",
-    Languages: "English, French",
-    Contact: "+966 558441502",
-    specialization:
-      "Hypertension, diabetes, infusion therapy, elderly mobility support",
+  const [patientData, setPatientData] = useState(null);
+  const [vitalsData, setVitalsData] = useState(null);
+  const token = localStorage.getItem("token");
+
+  const data = localStorage.getItem("userData");
+  const user = data ? JSON.parse(data) : null;
+  if (!user) {
+    window.location.href = "/";
+  }
+
+  const fetchPatientDetailsAndVitals = async () => {
+    try {
+      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { patientprofileid: user?.profile_id || 4 };
+
+      const res = await axios.post(endpoint, payload, { headers });
+
+      if (res.data && res.data.length > 0) {
+        const appointment = res.data[0];
+        setPatientData(appointment.patient);
+        setVitalsData(appointment);
+      }
+    } catch (error) {
+      console.error("Error fetching patient + vitals:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchPatientDetailsAndVitals();
+  }, []);
+
+  const careTeam = vitalsData
+    ? {
+        name:
+          vitalsData.caretaker?.caretaker_id ||
+          `${vitalsData.caretaker?.user || ""}` ||
+          "N/A",
+        role: "Caretaker",
+        contact: vitalsData.caretaker?.contact || "N/A",
+        nextVisit: vitalsData.appointment_date || "N/A",
+        frequency: "Weekly",
+        specialization: vitalsData.caretaker?.skillset || "General Care",
+        experience: vitalsData.caretaker?.caretaker_exprience || "N/A",
+        languages: vitalsData.caretaker?.languages || "N/A",
+      }
+    : {};
 
   return (
     <div
@@ -103,7 +142,7 @@ export default function CareTeam() {
             <div style={{ display: "flex", gap: "16px" }}>
               {/* Left - Avatar */}
               <img
-                src={patientdetails}
+                src={careTeam?.avatar || patientdetails}
                 alt="Profile"
                 style={{
                   width: "60px",
@@ -136,7 +175,7 @@ export default function CareTeam() {
                       Name
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.name}
+                      {careTeam.name || "N/A"}
                     </div>
                   </div>
                   <div>
@@ -144,7 +183,7 @@ export default function CareTeam() {
                       Role
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.role}
+                      {careTeam.role || "N/A"}
                     </div>
                   </div>
                   <div>
@@ -152,7 +191,7 @@ export default function CareTeam() {
                       Experience
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Experience}
+                      {careTeam.Experience || "N/A"}
                     </div>
                   </div>
                   <div>
@@ -160,7 +199,7 @@ export default function CareTeam() {
                       Languages
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Languages}
+                      {careTeam.Languages || "N/A"}
                     </div>
                   </div>
                   <div>
@@ -168,7 +207,7 @@ export default function CareTeam() {
                       Contact Number
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Contact}
+                      {careTeam.Contact || "N/A"}
                     </div>
                   </div>
                 </div>
@@ -182,7 +221,7 @@ export default function CareTeam() {
                     Specialization
                   </div>
                   <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                    {careTeam.specialization}
+                    {careTeam.specialization || "N/A"}
                   </div>
                 </div>
               </div>
