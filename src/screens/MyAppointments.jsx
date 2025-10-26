@@ -4,7 +4,7 @@ import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import Primarybtn from "../components/PrimaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Button, DatePicker, Table } from "antd";
+import { Button, DatePicker, Table, Spin } from "antd";
 import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
@@ -35,6 +35,7 @@ export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(3);
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const token = localStorage.getItem("token");
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
@@ -43,15 +44,22 @@ export default function MyAppointments() {
   }
 
   const fetchDoctorAppointments = async () => {
+    setLoading(true);
     try {
       const endpoint = `${base_url}/vb_doctorappoinment_list/`;
       const headers = { Authorization: `Token ${token}` };
       const payload = { doctorprofileid: user?.profile_id || 1 };
       const res = await axios.post(endpoint, payload, { headers });
       if (Array.isArray(res.data)) setDoctorAppointments(res.data);
-      else console.warn("Unexpected response:", res.data);
+      else {
+        console.warn("Unexpected response:", res.data);
+        setDoctorAppointments([]);
+      }
     } catch (error) {
       console.error("Error fetching doctor appointments:", error);
+      setDoctorAppointments([]);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -218,115 +226,107 @@ export default function MyAppointments() {
                 marginTop: 16,
               }}
             >
-              {doctorAppointments.slice(0, visibleCount).map((appt) => {
-                const patientUser = appt.patient?.user;
-                const name = patientUser
-                  ? `${patientUser.first_name} ${patientUser.last_name}`
-                  : "Unknown";
-                const disease = appt.patient?.medical_his_diagnosis || "";
-                const place = appt.appointment_type || "Home Visit";
+              {loading ? (
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 40,
+                  }}
+                >
+                  <Spin size="large" />
+                </div>
+              ) : (
+                doctorAppointments.slice(0, visibleCount).map((appt) => {
+                  const patientUser = appt.patient?.user;
+                  const name = patientUser
+                    ? `${patientUser.first_name} ${patientUser.last_name}`
+                    : "Unknown";
+                  const disease = appt.patient?.medical_his_diagnosis || "";
+                  const place = appt.appointment_type || "Home Visit";
 
-                const dt = appt.appointment_date
-                  ? new Date(
-                      `${appt.appointment_date}T${
-                        appt.appointment_time || "00:00:00"
-                      }`
-                    )
-                  : null;
-                const displayDate = dt
-                  ? dt.toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "-";
-                const displayTime = dt
-                  ? dt.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "-";
+                  const dt = appt.appointment_date
+                    ? new Date(
+                        `${appt.appointment_date}T${
+                          appt.appointment_time || "00:00:00"
+                        }`
+                      )
+                    : null;
+                  const displayDate = dt
+                    ? dt.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "-";
+                  const displayTime = dt
+                    ? dt.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-";
 
-                return (
-                  <div
-                    key={appt.id}
-                    style={{
-                      height: 256,
-                      borderRadius: 16,
-                      padding: 20,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                      background: "#fff",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                    }}
-                  >
+                  return (
                     <div
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
-                    >
-                      <img
-                        alt={name}
-                        src={patientdetails}
-                        style={{
-                          height: 65,
-                          width: 65,
-                          borderRadius: 100,
-                          objectFit: "contain",
-                        }}
-                      />
-                      <div>
-                        <p style={{ fontSize: 16, fontWeight: "600" }}>
-                          {name}
-                        </p>
-                        <p style={{ color: "#7A7D84" }}>{disease}</p>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "#004E891F",
-                            height: 22,
-                            width: 82,
-                            borderRadius: 20,
-                          }}
-                        >
-                          <p style={{ fontSize: 12, color: "#004E89" }}>
-                            {place}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
+                      key={appt.id}
                       style={{
-                        height: 1,
-                        width: "100%",
-                        backgroundColor: "#E5E5E5",
-                        margin: "12px 0",
-                      }}
-                    />
-
-                    <div
-                      style={{
+                        height: 256,
+                        borderRadius: 16,
+                        padding: 20,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        background: "#fff",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
+                        flexDirection: "column",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <div>
-                        <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
-                          {displayDate}
-                        </p>
-                        <p style={{ color: "#7A7D84", fontSize: 12 }}>
-                          {displayTime}
-                        </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <img
+                          alt={name}
+                          src={patientdetails}
+                          style={{
+                            height: 65,
+                            width: 65,
+                            borderRadius: 100,
+                            objectFit: "contain",
+                          }}
+                        />
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: "600" }}>
+                            {name}
+                          </p>
+                          <p style={{ color: "#7A7D84" }}>{disease}</p>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "#004E891F",
+                              height: 22,
+                              width: 82,
+                              borderRadius: 20,
+                            }}
+                          >
+                            <p style={{ fontSize: 12, color: "#004E89" }}>
+                              {place}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
                       <div
                         style={{
-                          height: "100%",
-                          width: 1,
+                          height: 1,
+                          width: "100%",
                           backgroundColor: "#E5E5E5",
+                          margin: "12px 0",
                         }}
                       />
 
@@ -340,31 +340,64 @@ export default function MyAppointments() {
                       >
                         <div>
                           <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
-                            {appt.amount || "-"}
+                            {displayDate}
                           </p>
                           <p style={{ color: "#7A7D84", fontSize: 12 }}>
-                            {appt.subscription_plan || "-"}
+                            {displayTime}
                           </p>
                         </div>
+
+                        <div
+                          style={{
+                            height: "100%",
+                            width: 1,
+                            backgroundColor: "#E5E5E5",
+                          }}
+                        />
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <div>
+                            <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
+                              {appt.amount || "-"}
+                            </p>
+                            <p style={{ color: "#7A7D84", fontSize: 12 }}>
+                              {appt.subscription_plan || "-"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <SecondaryBtn
+                          name="Patient Details"
+                          onClick={() =>
+                            navigate("/my_patients", {
+                              state: { appointmentData: appt },
+                            })
+                          }
+                        />
+                        <Primarybtn name="Visit Patient" onClick={() => {}} />
                       </div>
                     </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <SecondaryBtn name="Patient Details" onClick={() => {}} />
-                      <Primarybtn name="Visit Patient" onClick={() => {}} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
-            {doctorAppointments.length > 3 && (
+            {doctorAppointments.length > 3 && !loading && (
               <div style={{ textAlign: "center", marginTop: 16 }}>
                 {hasMore ? (
                   <button

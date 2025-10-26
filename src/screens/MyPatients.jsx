@@ -14,38 +14,104 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { useNavigate } from "react-router-dom";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
+import { useLocation } from "react-router-dom";
+import { Empty } from "antd";
 
 export default function MyPatients() {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 7));
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
+  const location = useLocation();
+  const { appointmentData } = location.state || {};
+  const caretaker = appointmentData?.caretaker || {};
+
+  console.log("Received Patient Data:", appointmentData);
+
+  const getVitalColor = (label, value) => {
+    if (!value || value === "N/A") return "#BDBDBD";
+
+    switch (label) {
+      case "Blood Pressure": {
+        const match = value.match(/(\d+)\/(\d+)/);
+        if (!match) return "#BDBDBD";
+        const [sys, dia] = match.slice(1).map(Number);
+        return sys > 130 || dia > 85 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Blood Sugar": {
+        const num = parseInt(value);
+        return num > 110 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Heart Rate": {
+        const num = parseInt(value);
+        return num > 100 || num < 60 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Oxygen": {
+        const num = parseInt(value);
+        return num < 95 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Temperature": {
+        const num = parseFloat(value);
+        return num > 100.4 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Respiratory Rate": {
+        const num = parseInt(value);
+        return num > 20 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Weight": {
+        const num = parseInt(value);
+        return num > 90 ? "#F39C12" : "#27AE60";
+      }
+      case "Status":
+        return value === "Stable" ? "#27AE60" : "#EF1E1E";
+      default:
+        return "#27AE60";
+    }
+  };
+
+  const vitalsData = {
+    blood_pressure: appointmentData.blood_pressure,
+    heart_rate: appointmentData.heart_rate,
+    blood_sugar: appointmentData.blood_sugar,
+    oxygen: appointmentData.oxygen,
+    temperature: appointmentData.temperature,
+    respiratory_rate: appointmentData.respiratory_rate,
+    weight: appointmentData.weight,
+    status: appointmentData.appointment_status,
+  };
+
+  // Create the vitals array with color
   const vitals = [
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: "100/67 mmHg",
-      color: "#27AE60",
+      value: vitalsData.blood_pressure || "N/A",
     },
-    { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
-    { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
-    { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
+    {
+      icon: heartRate,
+      label: "Heart Rate",
+      value: vitalsData.heart_rate || "N/A",
+    },
+    {
+      icon: sugar,
+      label: "Blood Sugar",
+      value: vitalsData.blood_sugar || "N/A",
+    },
+    { icon: oxygen, label: "Oxygen", value: vitalsData.oxygen || "N/A" },
     {
       icon: temperature,
       label: "Temperature",
-      value: "101 °C",
-      color: "#27AE60",
+      value: vitalsData.temperature || "N/A",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: "24 rpm",
-      color: "#EF1E1E",
+      value: vitalsData.respiratory_rate || "N/A",
     },
-    { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
-    { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
-  ];
+    { icon: weight, label: "Weight", value: vitalsData.weight || "N/A" },
+    { icon: statusIcon, label: "Status", value: vitalsData.status || "N/A" },
+  ].map((v) => ({ ...v, color: getVitalColor(v.label, v.value) }));
 
   const dotStyle = (color) => ({
     width: "8px",
@@ -56,29 +122,31 @@ export default function MyPatients() {
   });
 
   const careTeam = {
-    name: "Clarisse A.",
-    role: "Primary Care Taker / Skilled Nurse",
-    Experience: "15+",
-    Languages: "English, French",
-    Contact: "+966 558441502",
-    specialization:
-      "Hypertension, diabetes, infusion therapy, elderly mobility support",
+    name: caretaker?.caretaker_id || caretaker?.user || "N/A",
+    role: "Caretaker",
+    contact: caretaker?.phone || "N/A",
+    nextVisit: appointmentData?.appointment_date || "N/A",
+    frequency: "Weekly",
+    specialization: caretaker?.skillset || "General Care",
+    experience: caretaker?.caretaker_exprience || "N/A",
+    languages: caretaker?.languages || "N/A",
   };
 
-  const appointments = [
-    {
-      id: 1,
-      date: new Date(2025, 7, 14),
-      doctor: "Dr. Ashton Cleve",
-      time: "10:00am - 10:30am",
-    },
-    {
-      id: 2,
-      date: new Date(2025, 7, 15),
-      doctor: "Dr. Ashton Cleve",
-      time: "10:00am - 10:30am",
-    },
-  ];
+  const appointments = appointmentData
+    ? [
+        {
+          id: appointmentData.id,
+          doctor: appointmentData.doc?.user
+            ? `${appointmentData.doc.user.first_name} ${appointmentData.doc.user.last_name}`
+            : "N/A",
+          date: appointmentData.appointment_date
+            ? new Date(appointmentData.appointment_date)
+            : null,
+          time: appointmentData.appointment_time || "N/A",
+          type: appointmentData.appointment_type || "N/A",
+        },
+      ]
+    : [];
 
   const handlePrevMonth = () => {
     setCurrentMonth(
@@ -118,31 +186,26 @@ export default function MyPatients() {
 
   const appointmentDates = appointments.map((a) => a.date.toDateString());
 
-  const appointmentDetails = [
-    {
-      date: "Aug 10, 2025 – 10:00 AM",
-      badge: "Physician In-Home Visit",
-      type: "Home Visit",
-      provider: "Nurse Clarisse A.",
-      status: "Confirmed",
-      comments:
-        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
-    },
-    {
-      date: "Sep 02, 2024 – 09:30 AM",
-      checkin: "Completed on time",
-      vitals: "BP: 130/85 / Blood Sugar: 108 mg/dL / Temperature: 36.8 °C",
-      comments:
-        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
-    },
-    {
-      date: "Sep 01, 2024 – 11:30 AM",
-      status: "Needs Monitoring",
-      comments:
-        "Patient stable, continue current hypertension medication. Encourage daily walking.",
-      next: "Aug 24, 2025 – Virtual consult with Dr. Paul",
-    },
-  ];
+  const appointmentDetails = appointmentData
+    ? [
+        {
+          date: appointmentData.appointment_date
+            ? new Date(appointmentData.appointment_date).toLocaleDateString(
+                "en-US",
+                { month: "short", day: "numeric", year: "numeric" }
+              ) + ` – ${appointmentData.appointment_time?.slice(0, 5)}`
+            : "N/A",
+          type: appointmentData.appointment_type || "N/A",
+          provider: appointmentData.doc?.doctor_id || "N/A",
+          status: appointmentData.appointment_status || "N/A",
+          comments: appointmentData.care_taker_notes || "",
+          checkin: appointmentData.checkin_status || "N/A",
+          vitals: appointmentData.vitals?.recorded || "N/A",
+          next: appointmentData.next_appointment || "N/A",
+          badge: appointmentData.badge || "",
+        },
+      ]
+    : [];
 
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
@@ -166,35 +229,34 @@ export default function MyPatients() {
           }}
         >
           {/* cards */}
+
           <div style={vitalsGrid}>
-            {vitals.map((item, i) => (
-              <div key={i} style={vitalCard}>
-                <img
-                  src={item.icon}
-                  alt={item.label}
-                  style={{ width: 24, height: 24, flexShrink: 0 }}
-                />
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: 0,
-                  }}
-                >
-                  <p style={vitalLabel}>{item.label}</p>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                    }}
-                  >
-                    <div style={dotStyle(item.color)}></div>
-                    <span style={vitalValue}>{item.value}</span>
+            {vitals.length > 0 ? (
+              vitals.map((item, i) => (
+                <div key={i} style={vitalCard}>
+                  <img
+                    src={item.icon}
+                    alt={item.label}
+                    style={{ width: 24, height: 24 }}
+                  />
+                  <div>
+                    <p style={vitalLabel}>{item.label}</p>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <div style={dotStyle(item.color)}></div>
+                      <span style={vitalValue}>{item.value}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p style={{ color: "#999" }}>Loading vitals...</p>
+            )}
           </div>
 
           {/* my details */}
@@ -291,7 +353,7 @@ export default function MyPatients() {
                       Experience
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Experience}
+                      {careTeam.experience}
                     </div>
                   </div>
                   <div>
@@ -299,7 +361,7 @@ export default function MyPatients() {
                       Languages
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Languages}
+                      {careTeam.languages}
                     </div>
                   </div>
                   <div>
@@ -307,7 +369,7 @@ export default function MyPatients() {
                       Contact Number
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Contact}
+                      {careTeam.contact}
                     </div>
                   </div>
                 </div>
@@ -336,7 +398,6 @@ export default function MyPatients() {
               borderColor: "#004E89",
               padding: 20,
               borderRadius: 16,
-
               backgroundColor: "#004E890A",
             }}
           >
@@ -352,6 +413,7 @@ export default function MyPatients() {
               </p>
               <Primarybtn name="View Full Reports" onClick={() => {}} />
             </div>
+
             <div
               style={{
                 height: 1,
@@ -362,65 +424,54 @@ export default function MyPatients() {
                 marginBottom: 10,
               }}
             />
-            <div>
+
+            {/* <div>
               <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
                 Medical Reports (Doctor Reports)
               </p>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
+              {[
+                {
+                  text: "Patient stable, continue medication, BP to be checked daily.",
+                  date: "Aug 15, 2025",
+                  author: "Dr. Paul",
+                },
+                {
+                  text: "Diabetes under control, advised diet adjustment.",
+                  date: "Aug 15, 2025",
+                  author: "Dr. Paul",
+                },
+              ].map((report, index) => (
+                <div
+                  key={`med-${index}`}
                   style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontWeight: "500",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
-                  - Patient stable, continue medication, BP to be checked daily.
-                </p>
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  Aug 15, 2025 – Dr. Paul
-                </p>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontWeight: "500",
-                  }}
-                >
-                  - Diabetes under control, advised diet adjustment.
-                </p>
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  Aug 15, 2025 – Dr. Paul
-                </p>
-              </div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    - {report.text}
+                  </p>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {report.date} – {report.author}
+                  </p>
+                </div>
+              ))}
             </div>
+
             <div
               style={{
                 height: 1,
@@ -431,65 +482,54 @@ export default function MyPatients() {
                 marginBottom: 10,
               }}
             />
+
             <div>
               <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
                 Daily Reports (Submitted by Care Taker)
               </p>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
+              {[
+                {
+                  text: "BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable",
+                  date: "Aug 16, 2025",
+                  author: "Nurse Clarisse",
+                },
+                {
+                  text: "BP: 150/92 | Status: ⚠ Escalated to Physician",
+                  date: "Aug 16, 2025",
+                  author: "Nurse Clarisse",
+                },
+              ].map((report, index) => (
+                <div
+                  key={`daily-${index}`}
                   style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontWeight: "500",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
-                  - BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable
-                </p>
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  Aug 16, 2025 – Nurse Clarisse
-                </p>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontWeight: "500",
-                  }}
-                >
-                  - BP: 150/92 | Status: ⚠ Escalated to Physician
-                </p>
-                <p
-                  style={{
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  Aug 16, 2025 – Nurse Clarisse
-                </p>
-              </div>
-            </div>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    - {report.text}
+                  </p>
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {report.date} – {report.author}
+                  </p>
+                </div>
+              ))}
+            </div> */}
+            <Empty description="no data" />
           </div>
 
           {/* appointments */}
@@ -503,174 +543,7 @@ export default function MyPatients() {
             }}
           >
             {/* Left Section */}
-            {/* <div style={appointmentWrapper}>
-              <SectionHeader title="Appointment Details" />
-              <div style={timelineWrapper}>
-                <div style={timelineLine}></div> 
-                {appointmentDetails.map((item, index) => (
-                  <div key={index} style={timelineItem}>
-                    <div style={timelineDot}></div>
-                    <div style={timelineContent}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: -10,
-                        }}
-                      >
-                        <p style={apptDate}>{item.date} </p>
-                        <p>
-                          {item.badge && (
-                            <span style={badge}>{item.badge}</span>
-                          )}
-                        </p>
-                      </div>
-                      {item.type && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Type:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.type}
-                          </span>
-                        </p>
-                      )}
-                      {item.provider && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Assigned Provider:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.provider}
-                          </span>
-                        </p>
-                      )}
-                      {item.status && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Status:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.status}
-                          </span>
-                        </p>
-                      )}
-                      {item.checkin && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Check-in Status:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.checkin}
-                          </span>
-                        </p>
-                      )}
-                      {item.vitals && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Vitals Recorded:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.vitals}
-                          </span>
-                        </p>
-                      )}
-                      {item.comments && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Comments:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.comments}
-                          </span>
-                        </p>
-                      )}
-                      {item.next && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Next Appointment:{" "}
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 500,
-                              color: "#06152B99",
-                            }}
-                          >
-                            {item.next}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div> */}
+
             <div style={appointmentWrapper}>
               <SectionHeader title="Appointment Details" />
               <div style={timelineWrapper}>
