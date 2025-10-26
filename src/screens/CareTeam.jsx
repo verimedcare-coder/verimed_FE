@@ -5,6 +5,7 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { base_url } from "../constants/constants";
 import axios from "axios";
+import { Empty } from "antd";
 const actions = [
   {
     date: "Aug 15, 2025 — 10:00 AM",
@@ -256,7 +257,7 @@ export default function CareTeam() {
               <div style={timelineWrapper}>
                 <div style={timelineLine}></div>
 
-                {actions.map((action, index) => (
+                {/* {actions.map((action, index) => (
                   <div key={index} style={timelineItem}>
                     <div style={timelineDot}></div>
                     <div style={timelineContent}>
@@ -277,7 +278,8 @@ export default function CareTeam() {
                       </p>
                     </div>
                   </div>
-                ))}
+                ))} */}
+                <Empty description="no data" />
               </div>
             </div>
 
@@ -297,7 +299,7 @@ export default function CareTeam() {
                 </p>
               </SectionHeader>
 
-              {[
+              {/* {[
                 {
                   date: "Aug 15, 2025 — 10:00 AM",
                   vitals: {
@@ -375,7 +377,8 @@ export default function CareTeam() {
                     </p>
                   </div>
                 </div>
-              ))}
+              ))} */}
+              <Empty description="no data" />
             </div>
           </div>
         </div>
