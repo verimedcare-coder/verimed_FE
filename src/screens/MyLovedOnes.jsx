@@ -15,8 +15,10 @@ import patientdetails from "../assets/images/patient-profile.jpg";
 import { Table } from "antd";
 import { base_url } from "../constants/constants";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function MyLovedOnes() {
+  const navigate = useNavigate();
   const [patientData, setPatientData] = useState(null);
   const [vitalsData, setVitalsData] = useState(null);
 
@@ -324,14 +326,13 @@ export default function MyLovedOnes() {
               ) + ` – ${vitalsData.appointment_time?.slice(0, 5)}`
             : "N/A",
           type: vitalsData.appointment_type || "N/A",
-          provider: vitalsData.caretaker?.caretaker_id || "N/A",
+          provider: vitalsData.doc?.doctor_id || "N/A",
           status: vitalsData.appointment_status || "N/A",
           comments: vitalsData.care_taker_notes || "",
         },
       ]
     : [];
 
-  // Parse the timeline string like "2025-09-28: Scheduled | 2025-10-07: Completed"
   const timelineDataDynamic = vitalsData
     ? vitalsData.time_line
       ? vitalsData.time_line.split("|").map((entry) => {
@@ -475,8 +476,11 @@ export default function MyLovedOnes() {
           {/* medical history */}
           <div style={tableContainer}>
             <SectionHeader title="Medical History">
-              <Primarybtn name="Get Appointment" />
-              <SecondaryBtn name="update membership" />
+              <Primarybtn
+                name="Get Appointment"
+                onClick={() => navigate("/appointments")}
+              />
+              {/* <SecondaryBtn name="update membership" /> */}
             </SectionHeader>
 
             <Table
@@ -781,20 +785,6 @@ export default function MyLovedOnes() {
                           Status:{" "}
                           <span style={{ color: "#06152B99" }}>
                             {item.status}
-                          </span>
-                        </p>
-                      )}
-                      {item.comments && (
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "#2E2E2E",
-                          }}
-                        >
-                          Comments:{" "}
-                          <span style={{ color: "#06152B99" }}>
-                            {item.comments}
                           </span>
                         </p>
                       )}
