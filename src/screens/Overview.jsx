@@ -28,12 +28,14 @@ import axios from "axios";
 
 export default function Overview() {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 7));
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
   const scrollRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(3);
   const [appointmentList, setAppointmentList] = useState([]);
+  const [patientData, setPatientData] = useState(null);
+  const [vitalsData, setVitalsData] = useState(null);
 
   const token = localStorage.getItem("token");
 
@@ -60,6 +62,30 @@ export default function Overview() {
     window.location.href = "/";
   }
 
+  const fetchPatientDetailsAndVitals = async () => {
+    try {
+      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { patientprofileid: user?.profile_id || 4 };
+
+      const res = await axios.post(endpoint, payload, { headers });
+
+      if (res.data && res.data.length > 0) {
+        const appointment = res.data[0];
+        setPatientData(appointment.patient);
+        setVitalsData(appointment);
+      }
+    } catch (error) {
+      console.error("Error fetching patient + vitals:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.user_role === "sponsor" || user?.user_role === "patient") {
+      fetchPatientDetailsAndVitals();
+    }
+  }, [user]);
+
   const dotStyle = (color) => ({
     width: "8px",
     height: "8px",
@@ -68,56 +94,148 @@ export default function Overview() {
     flexShrink: 0,
   });
 
-  const patientInfo = [
-    { label: "Name", value: "Mr. Samuel N. (VM–976–324)" },
-    { label: "Condition", value: "Hypertension, Diabetes" },
-    { label: "Assigned Doctor", value: "Dr. Paul M." },
-    { label: "Care Taker", value: "Nurse Clarisse A." },
-  ];
+  const getVitalColor = (label, value) => {
+    if (!value) return "#BDBDBD"; // gray for N/A
 
-  const vitals = [
-    {
-      icon: bloodPressure,
-      label: "Blood Pressure",
-      value: "100/67 mmHg",
-      color: "#27AE60",
-    },
-    { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
-    { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
-    { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
-    {
-      icon: temperature,
-      label: "Temperature",
-      value: "101 °C",
-      color: "#27AE60",
-    },
-    {
-      icon: respiratory,
-      label: "Respiratory Rate",
-      value: "24 rpm",
-      color: "#EF1E1E",
-    },
-    { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
-    { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
-  ];
-
-  const careTeam = {
-    name: "Clarisse A.",
-    role: "Geriatric Care",
-    contact: "+966 558441502",
-    nextVisit: "Aug 20, 2025 – 10:00 AM (Home Visit)",
-    frequency: "Every 2 weeks",
-    specialization:
-      "Chronic disease management (hypertension, diabetes), IV therapy, palliative care",
-
-    Condition: "Hypertension, Diabetes",
-    AssignedDoctor: "Dr. Paul M.",
-    CareTaker: "Nurse Clarisse A.",
-    Conditions: "Hypertension, Type 2 Diabetes",
-    AssignedSince: "July 2025",
-    SponsorInfo: "John N. (Toronto, Canada)",
-    SponsorNumber: "+966 558441502",
+    switch (label) {
+      case "Blood Pressure": {
+        const match = value.match(/(\d+)\/(\d+)/);
+        if (!match) return "#BDBDBD";
+        const [sys, dia] = match.slice(1).map(Number);
+        if (sys > 130 || dia > 85) return "#EF1E1E"; // red for high
+        return "#27AE60"; // green normal
+      }
+      case "Blood Sugar": {
+        const num = parseInt(value);
+        return num > 110 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Heart Rate": {
+        const num = parseInt(value);
+        return num > 100 || num < 60 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Oxygen": {
+        const num = parseInt(value);
+        return num < 95 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Temperature": {
+        const num = parseFloat(value);
+        return num > 100.4 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Respiratory Rate": {
+        const num = parseInt(value);
+        return num > 20 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Weight": {
+        const num = parseInt(value);
+        return num > 90 ? "#F39C12" : "#27AE60";
+      }
+      case "Status":
+        return value === "Stable" ? "#27AE60" : "#EF1E1E";
+      default:
+        return "#27AE60";
+    }
   };
+
+  const vitals = vitalsData
+    ? [
+        {
+          icon: bloodPressure,
+          label: "Blood Pressure",
+          value: vitalsData.blood_pressure || "N/A",
+          color: getVitalColor("Blood Pressure", vitalsData.blood_pressure),
+        },
+        {
+          icon: heartRate,
+          label: "Heart Rate",
+          value: vitalsData.heart_rate || "N/A",
+          color: getVitalColor("Heart Rate", vitalsData.heart_rate),
+        },
+        {
+          icon: sugar,
+          label: "Blood Sugar",
+          value: vitalsData.blood_sugar || "N/A",
+          color: getVitalColor("Blood Sugar", vitalsData.blood_sugar),
+        },
+        {
+          icon: oxygen,
+          label: "Oxygen",
+          value: vitalsData.oxygen || "N/A",
+          color: getVitalColor("Oxygen", vitalsData.oxygen),
+        },
+        {
+          icon: temperature,
+          label: "Temperature",
+          value: vitalsData.temperature || "N/A",
+          color: getVitalColor("Temperature", vitalsData.temperature),
+        },
+        {
+          icon: respiratory,
+          label: "Respiratory Rate",
+          value: vitalsData.respiratory_rate || "N/A",
+          color: getVitalColor("Respiratory Rate", vitalsData.respiratory_rate),
+        },
+        {
+          icon: weight,
+          label: "Weight",
+          value: vitalsData.weight || "N/A",
+          color: getVitalColor("Weight", vitalsData.weight),
+        },
+        {
+          icon: statusIcon,
+          label: "Status",
+          value: vitalsData.status || "N/A",
+          color: getVitalColor("Status", vitalsData.status),
+        },
+      ]
+    : [];
+
+  // const careTeam = {
+  //   name: "Clarisse A.",
+  //   role: "Geriatric Care",
+  //   contact: "+966 558441502",
+  //   nextVisit: "Aug 20, 2025 – 10:00 AM (Home Visit)",
+  //   frequency: "Every 2 weeks",
+  //   specialization:
+  //     "Chronic disease management (hypertension, diabetes), IV therapy, palliative care",
+
+  //   Condition: "Hypertension, Diabetes",
+  //   AssignedDoctor: "Dr. Paul M.",
+  //   CareTaker: "Nurse Clarisse A.",
+  //   Conditions: "Hypertension, Type 2 Diabetes",
+  //   AssignedSince: "July 2025",
+  //   SponsorInfo: "John N. (Toronto, Canada)",
+  //   SponsorNumber: "+966 558441502",
+  // };
+
+  const careTeam = vitalsData
+    ? {
+        name:
+          vitalsData.caretaker?.title ||
+          `${vitalsData.caretaker?.user || ""}` ||
+          "N/A",
+        role: "Caretaker",
+        contact: vitalsData.caretaker?.contact || "N/A",
+        nextVisit: vitalsData.appointment_date || "N/A",
+        frequency: "Weekly",
+        specialization: vitalsData.caretaker?.skillset || "General Care",
+      }
+    : {};
+
+  const appointments = vitalsData
+    ? [
+        {
+          id: vitalsData.id,
+          doctor: vitalsData.doc?.user
+            ? `${vitalsData.doc.user.first_name} ${vitalsData.doc.user.last_name}`
+            : "N/A",
+          date: vitalsData.appointment_date
+            ? new Date(vitalsData.appointment_date)
+            : null,
+          time: vitalsData.appointment_time || "N/A",
+          type: vitalsData.appointment_type || "N/A",
+        },
+      ]
+    : [];
 
   const medicalHistory = [
     {
@@ -189,20 +307,20 @@ export default function Overview() {
     ...item,
   }));
 
-  const appointments = [
-    {
-      id: 1,
-      date: new Date(2025, 7, 14),
-      doctor: "Dr. Ashton Cleve",
-      time: "10:00am - 10:30am",
-    },
-    {
-      id: 2,
-      date: new Date(2025, 7, 15),
-      doctor: "Dr. Ashton Cleve",
-      time: "10:00am - 10:30am",
-    },
-  ];
+  // const appointments = [
+  //   {
+  //     id: 1,
+  //     date: new Date(2025, 7, 14),
+  //     doctor: "Dr. Ashton Cleve",
+  //     time: "10:00am - 10:30am",
+  //   },
+  //   {
+  //     id: 2,
+  //     date: new Date(2025, 7, 15),
+  //     doctor: "Dr. Ashton Cleve",
+  //     time: "10:00am - 10:30am",
+  //   },
+  // ];
 
   const docStats = [
     {
@@ -584,7 +702,11 @@ export default function Overview() {
                 {/* Profile */}
                 <div style={profileBox}>
                   <img
-                    src={patientdetails}
+                    src={
+                      patientData?.user?.photo_view_url
+                        ? `${base_url}${patientData.user.photo_view_url}`
+                        : patientdetails
+                    }
                     alt="profile"
                     style={{
                       width: 64,
@@ -594,16 +716,40 @@ export default function Overview() {
                       flexShrink: 0,
                     }}
                   />
+
                   <div style={infoGrid}>
-                    {patientInfo.map((item, i) => (
-                      <InfoItem key={i} label={item.label} value={item.value} />
-                    ))}
+                    {patientData ? (
+                      <>
+                        <InfoItem
+                          label="Name"
+                          value={`${patientData?.user?.first_name} ${patientData?.user?.last_name} (${patientData?.patient_id})`}
+                        />
+                        <InfoItem
+                          label="Condition"
+                          value={patientData?.medical_his_diagnosis}
+                        />
+                        <InfoItem
+                          label="Assigned Doctor"
+                          value={`${
+                            vitalsData?.doc?.user?.first_name || "N/A"
+                          } ${vitalsData?.doc?.user?.last_name || ""}`}
+                        />
+                        <InfoItem
+                          label="Care Taker"
+                          value={vitalsData?.caretaker?.caretaker_id || "N/A"}
+                        />
+                      </>
+                    ) : (
+                      <p style={{ color: "#999" }}>
+                        Loading patient details...
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Vitals */}
                 <div style={vitalsGrid}>
-                  {vitals.map((item, i) => (
+                  {/* {vitals.map((item, i) => (
                     <div key={i} style={vitalCard}>
                       <img
                         src={item.icon}
@@ -630,7 +776,35 @@ export default function Overview() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))} */}
+                  <div style={vitalsGrid}>
+                    {vitals.length > 0 ? (
+                      vitals.map((item, i) => (
+                        <div key={i} style={vitalCard}>
+                          <img
+                            src={item.icon}
+                            alt={item.label}
+                            style={{ width: 24, height: 24 }}
+                          />
+                          <div>
+                            <p style={vitalLabel}>{item.label}</p>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 5,
+                              }}
+                            >
+                              <div style={dotStyle(item.color)}></div>
+                              <span style={vitalValue}>{item.value}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p style={{ color: "#999" }}>Loading vitals...</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1066,8 +1240,7 @@ export default function Overview() {
                 width: "100%",
               }}
             >
-              {/* Header Row */}
-
+              {/* Divider */}
               <div
                 style={{
                   borderTop: "1px solid #E5E7EB",
@@ -1079,7 +1252,7 @@ export default function Overview() {
               <div style={{ display: "flex", gap: "16px" }}>
                 {/* Left - Avatar */}
                 <img
-                  src={patientdetails}
+                  src={careTeam?.avatar || patientdetails}
                   alt="Profile"
                   style={{
                     width: "60px",
@@ -1118,7 +1291,7 @@ export default function Overview() {
                         Name
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.name}
+                        {careTeam.name || "N/A"}
                       </div>
                     </div>
                     <div>
@@ -1132,7 +1305,7 @@ export default function Overview() {
                         Condition
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.Condition}
+                        {careTeam.Condition || "N/A"}
                       </div>
                     </div>
                     <div>
@@ -1146,7 +1319,7 @@ export default function Overview() {
                         Assigned Doctor
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.AssignedDoctor}
+                        {careTeam.AssignedDoctor || "N/A"}
                       </div>
                     </div>
                     <div>
@@ -1160,13 +1333,15 @@ export default function Overview() {
                         Care Taker
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.CareTaker}
+                        {careTeam.CareTaker || "N/A"}
                       </div>
                     </div>
                   </div>
 
                   {/* Divider */}
                   <div style={{ borderTop: "1px solid #E5E7EB" }} />
+
+                  {/* Row 2 */}
                   <div
                     style={{
                       display: "grid",
@@ -1174,7 +1349,6 @@ export default function Overview() {
                       gap: "10px",
                     }}
                   >
-                    {/* Row 3 */}
                     <div>
                       <div
                         style={{
@@ -1186,11 +1360,10 @@ export default function Overview() {
                         Condition(s)
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.Conditions}
+                        {careTeam.Conditions || "N/A"}
                       </div>
                     </div>
                     <div>
-                      {" "}
                       <div
                         style={{
                           fontSize: "13px",
@@ -1201,7 +1374,7 @@ export default function Overview() {
                         Assigned Since
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.AssignedSince}
+                        {careTeam.AssignedSince || "N/A"}
                       </div>
                     </div>
                     <div>
@@ -1215,7 +1388,7 @@ export default function Overview() {
                         Sponsor Info
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.SponsorInfo}
+                        {careTeam.SponsorInfo || "N/A"}
                       </div>
                     </div>
                     <div>
@@ -1229,7 +1402,7 @@ export default function Overview() {
                         Sponsor Number
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {careTeam.SponsorNumber}
+                        {careTeam.SponsorNumber || "N/A"}
                       </div>
                     </div>
                   </div>
@@ -1741,6 +1914,7 @@ export default function Overview() {
           {/* careTeam */}
           {user?.user_role === "sponsor" && (
             <>
+              {/* Main Container */}
               <div
                 style={{
                   display: "flex",
@@ -1760,9 +1934,10 @@ export default function Overview() {
                     borderRadius: "10px",
                     padding: "16px",
                     fontFamily: "Inter, sans-serif",
+                    flex: 1,
                   }}
                 >
-                  {/* Header Row */}
+                  {/* Header */}
                   <div
                     style={{
                       display: "flex",
@@ -1781,9 +1956,9 @@ export default function Overview() {
                     >
                       Care Team Details
                     </h3>
-
                     <SecondaryBtn name="view reports" onClick={() => {}} />
                   </div>
+
                   <div
                     style={{
                       borderTop: "1px solid #E5E7EB",
@@ -1791,11 +1966,10 @@ export default function Overview() {
                     }}
                   />
 
-                  {/* Content Row */}
+                  {/* Info Row */}
                   <div style={{ display: "flex", gap: "16px" }}>
-                    {/* Left - Avatar */}
                     <img
-                      src={patientdetails}
+                      src={careTeam.avatar || patientdetails}
                       alt="Profile"
                       style={{
                         width: "60px",
@@ -1806,7 +1980,6 @@ export default function Overview() {
                       }}
                     />
 
-                    {/* Right - Info Grid */}
                     <div
                       style={{
                         flex: 1,
@@ -1895,7 +2068,7 @@ export default function Overview() {
                 </div>
 
                 {/* Right - Upcoming Appointments */}
-
+                {/* this */}
                 <div
                   style={{
                     background: "#fff",
@@ -1944,7 +2117,7 @@ export default function Overview() {
                     }}
                   />
 
-                  {/* Month Row */}
+                  {/* Calendar Row */}
                   <div
                     style={{
                       background: "#E8F0EA",
@@ -2000,7 +2173,7 @@ export default function Overview() {
                     </span>
                   </div>
 
-                  {/* Calendar */}
+                  {/* Calendar Grid */}
                   {showCalendar && (
                     <div
                       style={{
@@ -2010,7 +2183,7 @@ export default function Overview() {
                         marginTop: "-15px",
                         textAlign: "center",
                         fontSize: "12px",
-                        padding: "10px 10px ",
+                        padding: "10px",
                         borderBottomRightRadius: 8,
                         borderBottomLeftRadius: 8,
                         background: "#007F5F14",
@@ -2037,7 +2210,6 @@ export default function Overview() {
                                 : "transparent",
                               color: isAppointment ? "white" : "inherit",
                               fontWeight: isAppointment ? 600 : 400,
-                              transition: "background 0.3s ease",
                             }}
                           >
                             {day.getDate()}
@@ -2053,7 +2225,7 @@ export default function Overview() {
                                   left: "50%",
                                   transform: "translateX(-50%)",
                                 }}
-                              ></div>
+                              />
                             )}
                           </div>
                         );
@@ -2062,71 +2234,7 @@ export default function Overview() {
                   )}
 
                   {/* Appointment Cards */}
-                  {/* {appointments
-                .filter(
-                  (a) =>
-                    a.date.getMonth() === currentMonth.getMonth() &&
-                    a.date.getFullYear() === currentMonth.getFullYear()
-                )
-                .map((appt) => {
-                  const isSelected = appt.id === selectedAppointmentId;
-
-                  return (
-                    <div
-                      key={appt.id}
-                      onClick={() => handleCardClick(appt)}
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        background: isSelected ? "#004C91" : "#F3F4F6",
-                        color: isSelected ? "#fff" : "#000",
-                        borderRadius: "8px",
-                        padding: "10px",
-                        cursor: "pointer",
-                        transition: "transform 0.15s, box-shadow 0.15s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow =
-                          "0 2px 8px rgba(0,0,0,0.15)";
-                        if (!isSelected) {
-                          e.currentTarget.style.background = "#004E89"; // light blue on hover
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = "none";
-                        if (!isSelected) {
-                          e.currentTarget.style.background = "#F3F4F6"; // revert to original
-                        }
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: isSelected ? "#00396E" : "#FFFFFF",
-                          color: isSelected ? "#fff" : "#000",
-                          borderRadius: "6px",
-                          width: "45px",
-                          textAlign: "center",
-                          padding: "5px 0",
-                        }}
-                      >
-                        <div style={{ fontSize: "13px" }}>
-                          {appt.date.toLocaleDateString("en-US", {
-                            weekday: "short",
-                          })}
-                        </div>
-                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                          {appt.date.getDate()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                          {appt.doctor}
-                        </div>
-                        <div style={{ fontSize: "13px" }}>{appt.time}</div>
-                      </div>
-                    </div>
-                  );
-                })} */}
+                  {/* Appointment Cards */}
                   {appointments
                     .filter(
                       (a) =>
@@ -2151,44 +2259,18 @@ export default function Overview() {
                             borderRadius: "8px",
                             padding: "10px",
                             cursor: "pointer",
-                            transition:
-                              "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#004E89";
-                              e.currentTarget.style.color = "#fff";
-                              const dateBox =
-                                e.currentTarget.querySelector(".date-box");
-                              dateBox.style.background = "#fff";
-                              dateBox.style.color = "#00396E";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#F3F4F6";
-                              e.currentTarget.style.color = "#000";
-                              const dateBox =
-                                e.currentTarget.querySelector(".date-box");
-                              // dateBox.style.background = "#FFFFFF";
-                              // dateBox.style.color = "#000";
-                              dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                              dateBox.style.color = "#fff"; // white text on blue
-                            }
+                            transition: "background 0.2s ease, color 0.2s ease",
                           }}
                         >
                           {/* Date Box */}
                           <div
-                            className="date-box"
                             style={{
-                              background: isSelected ? "#FFFFFF" : "#FFFFFF",
-                              color: isSelected ? "#000" : "#000",
+                              background: "#FFFFFF",
+                              color: "#000",
                               borderRadius: "6px",
                               width: "45px",
                               textAlign: "center",
                               padding: "5px 0",
-                              transition:
-                                "background 0.2s ease, color 0.2s ease",
                             }}
                           >
                             <div style={{ fontSize: "13px" }}>
@@ -2201,7 +2283,7 @@ export default function Overview() {
                             </div>
                           </div>
 
-                          {/* Appointment Info */}
+                          {/* Info */}
                           <div style={{ flexGrow: 1 }}>
                             <div style={{ fontSize: "14px", fontWeight: 500 }}>
                               {appt.doctor}
@@ -2213,6 +2295,7 @@ export default function Overview() {
                     })}
                 </div>
               </div>
+
               {/* Medical History */}
               <div style={tableContainer}>
                 <SectionHeader title="Medical History">
@@ -2222,8 +2305,8 @@ export default function Overview() {
                 <Table
                   columns={columns}
                   dataSource={dataSource}
-                  pagination={{ pageSize: 5 }} // Optional: adds pagination
-                  scroll={{ x: true }} // ✅ Enables horizontal scroll only inside table if needed
+                  pagination={{ pageSize: 5 }}
+                  scroll={{ x: true }}
                   bordered
                   style={{ width: "100%" }}
                 />
