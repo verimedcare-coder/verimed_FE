@@ -95,15 +95,14 @@ export default function Overview() {
   });
 
   const getVitalColor = (label, value) => {
-    if (!value) return "#BDBDBD"; // gray for N/A
-
+    if (!value) return "#BDBDBD";
     switch (label) {
       case "Blood Pressure": {
         const match = value.match(/(\d+)\/(\d+)/);
         if (!match) return "#BDBDBD";
         const [sys, dia] = match.slice(1).map(Number);
-        if (sys > 130 || dia > 85) return "#EF1E1E"; // red for high
-        return "#27AE60"; // green normal
+        if (sys > 130 || dia > 85) return "#EF1E1E";
+        return "#27AE60";
       }
       case "Blood Sugar": {
         const num = parseInt(value);
@@ -749,34 +748,6 @@ export default function Overview() {
 
                 {/* Vitals */}
                 <div style={vitalsGrid}>
-                  {/* {vitals.map((item, i) => (
-                    <div key={i} style={vitalCard}>
-                      <img
-                        src={item.icon}
-                        alt={item.label}
-                        style={{ width: 24, height: 24, flexShrink: 0 }}
-                      />
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          minWidth: 0,
-                        }}
-                      >
-                        <p style={vitalLabel}>{item.label}</p>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          <div style={dotStyle(item.color)}></div>
-                          <span style={vitalValue}>{item.value}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))} */}
                   <div style={vitalsGrid}>
                     {vitals.length > 0 ? (
                       vitals.map((item, i) => (

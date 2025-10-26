@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Primarybtn from "../components/PrimaryBtn";
@@ -13,8 +13,14 @@ import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { Table } from "antd";
+import { base_url } from "../constants/constants";
+import axios from "axios";
 
 export default function MyLovedOnes() {
+  const [patientData, setPatientData] = useState(null);
+  const [vitalsData, setVitalsData] = useState(null);
+
+  const token = localStorage.getItem("token");
   const dotStyle = (color) => ({
     width: "8px",
     height: "8px",
@@ -30,31 +36,31 @@ export default function MyLovedOnes() {
     { label: "Care Taker", value: "Nurse Clarisse A." },
   ];
 
-  const vitals = [
-    {
-      icon: bloodPressure,
-      label: "Blood Pressure",
-      value: "100/67 mmHg",
-      color: "#27AE60",
-    },
-    { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
-    { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
-    { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
-    {
-      icon: temperature,
-      label: "Temperature",
-      value: "101 °C",
-      color: "#27AE60",
-    },
-    {
-      icon: respiratory,
-      label: "Respiratory Rate",
-      value: "24 rpm",
-      color: "#EF1E1E",
-    },
-    { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
-    { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
-  ];
+  // const vitals = [
+  //   {
+  //     icon: bloodPressure,
+  //     label: "Blood Pressure",
+  //     value: "100/67 mmHg",
+  //     color: "#27AE60",
+  //   },
+  //   { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
+  //   { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
+  //   { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
+  //   {
+  //     icon: temperature,
+  //     label: "Temperature",
+  //     value: "101 °C",
+  //     color: "#27AE60",
+  //   },
+  //   {
+  //     icon: respiratory,
+  //     label: "Respiratory Rate",
+  //     value: "24 rpm",
+  //     color: "#EF1E1E",
+  //   },
+  //   { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
+  //   { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
+  // ];
 
   const medicalHistory = [
     {
@@ -182,6 +188,170 @@ export default function MyLovedOnes() {
     },
   ];
 
+  const data = localStorage.getItem("userData");
+  const user = data ? JSON.parse(data) : null;
+  if (!user) {
+    window.location.href = "/";
+  }
+
+  const fetchPatientDetailsAndVitals = async () => {
+    try {
+      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { patientprofileid: user?.profile_id || 4 };
+      console.log(payload);
+      const res = await axios.post(endpoint, payload, { headers });
+
+      if (res.data && res.data.length > 0) {
+        const appointment = res.data[0];
+        setPatientData(appointment.patient);
+        setVitalsData(appointment);
+      }
+    } catch (error) {
+      console.error("Error fetching patient + vitals:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatientDetailsAndVitals();
+  }, []);
+
+  const getVitalColor = (label, value) => {
+    if (!value) return "#BDBDBD";
+    switch (label) {
+      case "Blood Pressure": {
+        const match = value.match(/(\d+)\/(\d+)/);
+        if (!match) return "#BDBDBD";
+        const [sys, dia] = match.slice(1).map(Number);
+        if (sys > 130 || dia > 85) return "#EF1E1E";
+        return "#27AE60";
+      }
+      case "Blood Sugar": {
+        const num = parseInt(value);
+        return num > 110 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Heart Rate": {
+        const num = parseInt(value);
+        return num > 100 || num < 60 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Oxygen": {
+        const num = parseInt(value);
+        return num < 95 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Temperature": {
+        const num = parseFloat(value);
+        return num > 100.4 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Respiratory Rate": {
+        const num = parseInt(value);
+        return num > 20 ? "#EF1E1E" : "#27AE60";
+      }
+      case "Weight": {
+        const num = parseInt(value);
+        return num > 90 ? "#F39C12" : "#27AE60";
+      }
+      case "Status":
+        return value === "Stable" ? "#27AE60" : "#EF1E1E";
+      default:
+        return "#27AE60";
+    }
+  };
+
+  const vitals = vitalsData
+    ? [
+        {
+          icon: bloodPressure,
+          label: "Blood Pressure",
+          value: vitalsData.blood_pressure || "N/A",
+          color: getVitalColor("Blood Pressure", vitalsData.blood_pressure),
+        },
+        {
+          icon: heartRate,
+          label: "Heart Rate",
+          value: vitalsData.heart_rate || "N/A",
+          color: getVitalColor("Heart Rate", vitalsData.heart_rate),
+        },
+        {
+          icon: sugar,
+          label: "Blood Sugar",
+          value: vitalsData.blood_sugar || "N/A",
+          color: getVitalColor("Blood Sugar", vitalsData.blood_sugar),
+        },
+        {
+          icon: oxygen,
+          label: "Oxygen",
+          value: vitalsData.oxygen || "N/A",
+          color: getVitalColor("Oxygen", vitalsData.oxygen),
+        },
+        {
+          icon: temperature,
+          label: "Temperature",
+          value: vitalsData.temperature || "N/A",
+          color: getVitalColor("Temperature", vitalsData.temperature),
+        },
+        {
+          icon: respiratory,
+          label: "Respiratory Rate",
+          value: vitalsData.respiratory_rate || "N/A",
+          color: getVitalColor("Respiratory Rate", vitalsData.respiratory_rate),
+        },
+        {
+          icon: weight,
+          label: "Weight",
+          value: vitalsData.weight || "N/A",
+          color: getVitalColor("Weight", vitalsData.weight),
+        },
+        {
+          icon: statusIcon,
+          label: "Status",
+          value: vitalsData.status || "N/A",
+          color: getVitalColor("Status", vitalsData.status),
+        },
+      ]
+    : [];
+
+  const appointmentDetailsDynamic = vitalsData
+    ? [
+        {
+          date: vitalsData.appointment_date
+            ? new Date(vitalsData.appointment_date).toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }
+              ) + ` – ${vitalsData.appointment_time?.slice(0, 5)}`
+            : "N/A",
+          type: vitalsData.appointment_type || "N/A",
+          provider: vitalsData.caretaker?.caretaker_id || "N/A",
+          status: vitalsData.appointment_status || "N/A",
+          comments: vitalsData.care_taker_notes || "",
+        },
+      ]
+    : [];
+
+  // Parse the timeline string like "2025-09-28: Scheduled | 2025-10-07: Completed"
+  const timelineDataDynamic = vitalsData
+    ? vitalsData.time_line
+      ? vitalsData.time_line.split("|").map((entry) => {
+          const [dateStr, status] = entry.split(":").map((s) => s.trim());
+          return {
+            title: status,
+            details: [
+              vitalsData.treatment_performed || "No treatment info",
+              vitalsData.care_taker_notes || "",
+            ],
+            date: new Date(dateStr).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          };
+        })
+      : []
+    : [];
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -227,7 +397,11 @@ export default function MyLovedOnes() {
             {/* Profile */}
             <div style={profileBox}>
               <img
-                src={patientdetails}
+                src={
+                  patientData?.user?.photo_view_url
+                    ? `${base_url}${patientData.user.photo_view_url}`
+                    : patientdetails
+                }
                 alt="profile"
                 style={{
                   width: 64,
@@ -237,39 +411,64 @@ export default function MyLovedOnes() {
                   flexShrink: 0,
                 }}
               />
+
               <div style={infoGrid}>
-                {patientInfo.map((item, i) => (
-                  <InfoItem key={i} label={item.label} value={item.value} />
-                ))}
+                {patientData ? (
+                  <>
+                    <InfoItem
+                      label="Name"
+                      value={`${patientData?.user?.first_name} ${patientData?.user?.last_name} (${patientData?.patient_id})`}
+                    />
+                    <InfoItem
+                      label="Condition"
+                      value={patientData?.medical_his_diagnosis}
+                    />
+                    <InfoItem
+                      label="Assigned Doctor"
+                      value={`${vitalsData?.doc?.user?.first_name || "N/A"} ${
+                        vitalsData?.doc?.user?.last_name || ""
+                      }`}
+                    />
+                    <InfoItem
+                      label="Care Taker"
+                      value={vitalsData?.caretaker?.caretaker_id || "N/A"}
+                    />
+                  </>
+                ) : (
+                  <p style={{ color: "#999" }}>Loading patient details...</p>
+                )}
               </div>
             </div>
-
             {/* Vitals */}
             <div style={vitalsGrid}>
-              {vitals.map((item, i) => (
-                <div key={i} style={vitalCard}>
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    style={{ width: 24, height: 24, flexShrink: 0 }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      minWidth: 0,
-                    }}
-                  >
-                    <p style={vitalLabel}>{item.label}</p>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 5 }}
-                    >
-                      <div style={dotStyle(item.color)}></div>
-                      <span style={vitalValue}>{item.value}</span>
+              <div style={vitalsGrid}>
+                {vitals.length > 0 ? (
+                  vitals.map((item, i) => (
+                    <div key={i} style={vitalCard}>
+                      <img
+                        src={item.icon}
+                        alt={item.label}
+                        style={{ width: 24, height: 24 }}
+                      />
+                      <div>
+                        <p style={vitalLabel}>{item.label}</p>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                          }}
+                        >
+                          <div style={dotStyle(item.color)}></div>
+                          <span style={vitalValue}>{item.value}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                ) : (
+                  <p style={{ color: "#999" }}>Loading vitals...</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -300,10 +499,10 @@ export default function MyLovedOnes() {
             }}
           >
             {/* LEFT: Appointment Details Timeline */}
-            <div style={appointmentWrapper}>
+            {/* <div style={appointmentWrapper}>
               <SectionHeader title="Appointment Details" />
               <div style={timelineWrapper}>
-                <div style={timelineLine}></div> {/* vertical line */}
+                <div style={timelineLine}></div>
                 {appointmentDetails.map((item, index) => (
                   <div key={index} style={timelineItem}>
                     <div style={timelineDot}></div>
@@ -469,7 +668,7 @@ export default function MyLovedOnes() {
               </div>
             </div>
 
-            {/* RIGHT: Timeline */}
+           
             <div style={timelineCard}>
               <SectionHeader title="Timeline" />
               {timelineData.map((item, index) => (
@@ -518,6 +717,141 @@ export default function MyLovedOnes() {
                       }}
                     >
                       {item.details}
+                    </p>
+                  )}
+                  <p style={timelineDate}>{item.date}</p>
+                </div>
+              ))}
+            </div> */}
+            {/* LEFT: Appointment Details Timeline */}
+            <div style={appointmentWrapper}>
+              <SectionHeader title="Appointment Details" />
+              <div style={timelineWrapper}>
+                <div style={timelineLine}></div>
+                {appointmentDetailsDynamic.map((item, index) => (
+                  <div key={index} style={timelineItem}>
+                    <div style={timelineDot}></div>
+                    <div style={timelineContent}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: -10,
+                        }}
+                      >
+                        <p style={apptDate}>{item.date}</p>
+                      </div>
+                      {item.type && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Type:{" "}
+                          <span style={{ color: "#06152B99" }}>
+                            {item.type}
+                          </span>
+                        </p>
+                      )}
+                      {item.provider && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Assigned Provider:{" "}
+                          <span style={{ color: "#06152B99" }}>
+                            {item.provider}
+                          </span>
+                        </p>
+                      )}
+                      {item.status && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Status:{" "}
+                          <span style={{ color: "#06152B99" }}>
+                            {item.status}
+                          </span>
+                        </p>
+                      )}
+                      {item.comments && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Comments:{" "}
+                          <span style={{ color: "#06152B99" }}>
+                            {item.comments}
+                          </span>
+                        </p>
+                      )}
+                      {item.comments && (
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "#2E2E2E",
+                          }}
+                        >
+                          Comments:{" "}
+                          <span style={{ color: "#06152B99" }}>
+                            {item.comments}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT: Timeline */}
+            <div style={timelineCard}>
+              <SectionHeader title="Timeline" />
+              {timelineDataDynamic.map((item, index) => (
+                <div key={index} style={timelineBox}>
+                  <p
+                    style={{ fontSize: 14, fontWeight: 400, color: "#2E2E2E" }}
+                  >
+                    {item.title}
+                  </p>
+                  {Array.isArray(item.details) && item.details.length > 0 ? (
+                    <ul>
+                      {item.details.map((d, i) => (
+                        <li
+                          key={i}
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 400,
+                            color: "#06152BB2",
+                          }}
+                        >
+                          {d}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 400,
+                        color: "#06152BB2",
+                      }}
+                    >
+                      No details available
                     </p>
                   )}
                   <p style={timelineDate}>{item.date}</p>
