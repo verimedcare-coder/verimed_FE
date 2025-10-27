@@ -99,11 +99,11 @@ const menuConfig = {
       icon: <UserOutlined />,
       path: "/my_patients",
     },
-    {
-      label: "Reports To Review",
-      icon: <CalendarOutlined />,
-      path: "/reports_to_review",
-    },
+    // {
+    //   label: "Reports To Review",
+    //   icon: <CalendarOutlined />,
+    //   path: "/reports_to_review",
+    // },
     { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
   ],
 };
