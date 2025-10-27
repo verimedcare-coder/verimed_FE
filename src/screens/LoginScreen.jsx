@@ -15,9 +15,66 @@ const { Title, Text } = Typography;
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(() => {
+    const data = localStorage.getItem("userData");
+    return data ? JSON.parse(data) : null;
+  });
 
-  const userToken = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
+  // Fetch Sponsor Profile
+  const fetchSponsorProfile = async (userId, token) => {
+    if (!userId || !token) return;
+    try {
+      const endpoint = `${base_url}/sponsorprofile_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const res = await axios.get(endpoint, { headers });
+      const sponsorList = res.data;
+
+      const matchedSponsor = sponsorList.find(
+        (sponsor) => sponsor.user === userId
+      );
+
+      if (matchedSponsor) {
+        console.log("Matched Sponsor:", matchedSponsor);
+
+        localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
+        localStorage.setItem("sponsorProfileId", matchedSponsor.id);
+
+        await fetchSponsorPatients(matchedSponsor.id, token);
+      } else {
+        console.warn("No matching sponsor found for this user.");
+      }
+    } catch (error) {
+      console.error("Error fetching sponsor list:", error);
+    }
+  };
+
+  //  Fetch Sponsor Patients
+  const fetchSponsorPatients = async (sponsorProfileId, token) => {
+    if (!sponsorProfileId || !token) return;
+    try {
+      const endpoint = `${base_url}/sponsor_patients_view/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { sponsorprofileid: sponsorProfileId };
+
+      const res = await axios.post(endpoint, payload, { headers });
+      const patients = res.data || [];
+
+      if (patients.length > 0) {
+        const patientIds = patients.map((p) => p.id);
+        console.log("Sponsor Patients:", patientIds);
+
+        localStorage.setItem("sponsorPatientIds", JSON.stringify(patientIds));
+      } else {
+        console.warn("No patients found for this sponsor.");
+      }
+    } catch (error) {
+      console.error("Error fetching sponsor patients:", error);
+    }
+  };
+
+  //  On Login Submit
   const onFinish = async (values) => {
     const { username, password } = values;
     setLoading(true);
@@ -43,39 +100,39 @@ export default function LoginScreen() {
         return;
       }
 
-      const userRole = userData.user_role;
-
       localStorage.setItem("userData", JSON.stringify(userData));
-
       message.success("Login successful!");
 
-      switch (userRole) {
+      //  Conditional Sponsor Logic
+      if (userData.user_role === "sponsor") {
+        await fetchSponsorProfile(userData.id, token);
+      }
+
+      //  Redirect by Role
+      switch (userData.user_role) {
         case "admin":
-          window.location.href = "/overview";
-          break;
         case "sponsor":
-          window.location.href = "/overview";
-          break;
         case "doctor":
-          window.location.href = "/overview";
-          break;
         case "patient":
-          window.location.href = "/overview";
-          break;
         case "care_taker":
           window.location.href = "/overview";
           break;
         default:
           message.error("Invalid user role.");
-          break;
       }
     } catch (error) {
-      console.log("Login error:", error);
+      console.error("Login error:", error);
       message.error("Invalid username or password. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && token && user.user_role === "sponsor") {
+      fetchSponsorProfile(user.id, token);
+    }
+  }, [user, token]);
 
   return (
     <div
@@ -91,11 +148,7 @@ export default function LoginScreen() {
         <img
           src={LoginBg}
           alt="Doctor and patient"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
         <div
           style={{
@@ -142,13 +195,7 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <img
-            src={VerimedLogo}
-            alt="Verimed Logo"
-            style={{
-              width: 140,
-            }}
-          />
+          <img src={VerimedLogo} alt="Verimed Logo" style={{ width: 140 }} />
         </div>
 
         {/* Centered Card with Form */}
@@ -184,9 +231,7 @@ export default function LoginScreen() {
               type="secondary"
               style={{
                 fontSize: 14,
-                fontWeight: 400,
                 color: "#6C7688",
-                marginBottom: 8,
                 textAlign: "center",
               }}
             >

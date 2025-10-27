@@ -56,12 +56,16 @@ export default function Overview() {
     fetchAppointments();
   }, []);
 
-  // userdata type check
-  const data = localStorage.getItem("userData");
-  const user = data ? JSON.parse(data) : null;
-  if (!user) {
-    window.location.href = "/";
-  }
+  const [user] = useState(() => {
+    const data = localStorage.getItem("userData");
+    return data ? JSON.parse(data) : null;
+  });
+
+  useEffect(() => {
+    if (!user) {
+      window.location.href = "/";
+    }
+  }, [user]);
 
   const fetchPatientDetailsAndVitals = async () => {
     try {
