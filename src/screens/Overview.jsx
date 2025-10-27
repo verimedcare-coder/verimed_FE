@@ -231,7 +231,7 @@ export default function Overview() {
   const careTeam = vitalsData
     ? {
         name:
-          vitalsData.caretaker?.title ||
+          vitalsData.caretaker?.caretaker_id ||
           `${vitalsData.caretaker?.user || ""}` ||
           "N/A",
         role: "Caretaker",
@@ -254,6 +254,27 @@ export default function Overview() {
             : null,
           time: vitalsData.appointment_time || "N/A",
           type: vitalsData.appointment_type || "N/A",
+        },
+      ]
+    : [];
+
+  const appointmentDetailsDynamic = vitalsData
+    ? [
+        {
+          date: vitalsData.appointment_date
+            ? new Date(vitalsData.appointment_date).toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }
+              ) + ` – ${vitalsData.appointment_time?.slice(0, 5)}`
+            : "N/A",
+          type: vitalsData.appointment_type || "N/A",
+          provider: vitalsData.doc?.doctor_id || "N/A",
+          status: vitalsData.appointment_status || "N/A",
+          comments: vitalsData.care_taker_notes || "",
         },
       ]
     : [];
@@ -2304,45 +2325,38 @@ export default function Overview() {
           {/* Care Taker Details */}
           {user?.user_role === "patient" && (
             <>
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
-                  style={{
-                    textAlign: "left",
-                    textTransform: "capitalize",
-                    color: "#2E2E2E",
-                    fontSize: 16,
-                    fontWeight: "500",
-                  }}
-                >
-                  Care Taker Details
-                </p>
-                <SecondaryBtn name="Send Message" onClick={() => {}} />
-              </div>
-              <div
-                style={{
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: "#1B1B1B1A",
-                  padding: 20,
-                  borderRadius: 16,
-                  width: "100%",
-                }}
-              >
+              <div style={{ width: "100%" }}>
                 <div
                   style={{
+                    width: "100%",
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    width: "100%",
+                  }}
+                >
+                  <p
+                    style={{
+                      textAlign: "left",
+                      textTransform: "capitalize",
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Care Taker Details
+                  </p>
+                  <SecondaryBtn name="Send Message" onClick={() => {}} />
+                </div>
+                <div
+                  style={{
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    borderColor: "#1B1B1B1A",
+                    padding: 20,
+                    borderRadius: 16,
+
+                    margin: 20,
                   }}
                 >
                   <div
@@ -2350,21 +2364,51 @@ export default function Overview() {
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "center",
-                      gap: 20,
+                      justifyContent: "space-between",
+                      width: "100%",
                     }}
                   >
-                    <img
-                      src={patientdetails}
-                      alt="profile"
+                    <div
                       style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: "12px",
-                        objectFit: "cover",
-                        flexShrink: 0,
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 20,
                       }}
-                    />
+                    >
+                      <img
+                        src={patientdetails}
+                        alt="profile"
+                        style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: "12px",
+                          objectFit: "cover",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div>
+                        <p
+                          style={{
+                            color: "#2E2E2E",
+                            fontWeight: "500",
+                            opacity: 0.6,
+                          }}
+                        >
+                          Name
+                        </p>
+                        <p
+                          style={{
+                            color: "#2E2E2E",
+                            fontSize: 18,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {careTeam.name || "N/A"}
+                        </p>
+                      </div>
+                    </div>
                     <div>
                       <p
                         style={{
@@ -2373,7 +2417,7 @@ export default function Overview() {
                           opacity: 0.6,
                         }}
                       >
-                        Name
+                        Role
                       </p>
                       <p
                         style={{
@@ -2382,10 +2426,60 @@ export default function Overview() {
                           fontWeight: "700",
                         }}
                       >
-                        Clarissa A.
+                        {careTeam.role || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          color: "#2E2E2E",
+                          fontWeight: "500",
+                          opacity: 0.6,
+                        }}
+                      >
+                        Contact Number
+                      </p>
+                      <p
+                        style={{
+                          color: "#2E2E2E",
+                          fontSize: 18,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {careTeam.contact || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          color: "#2E2E2E",
+                          fontWeight: "500",
+                          opacity: 0.6,
+                        }}
+                      >
+                        Assigned Since
+                      </p>
+                      <p
+                        style={{
+                          color: "#2E2E2E",
+                          fontSize: 18,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {/* {careTeam.contact || "N/A"} */}-
                       </p>
                     </div>
                   </div>
+                  <div
+                    style={{
+                      height: 1,
+                      width: "100%",
+                      backgroundColor: "#1B1B1B",
+                      opacity: 0.1,
+                      marginTop: 10,
+                      marginBottom: 10,
+                    }}
+                  />
                   <div>
                     <p
                       style={{
@@ -2403,50 +2497,46 @@ export default function Overview() {
                         fontWeight: "700",
                       }}
                     >
-                      Geriatric Care
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontWeight: "500",
-                        opacity: 0.6,
-                      }}
-                    >
-                      Contact Number
-                    </p>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontSize: 18,
-                        fontWeight: "700",
-                      }}
-                    >
-                      +966 558441502
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontWeight: "500",
-                        opacity: 0.6,
-                      }}
-                    >
-                      Assigned Since
-                    </p>
-                    <p
-                      style={{
-                        color: "#2E2E2E",
-                        fontSize: 18,
-                        fontWeight: "700",
-                      }}
-                    >
-                      July 2025
+                      {careTeam.specialization || "N/A"}{" "}
                     </p>
                   </div>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* My Reports - Patient */}
+          {user?.user_role === "patient" && (
+            <div style={{ width: "100%" }}>
+              <div
+                style={{
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor: "#004E89",
+                  padding: 20,
+                  borderRadius: 16,
+                  backgroundColor: "#004E890A",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <p
+                    style={{
+                      color: "#2E2E2E",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                  >
+                    My Reports
+                  </p>
+                  <Primarybtn name="View Full Reports" onClick={() => {}} />
+                </div>
+
                 <div
                   style={{
                     height: 1,
@@ -2457,199 +2547,112 @@ export default function Overview() {
                     marginBottom: 10,
                   }}
                 />
-                <div>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontWeight: "500",
-                      opacity: 0.6,
-                    }}
-                  >
-                    Role
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 18,
-                      fontWeight: "700",
-                    }}
-                  >
-                    Daily monitoring, vitals check, record submission
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
 
-          {/* My Reports - Patient */}
-          {user?.user_role === "patient" && (
-            <div
-              style={{
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: "#004E89",
-                padding: 20,
-                borderRadius: 16,
-                width: "100%",
-                backgroundColor: "#004E890A",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <p
-                  style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "500" }}
-                >
-                  My Reports
-                </p>
-                <Primarybtn name="View Full Reports" onClick={() => {}} />
-              </div>
-              <div
-                style={{
-                  height: 1,
-                  width: "100%",
-                  backgroundColor: "#1B1B1B",
-                  opacity: 0.1,
-                  marginTop: 10,
-                  marginBottom: 10,
-                }}
-              />
-              <div>
-                <p
-                  style={{ color: "#2E2E2E", fontSize: 18, fontWeight: "600" }}
-                >
-                  Medical Reports (Doctor Reports)
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 18,
-                      fontWeight: "500",
-                    }}
-                  >
-                    - Patient stable, continue medication, BP to be checked
-                    daily.
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 16,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Aug 15, 2025 – Dr. Paul
-                  </p>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 18,
-                      fontWeight: "500",
-                    }}
-                  >
-                    - Diabetes under control, advised diet adjustment.
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 16,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Aug 15, 2025 – Dr. Paul
-                  </p>
-                </div>
-              </div>
-              <div
-                style={{
-                  height: 1,
-                  width: "100%",
-                  backgroundColor: "#1B1B1B",
-                  opacity: 0.1,
-                  marginTop: 10,
-                  marginBottom: 10,
-                }}
-              />
-              <div>
-                <p
-                  style={{ color: "#2E2E2E", fontSize: 18, fontWeight: "600" }}
-                >
-                  Daily Reports (Submitted by Care Taker)
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 18,
-                      fontWeight: "500",
-                    }}
-                  >
-                    - BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 16,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Aug 16, 2025 – Nurse Clarisse
-                  </p>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 18,
-                      fontWeight: "500",
-                    }}
-                  >
-                    - BP: 150/92 | Status: ⚠ Escalated to Physician
-                  </p>
-                  <p
-                    style={{
-                      color: "#2E2E2E",
-                      fontSize: 16,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Aug 16, 2025 – Nurse Clarisse
-                  </p>
-                </div>
+                {/* <div>
+                            <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
+                              Medical Reports (Doctor Reports)
+                            </p>
+                            {[
+                              {
+                                text: "Patient stable, continue medication, BP to be checked daily.",
+                                date: "Aug 15, 2025",
+                                author: "Dr. Paul",
+                              },
+                              {
+                                text: "Diabetes under control, advised diet adjustment.",
+                                date: "Aug 15, 2025",
+                                author: "Dr. Paul",
+                              },
+                            ].map((report, index) => (
+                              <div
+                                key={`med-${index}`}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    color: "#2E2E2E",
+                                    fontSize: 16,
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  - {report.text}
+                                </p>
+                                <p
+                                  style={{
+                                    color: "#2E2E2E",
+                                    fontSize: 16,
+                                    fontStyle: "italic",
+                                  }}
+                                >
+                                  {report.date} – {report.author}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+              
+                          <div
+                            style={{
+                              height: 1,
+                              width: "100%",
+                              backgroundColor: "#1B1B1B",
+                              opacity: 0.1,
+                              marginTop: 10,
+                              marginBottom: 10,
+                            }}
+                          />
+              
+                          <div>
+                            <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "600" }}>
+                              Daily Reports (Submitted by Care Taker)
+                            </p>
+                            {[
+                              {
+                                text: "BP: 126/80 | Sugar: 112 | Temp: 36.7 | Status: ✅ Stable",
+                                date: "Aug 16, 2025",
+                                author: "Nurse Clarisse",
+                              },
+                              {
+                                text: "BP: 150/92 | Status: ⚠ Escalated to Physician",
+                                date: "Aug 16, 2025",
+                                author: "Nurse Clarisse",
+                              },
+                            ].map((report, index) => (
+                              <div
+                                key={`daily-${index}`}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    color: "#2E2E2E",
+                                    fontSize: 16,
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  - {report.text}
+                                </p>
+                                <p
+                                  style={{
+                                    color: "#2E2E2E",
+                                    fontSize: 16,
+                                    fontStyle: "italic",
+                                  }}
+                                >
+                                  {report.date} – {report.author}
+                                </p>
+                              </div>
+                            ))}
+                          </div> */}
+                <Empty description="no data" />
               </div>
             </div>
           )}
@@ -2659,7 +2662,7 @@ export default function Overview() {
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "center",
                 gap: "20px",
                 width: "100%",
                 background: "#F9FAFB",
@@ -2672,7 +2675,7 @@ export default function Overview() {
                 <SectionHeader title="Appointment Details" />
                 <div style={timelineWrapper}>
                   <div style={timelineLine}></div> {/* vertical line */}
-                  {appointmentDetails.map((item, index) => (
+                  {appointmentDetailsDynamic.map((item, index) => (
                     <div key={index} style={timelineItem}>
                       <div style={timelineDot}></div>
                       <div style={timelineContent}>
@@ -3542,6 +3545,7 @@ const appointmentWrapper = {
   display: "flex",
   flexDirection: "column",
   gap: 20,
+  width: "60%",
 };
 
 const timelineWrapper = {
