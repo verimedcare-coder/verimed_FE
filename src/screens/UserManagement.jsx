@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
-import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
 import {
   Tabs,
@@ -13,18 +12,12 @@ import {
   Drawer,
   Avatar,
   Form,
-  DatePicker,
   Upload,
   Spin,
-  Modal,
-  Checkbox,
   notification,
-  Divider,
 } from "antd";
 import {
   EllipsisOutlined,
-  EyeInvisibleOutlined,
-  EyeTwoTone,
   PlusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
@@ -39,10 +32,7 @@ import statusIcon from "../assets/icons/status.svg";
 import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
-import dayjs from "dayjs";
 import { base_url } from "../constants/constants";
-
-const { Option } = Select;
 
 const linkedPatients = [
   {
@@ -58,15 +48,6 @@ const linkedPatients = [
     name: "Ms. Grace N. (VM–845–123)",
     doctor: "Dr. Linda S.",
     caretaker: "Nurse Alex P.",
-  },
-];
-const linkedSponsor = [
-  {
-    id: 1,
-    avatar: "https://randomuser.me/api/portraits/men/44.jpg",
-    name: "Name",
-    phone: "+1 416 222 1000",
-    email: "john.n@verimed.com",
   },
 ];
 
