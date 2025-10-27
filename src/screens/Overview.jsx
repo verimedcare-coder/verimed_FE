@@ -621,13 +621,13 @@ export default function Overview() {
 
   const handlePrevMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() - 1)
     );
   };
 
   const handleNextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() + 1)
     );
   };
 
@@ -651,11 +651,11 @@ export default function Overview() {
   };
 
   const monthDays = getMonthDays(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth()
+    currentMonth?.getFullYear(),
+    currentMonth?.getMonth()
   );
 
-  const appointmentDates = appointments.map((a) => a.date.toDateString());
+  const appointmentDates = appointments.map((a) => a.date?.toDateString());
 
   // Appointment Details (left)
   const appointmentDetails = [
@@ -2202,7 +2202,7 @@ export default function Overview() {
                       ))}
                       {monthDays.map((day) => {
                         const isAppointment = appointmentDates.includes(
-                          day.toDateString()
+                          day?.toDateString()
                         );
                         return (
                           <div
@@ -2241,64 +2241,72 @@ export default function Overview() {
 
                   {/* Appointment Cards */}
                   {/* Appointment Cards */}
-                  {appointments
-                    .filter(
-                      (a) =>
-                        a.date.getMonth() === currentMonth.getMonth() &&
-                        a.date.getFullYear() === currentMonth.getFullYear()
-                    )
-                    .map((appt, index) => {
-                      const isSelected =
-                        selectedAppointmentId === appt.id ||
-                        (selectedAppointmentId === null && index === 0);
+                  {appointments &&
+                    appointments
+                      .filter(
+                        (a) =>
+                          a.date?.getMonth() === currentMonth?.getMonth() &&
+                          a.date?.getFullYear() === currentMonth?.getFullYear()
+                      )
+                      .map((appt, index) => {
+                        const isSelected =
+                          selectedAppointmentId === appt.id ||
+                          (selectedAppointmentId === null && index === 0);
 
-                      return (
-                        <div
-                          key={appt.id}
-                          onClick={() => handleCardClick(appt)}
-                          style={{
-                            display: "flex",
-                            gap: "10px",
-                            alignItems: "center",
-                            background: isSelected ? "#004C91" : "#F3F4F6",
-                            color: isSelected ? "#fff" : "#000",
-                            borderRadius: "8px",
-                            padding: "10px",
-                            cursor: "pointer",
-                            transition: "background 0.2s ease, color 0.2s ease",
-                          }}
-                        >
-                          {/* Date Box */}
+                        return (
                           <div
+                            key={appt.id}
+                            onClick={() => handleCardClick(appt)}
                             style={{
-                              background: "#FFFFFF",
-                              color: "#000",
-                              borderRadius: "6px",
-                              width: "45px",
-                              textAlign: "center",
-                              padding: "5px 0",
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                              background: isSelected ? "#004C91" : "#F3F4F6",
+                              color: isSelected ? "#fff" : "#000",
+                              borderRadius: "8px",
+                              padding: "10px",
+                              cursor: "pointer",
+                              transition:
+                                "background 0.2s ease, color 0.2s ease",
                             }}
                           >
-                            <div style={{ fontSize: "13px" }}>
-                              {appt.date.toLocaleDateString("en-US", {
-                                weekday: "short",
-                              })}
+                            {/* Date Box */}
+                            <div
+                              style={{
+                                background: "#FFFFFF",
+                                color: "#000",
+                                borderRadius: "6px",
+                                width: "45px",
+                                textAlign: "center",
+                                padding: "5px 0",
+                              }}
+                            >
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.date.toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                })}
+                              </div>
+                              <div
+                                style={{ fontSize: "16px", fontWeight: 600 }}
+                              >
+                                {appt.date.getDate()}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                              {appt.date.getDate()}
-                            </div>
-                          </div>
 
-                          {/* Info */}
-                          <div style={{ flexGrow: 1 }}>
-                            <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                              {appt.doctor}
+                            {/* Info */}
+                            <div style={{ flexGrow: 1 }}>
+                              <div
+                                style={{ fontSize: "14px", fontWeight: 500 }}
+                              >
+                                {appt.doctor}
+                              </div>
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.time}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "13px" }}>{appt.time}</div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                 </div>
               </div>
 
@@ -2962,7 +2970,7 @@ export default function Overview() {
                     ))}
                     {monthDays.map((day) => {
                       const isAppointment = appointmentDates.includes(
-                        day.toDateString()
+                        day?.toDateString()
                       );
                       return (
                         <div
@@ -2996,88 +3004,90 @@ export default function Overview() {
                     })}
                   </div>
                 )}
-                {appointments
-                  .filter(
-                    (a) =>
-                      a.date.getMonth() === currentMonth.getMonth() &&
-                      a.date.getFullYear() === currentMonth.getFullYear()
-                  )
-                  .map((appt, index) => {
-                    const isSelected =
-                      selectedAppointmentId === appt.id ||
-                      (selectedAppointmentId === null && index === 0);
+                {appointments &&
+                  appointments
+                    .filter(
+                      (a) =>
+                        a.date?.getMonth() === currentMonth?.getMonth() &&
+                        a.date?.getFullYear() === currentMonth?.getFullYear()
+                    )
+                    .map((appt, index) => {
+                      const isSelected =
+                        selectedAppointmentId === appt.id ||
+                        (selectedAppointmentId === null && index === 0);
 
-                    return (
-                      <div
-                        key={appt.id}
-                        onClick={() => handleCardClick(appt)}
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          alignItems: "center",
-                          background: isSelected ? "#004C91" : "#F3F4F6",
-                          color: isSelected ? "#fff" : "#000",
-                          borderRadius: "8px",
-                          padding: "10px",
-                          cursor: "pointer",
-                          transition:
-                            "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.background = "#004E89";
-                            e.currentTarget.style.color = "#fff";
-                            const dateBox =
-                              e.currentTarget.querySelector(".date-box");
-                            dateBox.style.background = "#fff";
-                            dateBox.style.color = "#00396E";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.background = "#F3F4F6";
-                            e.currentTarget.style.color = "#000";
-                            const dateBox =
-                              e.currentTarget.querySelector(".date-box");
-
-                            dateBox.style.background = "#004C91";
-                            dateBox.style.color = "#fff";
-                          }
-                        }}
-                      >
-                        {/* Date Box */}
+                      return (
                         <div
-                          className="date-box"
+                          key={appt.id}
+                          onClick={() => handleCardClick(appt)}
                           style={{
-                            background: isSelected ? "#FFFFFF" : "#FFFFFF",
-                            color: isSelected ? "#000" : "#000",
-                            borderRadius: "6px",
-                            width: "45px",
-                            textAlign: "center",
-                            padding: "5px 0",
-                            transition: "background 0.2s ease, color 0.2s ease",
+                            display: "flex",
+                            gap: "10px",
+                            alignItems: "center",
+                            background: isSelected ? "#004C91" : "#F3F4F6",
+                            color: isSelected ? "#fff" : "#000",
+                            borderRadius: "8px",
+                            padding: "10px",
+                            cursor: "pointer",
+                            transition:
+                              "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#004E89";
+                              e.currentTarget.style.color = "#fff";
+                              const dateBox =
+                                e.currentTarget.querySelector(".date-box");
+                              dateBox.style.background = "#fff";
+                              dateBox.style.color = "#00396E";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = "#F3F4F6";
+                              e.currentTarget.style.color = "#000";
+                              const dateBox =
+                                e.currentTarget.querySelector(".date-box");
+
+                              dateBox.style.background = "#004C91";
+                              dateBox.style.color = "#fff";
+                            }
                           }}
                         >
-                          <div style={{ fontSize: "13px" }}>
-                            {appt.date.toLocaleDateString("en-US", {
-                              weekday: "short",
-                            })}
+                          {/* Date Box */}
+                          <div
+                            className="date-box"
+                            style={{
+                              background: isSelected ? "#FFFFFF" : "#FFFFFF",
+                              color: isSelected ? "#000" : "#000",
+                              borderRadius: "6px",
+                              width: "45px",
+                              textAlign: "center",
+                              padding: "5px 0",
+                              transition:
+                                "background 0.2s ease, color 0.2s ease",
+                            }}
+                          >
+                            <div style={{ fontSize: "13px" }}>
+                              {appt.date.toLocaleDateString("en-US", {
+                                weekday: "short",
+                              })}
+                            </div>
+                            <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                              {appt.date.getDate()}
+                            </div>
                           </div>
-                          <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                            {appt.date.getDate()}
-                          </div>
-                        </div>
 
-                        {/* Appointment Info */}
-                        <div style={{ flexGrow: 1 }}>
-                          <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                            {appt.doctor}
+                          {/* Appointment Info */}
+                          <div style={{ flexGrow: 1 }}>
+                            <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                              {appt.doctor}
+                            </div>
+                            <div style={{ fontSize: "13px" }}>{appt.time}</div>
                           </div>
-                          <div style={{ fontSize: "13px" }}>{appt.time}</div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
               </div>
             </div>
           )}
@@ -3290,7 +3300,7 @@ export default function Overview() {
                       ))}
                       {monthDays.map((day) => {
                         const isAppointment = appointmentDates.includes(
-                          day.toDateString()
+                          day?.toDateString()
                         );
                         return (
                           <div
@@ -3329,90 +3339,97 @@ export default function Overview() {
                   )}
 
                   {/* Appointment Cards */}
-                  {appointments
-                    .filter(
-                      (a) =>
-                        a.date.getMonth() === currentMonth.getMonth() &&
-                        a.date.getFullYear() === currentMonth.getFullYear()
-                    )
-                    .map((appt, index) => {
-                      const isSelected =
-                        selectedAppointmentId === appt.id ||
-                        (selectedAppointmentId === null && index === 0);
+                  {appointments &&
+                    appointments
+                      .filter(
+                        (a) =>
+                          a.date?.getMonth() === currentMonth?.getMonth() &&
+                          a.date?.getFullYear() === currentMonth?.getFullYear()
+                      )
+                      .map((appt, index) => {
+                        const isSelected =
+                          selectedAppointmentId === appt.id ||
+                          (selectedAppointmentId === null && index === 0);
 
-                      return (
-                        <div
-                          key={appt.id}
-                          onClick={() => handleCardClick(appt)}
-                          style={{
-                            display: "flex",
-                            gap: "10px",
-                            alignItems: "center",
-                            background: isSelected ? "#004C91" : "#F3F4F6",
-                            color: isSelected ? "#fff" : "#000",
-                            borderRadius: "8px",
-                            padding: "10px",
-                            cursor: "pointer",
-                            transition:
-                              "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#004E89";
-                              e.currentTarget.style.color = "#fff";
-                              const dateBox =
-                                e.currentTarget.querySelector(".date-box");
-                              dateBox.style.background = "#fff";
-                              dateBox.style.color = "#00396E";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = "#F3F4F6";
-                              e.currentTarget.style.color = "#000";
-                              const dateBox =
-                                e.currentTarget.querySelector(".date-box");
-                              // dateBox.style.background = "#FFFFFF";
-                              // dateBox.style.color = "#000";
-                              dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                              dateBox.style.color = "#fff"; // white text on blue
-                            }
-                          }}
-                        >
-                          {/* Date Box */}
+                        return (
                           <div
-                            className="date-box"
+                            key={appt.id}
+                            onClick={() => handleCardClick(appt)}
                             style={{
-                              background: isSelected ? "#FFFFFF" : "#FFFFFF",
-                              color: isSelected ? "#000" : "#000",
-                              borderRadius: "6px",
-                              width: "45px",
-                              textAlign: "center",
-                              padding: "5px 0",
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                              background: isSelected ? "#004C91" : "#F3F4F6",
+                              color: isSelected ? "#fff" : "#000",
+                              borderRadius: "8px",
+                              padding: "10px",
+                              cursor: "pointer",
                               transition:
-                                "background 0.2s ease, color 0.2s ease",
+                                "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#004E89";
+                                e.currentTarget.style.color = "#fff";
+                                const dateBox =
+                                  e.currentTarget.querySelector(".date-box");
+                                dateBox.style.background = "#fff";
+                                dateBox.style.color = "#00396E";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#F3F4F6";
+                                e.currentTarget.style.color = "#000";
+                                const dateBox =
+                                  e.currentTarget.querySelector(".date-box");
+                                // dateBox.style.background = "#FFFFFF";
+                                // dateBox.style.color = "#000";
+                                dateBox.style.background = "#004C91"; // keep blue for secondary cards
+                                dateBox.style.color = "#fff"; // white text on blue
+                              }
                             }}
                           >
-                            <div style={{ fontSize: "13px" }}>
-                              {appt.date.toLocaleDateString("en-US", {
-                                weekday: "short",
-                              })}
+                            {/* Date Box */}
+                            <div
+                              className="date-box"
+                              style={{
+                                background: isSelected ? "#FFFFFF" : "#FFFFFF",
+                                color: isSelected ? "#000" : "#000",
+                                borderRadius: "6px",
+                                width: "45px",
+                                textAlign: "center",
+                                padding: "5px 0",
+                                transition:
+                                  "background 0.2s ease, color 0.2s ease",
+                              }}
+                            >
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.date.toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                })}
+                              </div>
+                              <div
+                                style={{ fontSize: "16px", fontWeight: 600 }}
+                              >
+                                {appt.date.getDate()}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                              {appt.date.getDate()}
-                            </div>
-                          </div>
 
-                          {/* Appointment Info */}
-                          <div style={{ flexGrow: 1 }}>
-                            <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                              {appt.doctor}
+                            {/* Appointment Info */}
+                            <div style={{ flexGrow: 1 }}>
+                              <div
+                                style={{ fontSize: "14px", fontWeight: 500 }}
+                              >
+                                {appt.doctor}
+                              </div>
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.time}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "13px" }}>{appt.time}</div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                 </div>
               </div>
             </div>
