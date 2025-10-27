@@ -680,6 +680,24 @@ export default function Overview() {
     fetchUsers();
   }, []);
 
+  const base_url1 = "https://verimedramja.pythonanywhere.com";
+
+  const getPhotoUrl = (url) => {
+    if (!url) return patientdetails;
+    if (url.startsWith("http")) return url;
+
+    url = url.replace(/^\/media\/+/i, "/");
+
+    const base = base_url1.replace(/\/+$/, "");
+    const cleanedUrl = url.replace(/^\/+/, "");
+
+    const finalUrl = `${base}/${cleanedUrl}`;
+    console.log("photo_view_url from API (fixed):", url);
+    console.log("Final photo URL:", finalUrl);
+
+    return finalUrl;
+  };
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -723,11 +741,7 @@ export default function Overview() {
                 {/* Profile */}
                 <div style={profileBox}>
                   <img
-                    src={
-                      patientData?.user?.photo_view_url
-                        ? `${base_url}${patientData.user.photo_view_url}`
-                        : patientdetails
-                    }
+                    src={getPhotoUrl(patientData?.user?.photo_view_url)}
                     alt="profile"
                     style={{
                       width: 64,
