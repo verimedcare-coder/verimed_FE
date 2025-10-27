@@ -713,8 +713,6 @@ export default function Overview() {
     const cleanedUrl = url.replace(/^\/+/, "");
 
     const finalUrl = `${base}/${cleanedUrl}`;
-    console.log("photo_view_url from API (fixed):", url);
-    console.log("Final photo URL:", finalUrl);
 
     return finalUrl;
   };
