@@ -777,7 +777,10 @@ export default function Overview() {
               user?.user_role === "patient") && (
               <div style={cardStyle}>
                 <SectionHeader title="Patient Details">
-                  <Primarybtn name="View Full Profile" />
+                  <Primarybtn
+                    name="View Full Profile"
+                    onClick={() => navigate("/my_loved_ones")}
+                  />
                   <SecondaryBtn name="Download" onClick={handleDownloadExcel} />
                 </SectionHeader>
 
