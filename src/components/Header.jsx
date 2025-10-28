@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Layout,
   Select,
@@ -6,7 +6,6 @@ import {
   Button,
   Space,
   Tooltip,
-  Badge,
   Dropdown,
   Menu,
 } from "antd";
@@ -25,6 +24,8 @@ const { Option } = Select;
 
 export default function HeaderComponent() {
   const [language, setLanguage] = useState("EN");
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const navigate = useNavigate();
 
   const data = localStorage.getItem("userData");
@@ -53,6 +54,41 @@ export default function HeaderComponent() {
     navigate("/");
   };
 
+  // 🟢 Load patients from sponsor appointments
+  useEffect(() => {
+    const storedAppointments = localStorage.getItem("sponsorAppointments");
+    if (storedAppointments) {
+      try {
+        const parsedAppointments = JSON.parse(storedAppointments);
+
+        // Extract unique patients from appointment data
+        const uniquePatientsMap = new Map();
+        parsedAppointments.forEach((item) => {
+          const patientUser = item?.patient?.user;
+          if (patientUser && !uniquePatientsMap.has(patientUser.id)) {
+            uniquePatientsMap.set(patientUser.id, patientUser);
+          }
+        });
+
+        const patientList = Array.from(uniquePatientsMap.values());
+        setPatients(patientList);
+
+        // Default select logic
+        if (patientList.length > 0) {
+          setSelectedPatient(patientList[0].id);
+          localStorage.setItem("selectedPatientId", patientList[0].id);
+        }
+      } catch (error) {
+        console.error("Error parsing sponsor appointments:", error);
+      }
+    }
+  }, []);
+
+  const handlePatientChange = (value) => {
+    setSelectedPatient(value);
+    localStorage.setItem("selectedPatientId", value);
+  };
+
   return (
     <Header
       style={{
@@ -65,6 +101,7 @@ export default function HeaderComponent() {
         fontFamily: "Arial, sans-serif",
       }}
     >
+      {/* Left Section */}
       <div
         style={{
           display: "flex",
@@ -86,19 +123,27 @@ export default function HeaderComponent() {
         </span>
       </div>
 
+      {/* Right Section */}
       <Space size="middle" align="center">
+        {/* 🟢 Patient dropdown */}
         <Select
-          defaultValue="Mr. Samuel N."
-          style={{ width: 160, borderRadius: 6 }}
+          value={selectedPatient}
+          onChange={handlePatientChange}
+          style={{ width: 200, borderRadius: 6 }}
+          placeholder="Select Patient"
           dropdownMatchSelectWidth={false}
           bordered
         >
-          <Option value="mr-samuel-n">Mr. Samuel N.</Option>
+          {patients.map((p) => (
+            <Option key={p.id} value={p.id}>
+              {`${p.first_name} ${p.last_name}`}
+            </Option>
+          ))}
         </Select>
 
-        <Primarybtn name="add a patient" onClick={() => {}} />
+        <Primarybtn name="Enroll Loved One" onClick={() => {}} />
 
-        <Input
+        {/* <Input
           placeholder="Search"
           prefix={<SearchOutlined />}
           style={{
@@ -108,7 +153,7 @@ export default function HeaderComponent() {
             borderColor: "rgba(0,0,0,0.08)",
           }}
           allowClear
-        />
+        /> */}
 
         <Dropdown
           overlay={languageMenu}
@@ -131,7 +176,7 @@ export default function HeaderComponent() {
           </div>
         </Dropdown>
 
-        <Tooltip title="Notifications">
+        {/* <Tooltip title="Notifications">
           <Badge dot={unreadCount > 0} offset={[-2, 2]}>
             <Button
               shape="circle"
@@ -143,7 +188,7 @@ export default function HeaderComponent() {
               }}
             />
           </Badge>
-        </Tooltip>
+        </Tooltip> */}
 
         <Tooltip title="Logout">
           <Button

@@ -22,14 +22,14 @@ export default function LoginScreen() {
 
   const token = localStorage.getItem("token");
 
-  // Fetch Sponsor Profile
+  // ✅ Fetch Sponsor Profile
   const fetchSponsorProfile = async (userId, token) => {
     if (!userId || !token) return;
     try {
       const endpoint = `${base_url}/sponsorprofile_list/`;
       const headers = { Authorization: `Token ${token}` };
       const res = await axios.get(endpoint, { headers });
-      const sponsorList = res.data;
+      const sponsorList = Array.isArray(res.data) ? res.data : [];
 
       const matchedSponsor = sponsorList.find(
         (sponsor) => sponsor.user === userId
@@ -41,16 +41,20 @@ export default function LoginScreen() {
         localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
         localStorage.setItem("sponsorProfileId", matchedSponsor.id);
 
+        // ✅ Fetch Sponsor Patients
         await fetchSponsorPatients(matchedSponsor.id, token);
+
+        // ✅ Fetch Sponsor Appointments
+        await fetchSponsorAppointments(token);
       } else {
         console.warn("No matching sponsor found for this user.");
       }
     } catch (error) {
-      console.error("Error fetching sponsor list:", error);
+      console.error("Error fetching sponsor profile:", error);
     }
   };
 
-  //  Fetch Sponsor Patients
+  // ✅ Fetch Sponsor Patients
   const fetchSponsorPatients = async (sponsorProfileId, token) => {
     if (!sponsorProfileId || !token) return;
     try {
@@ -59,22 +63,71 @@ export default function LoginScreen() {
       const payload = { sponsorprofileid: sponsorProfileId };
 
       const res = await axios.post(endpoint, payload, { headers });
-      const patients = res.data || [];
+      const patients = Array.isArray(res.data) ? res.data : [];
 
       if (patients.length > 0) {
         const patientIds = patients.map((p) => p.id);
         console.log("Sponsor Patients:", patientIds);
 
         localStorage.setItem("sponsorPatientIds", JSON.stringify(patientIds));
+        localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
       } else {
         console.warn("No patients found for this sponsor.");
+        localStorage.removeItem("sponsorPatientIds");
+        localStorage.removeItem("sponsorPatientData");
       }
     } catch (error) {
       console.error("Error fetching sponsor patients:", error);
     }
   };
 
-  //  On Login Submit
+  // ✅ Fetch Sponsor Appointments
+  const fetchSponsorAppointments = async (token) => {
+    try {
+      const sponsorProfileId = localStorage.getItem("sponsorProfileId");
+      const sponsorPatientIds = JSON.parse(
+        localStorage.getItem("sponsorPatientIds") || "[]"
+      );
+
+      if (!sponsorProfileId || sponsorPatientIds.length === 0) {
+        console.warn("Missing sponsor profile or patients.");
+        return;
+      }
+
+      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const headers = { Authorization: `Token ${token}` };
+
+      // Use the first patient ID (required by API)
+      const firstPatientId = sponsorPatientIds[0];
+      const payload = { patientprofileid: firstPatientId };
+
+      const res = await axios.post(endpoint, payload, { headers });
+      const data = Array.isArray(res.data) ? res.data : [];
+
+      const filteredAppointments = data.filter(
+        (item) =>
+          item?.patient?.sponsor === Number(sponsorProfileId) &&
+          sponsorPatientIds.includes(item?.patient?.id)
+      );
+
+      console.log("Filtered Appointments:", filteredAppointments);
+
+      localStorage.setItem(
+        "sponsorAppointments",
+        JSON.stringify(filteredAppointments)
+      );
+
+      if (filteredAppointments.length > 0) {
+        message.success("Sponsor appointments loaded successfully!");
+      } else {
+        message.warning("No appointments found for sponsor patients.");
+      }
+    } catch (error) {
+      console.error("Error fetching sponsor appointments:", error);
+    }
+  };
+
+  // ✅ Login Submit
   const onFinish = async (values) => {
     const { username, password } = values;
     setLoading(true);
@@ -103,12 +156,11 @@ export default function LoginScreen() {
       localStorage.setItem("userData", JSON.stringify(userData));
       message.success("Login successful!");
 
-      //  Conditional Sponsor Logic
       if (userData.user_role === "sponsor") {
         await fetchSponsorProfile(userData.id, token);
       }
 
-      //  Redirect by Role
+      // ✅ Redirect by Role
       switch (userData.user_role) {
         case "admin":
         case "sponsor":
@@ -193,12 +245,10 @@ export default function LoginScreen() {
           padding: "40px 40px",
         }}
       >
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <img src={VerimedLogo} alt="Verimed Logo" style={{ width: 140 }} />
         </div>
 
-        {/* Centered Card with Form */}
         <div
           style={{
             flex: 1,
@@ -244,11 +294,19 @@ export default function LoginScreen() {
               style={{ marginTop: 24 }}
               onFinish={onFinish}
             >
-              <Form.Item label="User Name" name="username">
+              <Form.Item
+                label="User Name"
+                name="username"
+                rules={[{ required: true, message: "Please enter username" }]}
+              >
                 <Input prefix={<MailOutlined />} size="large" />
               </Form.Item>
 
-              <Form.Item label="Password" name="password">
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[{ required: true, message: "Please enter password" }]}
+              >
                 <Input.Password
                   prefix={<LockOutlined />}
                   size="large"
@@ -294,7 +352,6 @@ export default function LoginScreen() {
           </Card>
         </div>
 
-        {/* Footer */}
         <footer
           style={{
             fontSize: 12,
