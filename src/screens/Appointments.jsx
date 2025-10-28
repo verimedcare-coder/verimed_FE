@@ -14,6 +14,8 @@ import {
   UserOutlined,
   UploadOutlined,
   CloseOutlined,
+  BookOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import {
   Tabs,
@@ -28,6 +30,7 @@ import {
   Spin,
   Empty,
   Select,
+  Tag,
 } from "antd";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -55,8 +58,23 @@ export default function Appointments() {
   const [bookedDateTime, setBookedDateTime] = useState(null);
   const [appointmentList, setAppointmentList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
+  const [deptList, setDeptList] = useState([]);
+  const [sponsorUser, setSponsorUser] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
+    useState(false);
+
+  const handleDateSelect = (date) => {
+    if (!date) return;
+    const formatted = date.format("YYYY-MM-DD");
+    if (!selectedDates.includes(formatted)) {
+      setSelectedDates([...selectedDates, formatted]);
+    }
+  };
 
   const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("userData"));
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -77,6 +95,26 @@ export default function Appointments() {
     fetchAppointments();
   }, []);
 
+  useEffect(() => {
+    const fetchDeptList = async () => {
+      try {
+        const endpoint = `${base_url}/verimed_department_create_update/`;
+        const headers = {
+          Authorization: `Token ${token}`,
+        };
+        const res = await axios.get(endpoint, { headers });
+        setDeptList(res.data);
+      } catch (error) {
+        console.log("Error fetching departments: ", error);
+      }
+    };
+    fetchDeptList();
+  }, []);
+
+  const patientId = localStorage.getItem("sponsorPatientIds");
+
+  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+
   const bookAppointment = async (values) => {
     setLoading(true);
     try {
@@ -84,11 +122,11 @@ export default function Appointments() {
       const headers = { Authorization: `Token ${token}` };
 
       const bookappoinment_data = {
-        dep: 1,
-        patient: 4,
+        dep: values.depId,
+        patient: cleanedPatientId,
         caretaker: 1,
-        appointment_date: values.date ? values.date.format("YYYY-MM-DD") : null,
-        appointment_time: values.time || null,
+        appointment_date: selectedDates,
+        appointment_time: values.preferred_times || [],
         appointment_type: values.appointmentType || null,
         treatment_performed: values.treatment || null,
         care_taker_notes: values.notes || null,
@@ -150,6 +188,21 @@ export default function Appointments() {
     }
   };
 
+  useEffect(() => {
+    const fetchSponsorData = async () => {
+      try {
+        const endpoint = `${base_url}/user_view/`;
+        const headers = { Authorization: `Token ${token}` };
+        const res = await axios.get(endpoint, { headers });
+        const sponsorData = res.data;
+        setSponsorUser(sponsorData);
+      } catch (error) {
+        console.log("Error fetching sponsor data: ", error);
+      }
+    };
+    fetchSponsorData();
+  }, []);
+
   const getAppointmentStatus = (appointment) => {
     const today = new Date();
     const apptDate = new Date(appointment.appointment_date);
@@ -159,25 +212,55 @@ export default function Appointments() {
     return "upcoming";
   };
 
-  const mappedAppointments = appointmentList.map((appt) => ({
-    id: appt.id,
-    date: new Date(appt.appointment_date),
-    doctor: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
-    doctorName: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
-    time: appt.appointment_time
-      ? new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "",
-    status: getAppointmentStatus(appt),
-    name: appt.patient?.patient_id
-      ? `Patient ${appt.patient.patient_id}`
-      : "Patient",
-    issue: appt.appointment_reason || appt.appointment_type || "",
-    docs: appt.documents && appt.documents.length > 0,
-    documents: appt.documents || [],
-  }));
+  const mappedAppointments = appointmentList.map((appt) => {
+    const sponsor = sponsorUser?.find((s) => s.id === appt.sponsor?.user);
+
+    return {
+      id: appt.id,
+      appointment_type: appt.appointment_type,
+      date: new Date(appt.appointment_date),
+      doctor: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
+      doctorName: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
+      time: appt.appointment_time
+        ? new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString(
+            [],
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          )
+        : "",
+      status: getAppointmentStatus(appt),
+      name: appt.patient?.patient_id
+        ? `Sponsor: ${
+            sponsor
+              ? `${sponsor.first_name || ""} ${sponsor.last_name || ""}`
+              : "N/A"
+          } - Patient: ${
+            appt.patient?.user
+              ? `${appt.patient.user.first_name || ""} ${
+                  appt.patient.user.last_name || ""
+                }`
+              : "Unknown"
+          }`
+        : "Patient",
+      issue: appt.appointment_reason || appt.appointment_type || "",
+      docs: appt.documents && appt.documents.length > 0,
+      documents: appt.documents || [],
+    };
+  });
+
+  const handleDetailsCardClick = (appt) => {
+    if (userData?.user_role === "care_taker" && appt.status === "upcoming") {
+      setSelectedAppointment(appt);
+      setIsAppointmentDetailsModal(true);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsAppointmentDetailsModal(false);
+    setSelectedAppointment(null);
+  };
 
   const renderAppointments = (status) => {
     const filtered = mappedAppointments.filter(
@@ -190,11 +273,17 @@ export default function Appointments() {
         {filtered.map((appt) => (
           <Card
             key={appt.id}
+            hoverable={
+              userData?.user_role === "care_taker" && appt.status === "upcoming"
+            }
+            onClick={() => handleDetailsCardClick(appt)}
             size="small"
             style={{
               background: "#F9FAFB",
               border: "1px solid #E5E7EB",
               borderRadius: "8px",
+              cursor:
+                userData?.user_role === "care_taker" ? "pointer" : "default",
             }}
           >
             <div
@@ -207,24 +296,47 @@ export default function Appointments() {
               <div
                 style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
-                <div
-                  style={{
-                    background: "#004C91",
-                    color: "#fff",
-                    width: "50px",
-                    borderRadius: "6px",
-                    textAlign: "center",
-                    padding: "5px 0",
-                    fontWeight: 500,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {appt.date.toLocaleDateString("en-US", { weekday: "short" })}
-                  <br />
-                  <span style={{ fontSize: "16px", fontWeight: 600 }}>
-                    {appt.date.getDate()}
-                  </span>
-                </div>
+                {appt.status === "upcoming" ? (
+                  <div
+                    style={{
+                      background: "#004C91",
+                      color: "#fff",
+                      height: "45px",
+                      width: "50px",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      padding: "5px 0",
+                      fontWeight: 500,
+                      lineHeight: 1.2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CalendarOutlined />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      background: "#004C91",
+                      color: "#fff",
+                      width: "50px",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      padding: "5px 0",
+                      fontWeight: 500,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {appt.date.toLocaleDateString("en-US", {
+                      weekday: "short",
+                    })}
+                    <br />
+                    <span style={{ fontSize: "16px", fontWeight: 600 }}>
+                      {appt.date.getDate()}
+                    </span>
+                  </div>
+                )}
                 <div
                   style={{
                     width: "1px",
@@ -249,8 +361,8 @@ export default function Appointments() {
                       fontWeight: 500,
                     }}
                   >
-                    <ClockCircleOutlined style={{ color: "#6B7280" }} />
-                    {appt.time}
+                    <BookOutlined style={{ color: "#6B7280" }} />
+                    {appt.appointment_type}
                   </div>
                   <div
                     style={{
@@ -363,6 +475,8 @@ export default function Appointments() {
   );
   const appointmentDates = mappedAppointments.map((a) => a.date.toDateString());
 
+  console.log("selectedAppointment", selectedAppointment);
+
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
       <div style={{ width: "240px", flexShrink: 0 }}>
@@ -434,13 +548,35 @@ export default function Appointments() {
                   <Tabs.TabPane tab="Cancelled" key="cancelled" />
                 </Tabs>
                 <Primarybtn
-                  name="New Appointment"
+                  name={
+                    userData?.user_role === "sponsor"
+                      ? "Request Appointment"
+                      : "Book Appointment"
+                  }
                   icon={<PlusOutlined />}
                   onClick={() => setIsModalOpen(true)}
                 />
               </div>
               {renderAppointments(activeTab)}
             </div>
+            {userData?.user_role === "care_taker" && (
+              <Modal
+                title="Appointment Details"
+                open={isAppointmentDetailsModal}
+                onCancel={handleCloseModal}
+                footer={null}
+              >
+                {selectedAppointment ? (
+                  <div>
+                    <p>
+                      <b>Appointment ID:</b> {selectedAppointment.id}
+                    </p>
+                  </div>
+                ) : (
+                  <p>No appointment selected.</p>
+                )}
+              </Modal>
+            )}
           </div>
 
           {/* Right Section */}
@@ -645,7 +781,7 @@ export default function Appointments() {
         </div>
       </div>
 
-      {/* Book Appointment Modal */}
+      {/* Request Appointment Modal */}
       <Modal
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
@@ -696,37 +832,66 @@ export default function Appointments() {
               </span>
             }
           >
-            <Select placeholder="Select type">
-              <Option value="consultation">Consultation</Option>
-              <Option value="followup">Follow-up</Option>
-              <Option value="diagnostic">Diagnostic</Option>
+            <Select
+              placeholder="Select Department"
+              onChange={(value, option) => {
+                form.setFieldsValue({ depId: option.depId });
+              }}
+            >
+              {deptList?.map((dept) => (
+                <Option key={dept.id} value={dept.dep_name} depId={dept.id}>
+                  {dept.dep_name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
-
-          <Form.Item
-            name="date"
-            label={
-              <span
-                style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
-              >
-                Preferred Date
-              </span>
-            }
-          >
-            <DatePicker style={{ width: "100%" }} />
+          <Form.Item name="depId" hidden>
+            <Input type="hidden" />
           </Form.Item>
 
           <Form.Item
-            name="time"
             label={
               <span
                 style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
               >
-                Preferred Time
+                Preferred Date(s)
               </span>
             }
           >
-            <Select placeholder="Select time">
+            <DatePicker onChange={handleDateSelect} />
+            <div style={{ marginTop: 8 }}>
+              {selectedDates.map((d) => (
+                <Tag
+                  key={d}
+                  closable
+                  onClose={() =>
+                    setSelectedDates(selectedDates.filter((date) => date !== d))
+                  }
+                >
+                  {d}
+                </Tag>
+              ))}
+            </div>
+          </Form.Item>
+
+          <Form.Item
+            name="preferred_times"
+            label={
+              <span
+                style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
+              >
+                Preferred Time(s)
+              </span>
+            }
+            rules={[
+              { required: true, message: "Please select at least one time" },
+            ]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select time(s)"
+              style={{ width: "100%" }}
+            >
               {Array.from({ length: 13 }, (_, i) => {
                 const hour = 9 + i;
                 const value = `${hour.toString().padStart(2, "0")}:00:00`;
@@ -816,6 +981,7 @@ export default function Appointments() {
         </Form>
       </Modal>
 
+      {/* Request Appointment Success Modal */}
       <Modal
         open={isSuccessModalOpen}
         onCancel={() => setIsSuccessModalOpen(false)}
@@ -839,8 +1005,6 @@ export default function Appointments() {
               }}
             >
               Your Appointment Request Sent Successfully <br />
-              Our Practice Manager will review your request and get back to you
-              shortly.
             </h2>
           </div>
         }
@@ -853,9 +1017,8 @@ export default function Appointments() {
             textAlign: "center",
           }}
         >
-          Your appointment is scheduled for {bookedDateTime?.date} at{" "}
-          {bookedDateTime?.time}. You will receive reminders 24 hours and 1 hour
-          before your visit.
+          Our Practice Manager will review your request and get back to you
+          shortly.
         </p>
       </Modal>
     </div>

@@ -35,11 +35,11 @@ const menuConfig = {
       icon: <DollarOutlined />,
       path: "/membership_plans",
     },
-    {
-      label: "Messages / Support",
-      icon: <MessageOutlined />,
-      path: "/support",
-    },
+    // {
+    //   label: "Messages / Support",
+    //   icon: <MessageOutlined />,
+    //   path: "/support",
+    // },
   ],
   sponsor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
@@ -50,7 +50,7 @@ const menuConfig = {
       path: "/appointments",
     },
     { label: "Care Team", icon: <TeamOutlined />, path: "/care_team" },
-    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    // { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
     {
       label: "Billing & Membership",
       icon: <DollarOutlined />,
@@ -66,26 +66,31 @@ const menuConfig = {
       icon: <CalendarOutlined />,
       path: "/appointments",
     },
-    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    // { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
   ],
-  care: [
+  care_taker: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
+    {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
     {
       label: "My Patients",
       icon: <UserOutlined />,
       path: "/my_patients",
     },
-    {
-      label: "Daily Reports",
-      icon: <CalendarOutlined />,
-      path: "/daily_reports",
-    },
-    {
-      label: "Health Monitoring",
-      icon: <HeartOutlined />,
-      path: "/health_monitoring",
-    },
-    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    // {
+    //   label: "Daily Reports",
+    //   icon: <CalendarOutlined />,
+    //   path: "/daily_reports",
+    // },
+    // {
+    //   label: "Health Monitoring",
+    //   icon: <HeartOutlined />,
+    //   path: "/health_monitoring",
+    // },
+    // { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
   ],
   doctor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
@@ -104,7 +109,7 @@ const menuConfig = {
     //   icon: <CalendarOutlined />,
     //   path: "/reports_to_review",
     // },
-    { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
+    // { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
   ],
 };
 
@@ -118,8 +123,26 @@ export default function CustomSider() {
     menuConfig[user?.user_role] || menuConfig["patient"];
 
   const activeItem =
-    filteredMenuItems.find((item) => location.pathname.startsWith(item.path))
-      ?.path || filteredMenuItems[0].path;
+    filteredMenuItems.find((item) =>
+      (location?.pathname || "").startsWith(item.path)
+    )?.path || filteredMenuItems[0].path;
+
+  const base_url1 = "https://verimedramja.pythonanywhere.com";
+
+  const getPhotoUrl = (url) => {
+    // Guard against null/undefined url
+    if (!url) return Profile;
+    if (url?.startsWith("http")) return url;
+
+    url = url.replace(/^\/media\/+/i, "/");
+
+    const base = base_url1.replace(/\/+$/, "");
+    const cleanedUrl = url.replace(/^\/+/, "");
+
+    const finalUrl = `${base}/${cleanedUrl}`;
+
+    return finalUrl;
+  };
 
   return (
     <Sider
@@ -148,7 +171,7 @@ export default function CustomSider() {
 
         {/* Profile Section */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Avatar src={Profile} size={67} />
+          <Avatar src={getPhotoUrl(user?.photo_view_url)} size={67} />
           <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>
               {user?.first_name} {user?.last_name}

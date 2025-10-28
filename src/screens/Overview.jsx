@@ -37,6 +37,7 @@ export default function Overview() {
   const [patientData, setPatientData] = useState(null);
   const [vitalsData, setVitalsData] = useState(null);
   const [doctorAppointments, setDoctorAppointments] = useState([]);
+  const [medicalReports, setMedicalReports] = useState([]);
 
   const token = localStorage.getItem("token");
 
@@ -87,8 +88,6 @@ export default function Overview() {
       const data = res.data || [];
 
       if (data.length > 0) {
-        console.log("Selected Patient Details (Sponsor View):", data);
-
         localStorage.setItem(
           "selectedPatientAppointments",
           JSON.stringify(data)
@@ -307,49 +306,17 @@ export default function Overview() {
       ]
     : [];
 
-  const medicalHistory = [
-    {
-      date: "Aug 15, 2025",
-      time: "10:00 AM",
-      doctor: "Nurse Clarisse A.",
-      diagnostic: "Routine Vitals Check",
-      comments: "BP 128/78, Blood Sugar 110. Stable. No Urgent Concerns.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "10:30 AM",
-      doctor: "Dr. Robert M.",
-      diagnostic: "Physical Exam",
-      comments: "General Health Appears Good. Follow-Up in 6 Months.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "11:30 AM",
-      doctor: "Dr. Sarah T.",
-      diagnostic: "X-Ray Interpretation",
-      comments: "No Abnormalities Found In Chest X-Ray.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "12:00 PM",
-      doctor: "Nurse Leo B.",
-      diagnostic: "Medication Review",
-      comments:
-        "Patient Adheres To Prescribed Regimen, No Side Effects Reported.",
-    },
-  ];
-
   const columns = [
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "appointment_date",
+      key: "appointment_date",
       width: 120,
     },
     {
       title: "Time",
-      dataIndex: "time",
-      key: "time",
+      dataIndex: "appointment_time",
+      key: "appointment_time",
       width: 120,
     },
     {
@@ -359,23 +326,18 @@ export default function Overview() {
       width: 180,
     },
     {
-      title: "Diagnostic",
-      dataIndex: "diagnostic",
-      key: "diagnostic",
+      title: "Service Taken",
+      dataIndex: "appointment_type",
+      key: "appointment_type",
       width: 200,
     },
     {
-      title: "Comments",
-      dataIndex: "comments",
-      key: "comments",
+      title: "Care Taker Notes",
+      dataIndex: "care_taker_notes",
+      key: "care_taker_notes",
       ellipsis: true,
     },
   ];
-
-  const dataSource = medicalHistory.map((item, index) => ({
-    key: index,
-    ...item,
-  }));
 
   const docStats = [
     {
@@ -691,12 +653,12 @@ export default function Overview() {
 
   const getPhotoUrl = (url) => {
     if (!url) return patientdetails;
-    if (url.startsWith("http")) return url;
+    if (url?.startsWith("http")) return url;
 
-    url = url.replace(/^\/media\/+/i, "/");
+    url = url?.replace(/^\/media\/+/i, "/");
 
-    const base = base_url1.replace(/\/+$/, "");
-    const cleanedUrl = url.replace(/^\/+/, "");
+    const base = base_url1?.replace(/\/+$/, "");
+    const cleanedUrl = url?.replace(/^\/+/, "");
 
     const finalUrl = `${base}/${cleanedUrl}`;
 
@@ -740,6 +702,39 @@ export default function Overview() {
     link.click();
     document.body.removeChild(link);
   };
+
+  const patientId = localStorage.getItem("sponsorPatientIds");
+
+  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+
+  useEffect(() => {
+    const fetchMedicalHistory = async () => {
+      try {
+        const endpoint = `${base_url}/vb_patientappoinment_list/`;
+        const headers = { Authorization: `Token ${token}` };
+        const payload = { patientprofileid: cleanedPatientId };
+
+        const res = await axios.post(endpoint, payload, { headers });
+
+        const reports = res.data.map((item, index) => ({
+          key: index,
+          appointment_date: item.appointment_date,
+          appointment_time: item.appointment_time,
+          doctor: item.doc?.user
+            ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
+            : "—",
+          appointment_type: item.appointment_type,
+          care_taker_notes: item.care_taker_notes,
+        }));
+
+        setMedicalReports(reports);
+      } catch (error) {
+        console.error("Error fetching medical history:", error);
+      }
+    };
+
+    fetchMedicalHistory();
+  }, []);
 
   return (
     <div
@@ -1058,7 +1053,6 @@ export default function Overview() {
           )}
 
           {/* Charts section */}
-
           {user?.user_role === "admin" && (
             <div
               style={{
@@ -1944,7 +1938,7 @@ export default function Overview() {
             </div>
           )}
 
-          {/* careTeam */}
+          {/* Care Team & Medical History */}
           {user?.user_role === "sponsor" && (
             <>
               {/* Main Container */}
@@ -2340,14 +2334,14 @@ export default function Overview() {
               {/* Medical History */}
               <div style={tableContainer}>
                 <SectionHeader title="Medical History">
-                  <Primarybtn name="Get Appointment" />
+                  <Primarybtn name="Request Appointment" />
                 </SectionHeader>
 
                 <Table
                   columns={columns}
-                  dataSource={dataSource}
+                  dataSource={medicalReports}
                   pagination={{ pageSize: 5 }}
-                  scroll={{ x: true }}
+                  // scroll={{ x: true }}
                   bordered
                   style={{ width: "100%" }}
                 />
@@ -3119,26 +3113,26 @@ export default function Overview() {
             </div>
           )}
 
-          {/* medical history */}
+          {/* Medical History */}
           {user?.user_role === "care_taker" && (
             <div style={tableContainer}>
               <SectionHeader title="Medical History">
-                <Primarybtn name="Get Appointment" />
+                <Primarybtn name="Request Appointment" />
                 <SecondaryBtn name="update membership" />
               </SectionHeader>
 
               <Table
                 columns={columns}
-                dataSource={dataSource}
+                dataSource={medicalReports}
                 pagination={{ pageSize: 5 }}
-                scroll={{ x: true }}
+                // scroll={{ x: true }}
                 bordered
                 style={{ width: "100%" }}
               />
             </div>
           )}
 
-          {/* upcoming appoinment */}
+          {/* Upcoming Appoinment */}
           {user?.user_role === "care_taker" && (
             <div
               style={{

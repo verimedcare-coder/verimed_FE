@@ -282,14 +282,12 @@ export default function HeaderComponent() {
     navigate("/");
   };
 
-  // 🟢 Load patients from sponsorAppointments and auto-select first one
   useEffect(() => {
     const storedAppointments = localStorage.getItem("sponsorAppointments");
     if (storedAppointments) {
       try {
         const parsedAppointments = JSON.parse(storedAppointments);
 
-        // Extract unique patients from appointment data
         const uniquePatientsMap = new Map();
         parsedAppointments.forEach((item) => {
           const patientUser = item?.patient?.user;
@@ -301,13 +299,11 @@ export default function HeaderComponent() {
         const patientList = Array.from(uniquePatientsMap.values());
         setPatients(patientList);
 
-        // ✅ Auto-select logic for single or multiple patients
         if (patientList.length > 0) {
           const defaultPatient = patientList[0];
           setSelectedPatient(defaultPatient.id);
           localStorage.setItem("selectedPatientId", defaultPatient.id);
 
-          // 🟢 Also show that patient's full details immediately
           showPatientDetails(defaultPatient.id);
         }
       } catch (error) {
@@ -334,7 +330,6 @@ export default function HeaderComponent() {
             patientAppointments
           );
 
-          // 🟡 Store in localStorage
           localStorage.setItem(
             "selectedPatientDetails",
             JSON.stringify(patientDetails)
@@ -345,7 +340,6 @@ export default function HeaderComponent() {
           );
         } else {
           console.warn("No appointments found for this patient ID:", patientId);
-          // optional: clear previous data
           localStorage.removeItem("selectedPatientDetails");
           localStorage.removeItem("selectedPatientAppointments");
         }
@@ -398,22 +392,26 @@ export default function HeaderComponent() {
       {/* Right Section */}
       <Space size="middle" align="center">
         {/* 🟢 Patient dropdown */}
-        <Select
-          value={selectedPatient}
-          onChange={handlePatientChange}
-          style={{ width: 200, borderRadius: 6 }}
-          placeholder="Select Patient"
-          dropdownMatchSelectWidth={false}
-          bordered
-        >
-          {patients.map((p) => (
-            <Option key={p.id} value={p.id}>
-              {`${p.first_name} ${p.last_name}`}
-            </Option>
-          ))}
-        </Select>
-
-        <Primarybtn name="Enroll Loved One" onClick={() => {}} />
+        {user?.user_role !== "care_taker" && (
+          <>
+            {" "}
+            <Select
+              value={selectedPatient}
+              onChange={handlePatientChange}
+              style={{ width: 200, borderRadius: 6 }}
+              placeholder="Select Patient"
+              dropdownMatchSelectWidth={false}
+              bordered
+            >
+              {patients.map((p) => (
+                <Option key={p.id} value={p.id}>
+                  {`${p.first_name} ${p.last_name}`}
+                </Option>
+              ))}
+            </Select>
+            <Primarybtn name="Enroll Loved One" onClick={() => {}} />{" "}
+          </>
+        )}
 
         {/* <Input
           placeholder="Search"

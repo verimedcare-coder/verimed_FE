@@ -708,7 +708,7 @@ export default function DailyReports() {
           {/* medical history */}
           <div style={tableContainer}>
             <SectionHeader title="Medical History">
-              <Primarybtn name="Get Appointment" />
+              <Primarybtn name="Request Appointment" />
               <SecondaryBtn name="update membership" />
             </SectionHeader>
 
