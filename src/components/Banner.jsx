@@ -5,8 +5,10 @@ import Profile2 from "../assets/images/banner-profile2.png";
 import Profile3 from "../assets/images/banner-profile3.png";
 import Primarybtn from "./PrimaryBtn";
 import TertiaryBtn from "./TertiaryBtn";
+import { useNavigate } from "react-router-dom";
 
 export default function Banner({ hideButtons = false }) {
+  const navigate = useNavigate();
   return (
     <div
       style={{
@@ -102,8 +104,14 @@ export default function Banner({ hideButtons = false }) {
         {/* Buttons - show only if not hidden */}
         {!hideButtons && (
           <div style={{ display: "flex", gap: "12px" }}>
-            <Primarybtn name=" Get Appointment" onClick={() => {}} />
-            <TertiaryBtn name=" Update Membership" />
+            <Primarybtn
+              name="Request Appointment"
+              onClick={() => navigate("/appointments")}
+            />
+            <TertiaryBtn
+              name="Purchase Service"
+              onClick={() => (window.location.href = "#")}
+            />
           </div>
         )}
       </div>

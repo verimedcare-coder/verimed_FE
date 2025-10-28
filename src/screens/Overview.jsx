@@ -67,6 +67,48 @@ export default function Overview() {
     }
   }, [user]);
 
+  //  Fetch Selected Patient Details for Sponsor
+  const fetchSelectedPatientDetails = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const selectedPatientId = localStorage.getItem("selectedPatientId");
+      const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+
+      if (userData?.user_role !== "sponsor" || !selectedPatientId) {
+        console.warn("Not a sponsor or no patient selected.");
+        return;
+      }
+
+      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { patientprofileid: selectedPatientId };
+
+      const res = await axios.post(endpoint, payload, { headers });
+      const data = res.data || [];
+
+      if (data.length > 0) {
+        console.log("Selected Patient Details (Sponsor View):", data);
+
+        localStorage.setItem(
+          "selectedPatientAppointments",
+          JSON.stringify(data)
+        );
+      } else {
+        console.warn(
+          "No appointments found for this patient ID:",
+          selectedPatientId
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching selected patient details:", error);
+    }
+  };
+  useEffect(() => {
+    if (user?.user_role === "sponsor") {
+      fetchSelectedPatientDetails();
+    }
+  }, [user]);
+
   const fetchPatientDetailsAndVitals = async () => {
     try {
       const endpoint = `${base_url}/vb_patientappoinment_list/`;
@@ -214,24 +256,6 @@ export default function Overview() {
       ]
     : [];
 
-  // const careTeam = {
-  //   name: "Clarisse A.",
-  //   role: "Geriatric Care",
-  //   contact: "+966 558441502",
-  //   nextVisit: "Aug 20, 2025 – 10:00 AM (Home Visit)",
-  //   frequency: "Every 2 weeks",
-  //   specialization:
-  //     "Chronic disease management (hypertension, diabetes), IV therapy, palliative care",
-
-  //   Condition: "Hypertension, Diabetes",
-  //   AssignedDoctor: "Dr. Paul M.",
-  //   CareTaker: "Nurse Clarisse A.",
-  //   Conditions: "Hypertension, Type 2 Diabetes",
-  //   AssignedSince: "July 2025",
-  //   SponsorInfo: "John N. (Toronto, Canada)",
-  //   SponsorNumber: "+966 558441502",
-  // };
-
   const careTeam = vitalsData
     ? {
         name:
@@ -352,21 +376,6 @@ export default function Overview() {
     key: index,
     ...item,
   }));
-
-  // const appointments = [
-  //   {
-  //     id: 1,
-  //     date: new Date(2025, 7, 14),
-  //     doctor: "Dr. Ashton Cleve",
-  //     time: "10:00am - 10:30am",
-  //   },
-  //   {
-  //     id: 2,
-  //     date: new Date(2025, 7, 15),
-  //     doctor: "Dr. Ashton Cleve",
-  //     time: "10:00am - 10:30am",
-  //   },
-  // ];
 
   const docStats = [
     {
@@ -499,7 +508,6 @@ export default function Overview() {
     seriesField: "type",
   };
 
-  // Transform the data for stacked bars
   const transformedData = [];
   statusBarConfig.data.forEach((item) => {
     transformedData.push(
@@ -661,32 +669,6 @@ export default function Overview() {
 
   const appointmentDates = appointments.map((a) => a.date?.toDateString());
 
-  // Appointment Details (left)
-  const appointmentDetails = [
-    {
-      date: "Aug 10, 2025 – 10:00 AM",
-      badge: "Physician In-Home Visit",
-      type: "Home Visit",
-      provider: "Nurse Clarisse A.",
-      status: "Confirmed",
-      comments:
-        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
-    },
-    {
-      date: "Sep 02, 2024 – 09:30 AM",
-      checkin: "Completed on time",
-      vitals: "BP: 130/85 / Blood Sugar: 108 mg/dL / Temperature: 36.8 °C",
-      comments:
-        "Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.",
-    },
-    {
-      date: "Sep 01, 2024 – 11:30 AM",
-      status: "Needs Monitoring",
-      comments:
-        "Patient stable, continue current hypertension medication. Encourage daily walking.",
-      next: "Aug 24, 2025 – Virtual consult with Dr. Paul",
-    },
-  ];
   const userToken = localStorage.getItem("token");
 
   useEffect(() => {
@@ -719,6 +701,44 @@ export default function Overview() {
     const finalUrl = `${base}/${cleanedUrl}`;
 
     return finalUrl;
+  };
+
+  const handleDownloadExcel = () => {
+    if (!patientData) {
+      alert("Patient data not available yet.");
+      return;
+    }
+
+    // Prepare CSV header and rows
+    let csvContent = "Patient Details\n";
+    csvContent += `Name,Patient ID,Condition,Assigned Doctor,Care Taker\n`;
+    csvContent += `"${patientData?.user?.first_name} ${
+      patientData?.user?.last_name
+    }","${patientData?.patient_id}","${
+      patientData?.medical_his_diagnosis || "N/A"
+    }","${
+      (vitalsData?.doc?.user?.first_name || "") +
+      " " +
+      (vitalsData?.doc?.user?.last_name || "")
+    }","${vitalsData?.caretaker?.caretaker_id || "N/A"}"\n\n`;
+
+    csvContent += "Vitals\n";
+    csvContent += "Parameter,Value\n";
+    vitals.forEach((v) => {
+      csvContent += `"${v.label}","${v.value}"\n`;
+    });
+
+    // Create a Blob for download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary link and trigger download
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Patient_Details.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -758,7 +778,7 @@ export default function Overview() {
               <div style={cardStyle}>
                 <SectionHeader title="Patient Details">
                   <Primarybtn name="View Full Profile" />
-                  <SecondaryBtn name="Download" />
+                  <SecondaryBtn name="Download" onClick={handleDownloadExcel} />
                 </SectionHeader>
 
                 {/* Profile */}
