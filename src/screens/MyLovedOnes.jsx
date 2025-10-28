@@ -21,6 +21,7 @@ export default function MyLovedOnes() {
   const navigate = useNavigate();
   const [patientData, setPatientData] = useState(null);
   const [vitalsData, setVitalsData] = useState(null);
+  const [medicalReports, setMedicalReports] = useState([]);
 
   const token = localStorage.getItem("token");
   const dotStyle = (color) => ({
@@ -38,75 +39,51 @@ export default function MyLovedOnes() {
     { label: "Care Taker", value: "Nurse Clarisse A." },
   ];
 
-  // const vitals = [
-  //   {
-  //     icon: bloodPressure,
-  //     label: "Blood Pressure",
-  //     value: "100/67 mmHg",
-  //     color: "#27AE60",
-  //   },
-  //   { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
-  //   { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
-  //   { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
-  //   {
-  //     icon: temperature,
-  //     label: "Temperature",
-  //     value: "101 °C",
-  //     color: "#27AE60",
-  //   },
-  //   {
-  //     icon: respiratory,
-  //     label: "Respiratory Rate",
-  //     value: "24 rpm",
-  //     color: "#EF1E1E",
-  //   },
-  //   { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
-  //   { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
-  // ];
+  const patientId = localStorage.getItem("sponsorPatientIds");
 
-  const medicalHistory = [
-    {
-      date: "Aug 15, 2025",
-      time: "10:00 AM",
-      doctor: "Nurse Clarisse A.",
-      diagnostic: "Routine Vitals Check",
-      comments: "BP 128/78, Blood Sugar 110. Stable. No Urgent Concerns.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "10:30 AM",
-      doctor: "Dr. Robert M.",
-      diagnostic: "Physical Exam",
-      comments: "General Health Appears Good. Follow-Up in 6 Months.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "11:30 AM",
-      doctor: "Dr. Sarah T.",
-      diagnostic: "X-Ray Interpretation",
-      comments: "No Abnormalities Found In Chest X-Ray.",
-    },
-    {
-      date: "Aug 15, 2025",
-      time: "12:00 PM",
-      doctor: "Nurse Leo B.",
-      diagnostic: "Medication Review",
-      comments:
-        "Patient Adheres To Prescribed Regimen, No Side Effects Reported.",
-    },
-  ];
+  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+
+  useEffect(() => {
+    const fetchMedicalHistory = async () => {
+      try {
+        const endpoint = `${base_url}/vb_patientappoinment_list/`;
+        const headers = { Authorization: `Token ${token}` };
+        const payload = { patientprofileid: cleanedPatientId };
+
+        const res = await axios.post(endpoint, payload, { headers });
+
+        const reports = res.data.map((item, index) => ({
+          key: index,
+          appointment_date: item.appointment_date,
+          appointment_time: item.appointment_time,
+          doctor: item.doc?.user
+            ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
+            : "—",
+          appointment_type: item.appointment_type,
+          care_taker_notes: item.care_taker_notes,
+          treatment_performed: item.treatment_performed,
+        }));
+
+        setMedicalReports(reports);
+      } catch (error) {
+        console.error("Error fetching medical history:", error);
+      }
+    };
+
+    fetchMedicalHistory();
+  }, []);
 
   const columns = [
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "appointment_date",
+      key: "appointment_date",
       width: 120,
     },
     {
       title: "Time",
-      dataIndex: "time",
-      key: "time",
+      dataIndex: "appointment_time",
+      key: "appointment_time",
       width: 120,
     },
     {
@@ -117,22 +94,17 @@ export default function MyLovedOnes() {
     },
     {
       title: "Diagnostic",
-      dataIndex: "diagnostic",
-      key: "diagnostic",
+      dataIndex: "treatment_performed",
+      key: "treatment_performed",
       width: 200,
     },
     {
       title: "Comments",
-      dataIndex: "comments",
-      key: "comments",
+      dataIndex: "care_taker_notes",
+      key: "care_taker_notes",
       ellipsis: true,
     },
   ];
-
-  const dataSource = medicalHistory.map((item, index) => ({
-    key: index,
-    ...item,
-  }));
 
   // Appointment Details (left)
   const appointmentDetails = [
@@ -485,9 +457,9 @@ export default function MyLovedOnes() {
 
             <Table
               columns={columns}
-              dataSource={dataSource}
+              dataSource={medicalReports}
               pagination={{ pageSize: 5 }}
-              scroll={{ x: true }}
+              // scroll={{ x: true }}
               bordered
               style={{ width: "100%" }}
             />
