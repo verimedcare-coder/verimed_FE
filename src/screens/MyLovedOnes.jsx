@@ -477,7 +477,7 @@ export default function MyLovedOnes() {
           <div style={tableContainer}>
             <SectionHeader title="Medical History">
               <Primarybtn
-                name="Get Appointment"
+                name="Request Appointment"
                 onClick={() => navigate("/appointments")}
               />
               {/* <SecondaryBtn name="update membership" /> */}

@@ -664,7 +664,7 @@ export default function Appointments() {
                 marginBottom: 15,
               }}
             >
-              Book a New Medical Appointment
+              Request a New Medical Appointment
             </h2>
             <div
               style={{
@@ -692,7 +692,7 @@ export default function Appointments() {
             name="appointmentType"
             label={
               <span style={{ fontWeight: 600, fontSize: "16px" }}>
-                Appointment Type
+                Request Service
               </span>
             }
           >
@@ -709,7 +709,7 @@ export default function Appointments() {
               <span
                 style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
               >
-                Date
+                Preferred Date
               </span>
             }
           >
@@ -722,7 +722,7 @@ export default function Appointments() {
               <span
                 style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
               >
-                Time
+                Preferred Time
               </span>
             }
           >
@@ -751,7 +751,7 @@ export default function Appointments() {
               <span
                 style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
               >
-                Treatment Performed
+                Pre Existing Conditions
               </span>
             }
           >
@@ -808,7 +808,7 @@ export default function Appointments() {
           >
             <SecondaryBtn name="cancel" onClick={() => setIsModalOpen(false)} />
             <Primarybtn
-              name="Book Appointment"
+              name="Request Appointment"
               type="button"
               onClick={() => form.submit()}
             />
@@ -834,9 +834,13 @@ export default function Appointments() {
                 fontSize: "20px",
                 fontWeight: 700,
                 margin: 0,
+                textTransform: "capitalize",
+                lineHeight: 1.5,
               }}
             >
-              Appointment Booked Successfully
+              Your Appointment Request Sent Successfully <br />
+              Our Practice Manager will review your request and get back to you
+              shortly.
             </h2>
           </div>
         }
