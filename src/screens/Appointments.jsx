@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -65,6 +65,10 @@ export default function Appointments() {
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
 
+  const patientId = localStorage.getItem("sponsorPatientIds");
+
+  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+
   const handleDateSelect = (date) => {
     if (!date) return;
     const formatted = date.format("YYYY-MM-DD");
@@ -81,7 +85,7 @@ export default function Appointments() {
     try {
       const endpoint = `${base_url}/vb_patientappoinment_list/`;
       const headers = { Authorization: `Token ${token}` };
-      const payload = { patientprofileid: 4 };
+      const payload = { patientprofileid: cleanedPatientId };
       const res = await axios.post(endpoint, payload, { headers });
       setAppointmentList(res.data);
     } catch (error) {
@@ -111,22 +115,27 @@ export default function Appointments() {
     fetchDeptList();
   }, []);
 
-  const patientId = localStorage.getItem("sponsorPatientIds");
-
-  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
-
   const bookAppointment = async (values) => {
     setLoading(true);
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = { Authorization: `Token ${token}` };
 
+      const formattedPreferredTimes = (values.preferred_times || []).map(
+        (time) => {
+          const [hour, minute] = time.split(":");
+          return `${parseInt(hour, 10)}:${minute}`;
+        }
+      );
+
       const bookappoinment_data = {
         dep: values.depId,
         patient: cleanedPatientId,
         caretaker: 1,
-        appointment_date: selectedDates,
-        appointment_time: values.preferred_times || [],
+        appointment_date: null,
+        appointment_time: null,
+        preferred_dates: selectedDates,
+        preferred_times: formattedPreferredTimes,
         appointment_type: values.appointmentType || null,
         treatment_performed: values.treatment || null,
         care_taker_notes: values.notes || null,
@@ -205,50 +214,93 @@ export default function Appointments() {
 
   const getAppointmentStatus = (appointment) => {
     const today = new Date();
-    const apptDate = new Date(appointment.appointment_date);
+
     if (appointment.appointment_status === "cancelled") return "cancelled";
-    if (apptDate > today) return "upcoming";
-    if (apptDate < today) return "past";
+
+    if (appointment.appointment_date) {
+      const apptDate = new Date(appointment.appointment_date);
+      if (apptDate.toDateString() === today.toDateString()) return "upcoming";
+      return apptDate > today ? "upcoming" : "past";
+    }
+
+    if (
+      Array.isArray(appointment.preferred_dates) &&
+      appointment.preferred_dates.length > 0
+    ) {
+      const firstPreferred = new Date(appointment.preferred_dates[0]);
+      return firstPreferred >= today ? "upcoming" : "past";
+    }
+
     return "upcoming";
   };
 
-  const mappedAppointments = appointmentList.map((appt) => {
-    const sponsor = sponsorUser?.find((s) => s.id === appt.sponsor?.user);
+  const mappedAppointments = useMemo(() => {
+    return appointmentList.map((appt) => {
+      const sponsor = sponsorUser?.find((s) => s.id === appt.sponsor?.user);
+      const status = getAppointmentStatus(appt);
 
-    return {
-      id: appt.id,
-      appointment_type: appt.appointment_type,
-      date: new Date(appt.appointment_date),
-      doctor: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
-      doctorName: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
-      time: appt.appointment_time
-        ? new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString(
+      let displayDate = null;
+      if (
+        status === "upcoming" &&
+        Array.isArray(appt.preferred_dates) &&
+        appt.preferred_dates.length > 0
+      ) {
+        displayDate = new Date(appt.preferred_dates[0]);
+      } else if (status === "past" || status === "cancelled") {
+        displayDate = appt.appointment_date
+          ? new Date(appt.appointment_date)
+          : null;
+      }
+
+      let formattedTimes = [];
+      if (Array.isArray(appt.appointment_time)) {
+        formattedTimes = appt.appointment_time.map((t) =>
+          new Date(`1970-01-01T${t}`).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+      } else if (appt.appointment_time) {
+        formattedTimes = [
+          new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString(
             [],
             {
               hour: "2-digit",
               minute: "2-digit",
             }
-          )
-        : "",
-      status: getAppointmentStatus(appt),
-      name: appt.patient?.patient_id
-        ? `Sponsor: ${
-            sponsor
-              ? `${sponsor.first_name || ""} ${sponsor.last_name || ""}`
-              : "N/A"
-          } - Patient: ${
-            appt.patient?.user
-              ? `${appt.patient.user.first_name || ""} ${
-                  appt.patient.user.last_name || ""
-                }`
-              : "Unknown"
-          }`
-        : "Patient",
-      issue: appt.appointment_reason || appt.appointment_type || "",
-      docs: appt.documents && appt.documents.length > 0,
-      documents: appt.documents || [],
-    };
-  });
+          ),
+        ];
+      }
+
+      return {
+        id: appt.id,
+        appointment_type: appt.appointment_type,
+        date: displayDate,
+        doctor: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
+        doctorName: appt.doc?.doctor_id
+          ? `Dr. ${appt.doc.doctor_id}`
+          : "Doctor",
+        time: formattedTimes,
+        status,
+        name: appt.patient?.patient_id
+          ? `Sponsor: ${
+              sponsor
+                ? `${sponsor.first_name || ""} ${sponsor.last_name || ""}`
+                : "N/A"
+            } - Patient: ${
+              appt.patient?.user
+                ? `${appt.patient.user.first_name || ""} ${
+                    appt.patient.user.last_name || ""
+                  }`
+                : "Unknown"
+            }`
+          : "Patient",
+        issue: appt.appointment_reason || appt.appointment_type || "",
+        docs: appt.documents && appt.documents.length > 0,
+        documents: appt.documents || [],
+      };
+    });
+  }, [appointmentList, sponsorUser]);
 
   const handleDetailsCardClick = (appt) => {
     if (userData?.user_role === "care_taker" && appt.status === "upcoming") {
@@ -296,47 +348,38 @@ export default function Appointments() {
               <div
                 style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
-                {appt.status === "upcoming" ? (
-                  <div
-                    style={{
-                      background: "#004C91",
-                      color: "#fff",
-                      height: "45px",
-                      width: "50px",
-                      borderRadius: "6px",
-                      textAlign: "center",
-                      padding: "5px 0",
-                      fontWeight: 500,
-                      lineHeight: 1.2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CalendarOutlined />
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      background: "#004C91",
-                      color: "#fff",
-                      width: "50px",
-                      borderRadius: "6px",
-                      textAlign: "center",
-                      padding: "5px 0",
-                      fontWeight: 500,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {appt.date.toLocaleDateString("en-US", {
-                      weekday: "short",
-                    })}
-                    <br />
-                    <span style={{ fontSize: "16px", fontWeight: 600 }}>
-                      {appt.date.getDate()}
-                    </span>
-                  </div>
-                )}
+                <div
+                  style={{
+                    background: "#004C91",
+                    color: "#fff",
+                    width: "50px",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    padding: "5px 0",
+                    fontWeight: 500,
+                    lineHeight: 1.2,
+                    height: "40px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {appt.date ? (
+                    <>
+                      <div style={{ fontSize: "13px" }}>
+                        {appt.date.toLocaleDateString("en-US", {
+                          weekday: "short",
+                        })}
+                      </div>
+                      <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                        {appt.date.getDate()}
+                      </div>
+                    </>
+                  ) : (
+                    <CalendarOutlined style={{ fontSize: "18px" }} />
+                  )}
+                </div>
                 <div
                   style={{
                     width: "1px",
@@ -473,9 +516,9 @@ export default function Appointments() {
     currentMonth.getFullYear(),
     currentMonth.getMonth()
   );
-  const appointmentDates = mappedAppointments.map((a) => a.date.toDateString());
-
-  console.log("selectedAppointment", selectedAppointment);
+  const appointmentDates = mappedAppointments
+    .filter((a) => a.date)
+    .map((a) => a.date.toDateString());
 
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
@@ -725,8 +768,11 @@ export default function Appointments() {
               {mappedAppointments
                 .filter(
                   (a) =>
-                    a.date.getMonth() === currentMonth.getMonth() &&
-                    a.date.getFullYear() === currentMonth.getFullYear()
+                    a.status &&
+                    (a.status === "upcoming" ||
+                      (a.date &&
+                        a.date.getMonth() === currentMonth.getMonth() &&
+                        a.date.getFullYear() === currentMonth.getFullYear()))
                 )
                 .map((appt, index) => {
                   const isSelected =
@@ -735,7 +781,7 @@ export default function Appointments() {
                   return (
                     <div
                       key={appt.id}
-                      onClick={() => handleCardClick(appt)}
+                      // onClick={() => handleCardClick(appt)}
                       style={{
                         display: "flex",
                         gap: "10px",
@@ -744,29 +790,69 @@ export default function Appointments() {
                         color: isSelected ? "#fff" : "#000",
                         borderRadius: "8px",
                         padding: "10px",
-                        cursor: "pointer",
+                        // cursor: "pointer",
                       }}
                     >
                       <div
                         className="date-box"
                         style={{
-                          background: isSelected ? "#FFFFFF" : "#FFFFFF",
-                          color: isSelected ? "#000" : "#000",
+                          background: "#FFFFFF",
+                          color: "#000",
                           borderRadius: "6px",
                           width: "45px",
                           textAlign: "center",
                           padding: "5px 0",
                         }}
                       >
-                        <div style={{ fontSize: "13px" }}>
-                          {appt.date.toLocaleDateString("en-US", {
-                            weekday: "short",
-                          })}
-                        </div>
-                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                          {appt.date.getDate()}
-                        </div>
+                        {appt.status === "upcoming" ? (
+                          appt.date ? (
+                            <>
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.date.toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                })}
+                              </div>
+                              <div
+                                style={{ fontSize: "16px", fontWeight: 600 }}
+                              >
+                                {appt.date.getDate()}
+                              </div>
+                            </>
+                          ) : (
+                            <div
+                              style={{
+                                background: "#004C91",
+                                color: "#fff",
+                                borderRadius: "6px",
+                                width: "45px",
+                                height: "45px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <CalendarOutlined />
+                            </div>
+                          )
+                        ) : (
+                          // For past/cancelled → always show date
+                          appt.date && (
+                            <>
+                              <div style={{ fontSize: "13px" }}>
+                                {appt.date.toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                })}
+                              </div>
+                              <div
+                                style={{ fontSize: "16px", fontWeight: 600 }}
+                              >
+                                {appt.date.getDate()}
+                              </div>
+                            </>
+                          )
+                        )}
                       </div>
+
                       <div style={{ flexGrow: 1 }}>
                         <div style={{ fontSize: "14px", fontWeight: 500 }}>
                           {appt.doctor}
