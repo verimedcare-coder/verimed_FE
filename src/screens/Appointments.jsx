@@ -602,7 +602,7 @@ export default function Appointments() {
               </div>
               {renderAppointments(activeTab)}
             </div>
-            {userData?.user_role === "care_taker" && (
+            {/* {userData?.user_role === "care_taker" && (
               <Modal
                 title="Appointment Details"
                 open={isAppointmentDetailsModal}
@@ -614,6 +614,106 @@ export default function Appointments() {
                     <p>
                       <b>Appointment ID:</b> {selectedAppointment.id}
                     </p>
+                  </div>
+                ) : (
+                  <p>No appointment selected.</p>
+                )}
+              </Modal>
+            )} */}
+            {userData?.user_role === "care_taker" && (
+              <Modal
+                title="Appointment Details"
+                width={"auto"}
+                open={isAppointmentDetailsModal}
+                onCancel={handleCloseModal}
+                footer={null}
+                centered
+              >
+                {selectedAppointment ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      columnGap: "20px",
+                      rowGap: "12px",
+                      fontSize: "15px",
+                    }}
+                  >
+                    {/* <div>
+                      <b>Appointment ID:</b> {selectedAppointment.id}
+                    </div> */}
+
+                    <div>
+                      <b>Appointment Type:</b>{" "}
+                      {selectedAppointment.appointment_type}
+                    </div>
+
+                    <div>
+                      <b>Date:</b>{" "}
+                      {selectedAppointment.date
+                        ? new Date(
+                            selectedAppointment.date
+                          ).toLocaleDateString()
+                        : "N/A"}
+                    </div>
+
+                    <div>
+                      <b>Time:</b> {selectedAppointment.time || "N/A"}
+                    </div>
+
+                    <div>
+                      <b>Doctor:</b> {selectedAppointment.doctorName || "N/A"}
+                    </div>
+
+                    <div>
+                      <b>Patient:</b> {selectedAppointment.name || "N/A"}
+                    </div>
+
+                    <div>
+                      <b>Issue/Reason:</b> {selectedAppointment.issue || "N/A"}
+                    </div>
+                    <div>
+                      {" "}
+                      <b>Status:</b>{" "}
+                      <Tag
+                        color={
+                          selectedAppointment.status === "upcoming"
+                            ? "blue"
+                            : selectedAppointment.status === "past"
+                            ? "gray"
+                            : "red"
+                        }
+                      >
+                        {selectedAppointment.status.toUpperCase()}
+                      </Tag>
+                    </div>
+
+                    {selectedAppointment.documents?.length > 0 && (
+                      <div>
+                        <b>Documents:</b>
+                        <div style={{ marginTop: "8px", marginLeft: "16px" }}>
+                          {selectedAppointment.documents.map((doc) => (
+                            <div key={doc.id}>
+                              <a
+                                href={doc.view_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "#004C91",
+                                  textDecoration: "underline",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <FileTextOutlined />
+                                {doc.filename.split("/").pop()}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p>No appointment selected.</p>
