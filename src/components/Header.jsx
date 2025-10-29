@@ -109,9 +109,13 @@ export default function HeaderComponent() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isSecondModalVisible, setIsSecondModalVisible] = useState(false);
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [editedData, setEditedData] = useState({});
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [form] = Form.useForm();
+  const [newUser, setNewUser] = useState(null);
 
+  const openModal = () => setIsModalVisible(true);
   const navigate = useNavigate();
 
   const data = localStorage.getItem("userData");
@@ -229,8 +233,7 @@ export default function HeaderComponent() {
       formData.append("user_signup", JSON.stringify(user_signup));
       if (values.photo) formData.append("photo", values.photo);
 
-      const endpoint = `${base_url}/user_create/`;
-      const res = await axios.post(endpoint, formData, {
+      const res = await axios.post(`${base_url}/user_create/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Token ${token}`,
@@ -239,41 +242,73 @@ export default function HeaderComponent() {
 
       message.success("Patient enrolled successfully!");
 
-      setIsModalVisible(false);
-
-      const patientData = res.data?.user || user_signup;
-
-      setEditedData({
-        patient_first_name: patientData.first_name || "",
-        patient_last_name: patientData.last_name || "",
-        patient_email: patientData.email || "",
-        patient_phone: patientData.phone || "",
-        patient_gender: "",
-        patient_dob: "",
-        blood_group: "",
-        primary_language: "",
-        religion: "",
-        escalate_to_physician: "",
-        patient_home_address: "",
+      // 🟩 Step 1: Fetch username from user_view
+      const userViewRes = await axios.get(`${base_url}/user_view/`, {
+        headers: { Authorization: `Token ${token}` },
       });
 
-      setIsSecondModalVisible(true);
-    } catch (error) {
-      console.error("Signup error:", error);
-      message.error(
-        error.response?.data?.detail ||
-          "Something went wrong while enrolling patient."
+      const allUsers = userViewRes.data;
+      const matchedUser = allUsers.find(
+        (u) =>
+          u.first_name.toLowerCase() === values.first_name.toLowerCase() &&
+          u.last_name.toLowerCase() === values.last_name.toLowerCase() &&
+          u.user_role === "patient"
       );
+
+      if (!matchedUser) {
+        message.warning("User not found after enrollment.");
+        return;
+      }
+
+      localStorage.setItem("enrolledUsername", matchedUser.username);
+      console.log("✅ Username:", matchedUser.username);
+
+      // 🟩 Step 2: Get correct patient profile ID (id, not user.id)
+      const profileRes = await axios.get(`${base_url}/patientprofile_list/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      const matchedProfile = profileRes.data.find(
+        (p) => p.user?.username === matchedUser.username
+      );
+
+      if (matchedProfile) {
+        console.log("✅ Patient Profile ID:", matchedProfile.id);
+        localStorage.setItem("patient_profile_updateid", matchedProfile.id);
+        setNewUser({
+          username: matchedUser.username,
+          profile_id: matchedProfile.id,
+          first_name: matchedUser.first_name,
+          last_name: matchedUser.last_name,
+          email: matchedUser.email,
+          phone: matchedUser.phone,
+        });
+      } else {
+        message.warning("No patient profile found for this user.");
+      }
+
+      // 🟩 Step 3: Show success modal
+      setIsModalVisible(false);
+      setIsSuccessModalVisible(true);
+    } catch (error) {
+      console.error("Enrollment failed:", error);
+      message.error("Something went wrong while enrolling the patient.");
     }
   };
 
   const handleUpdateClick = async () => {
     try {
+      const storedProfileId = localStorage.getItem("patient_profile_updateid");
+      if (!storedProfileId) {
+        message.error("Patient profile ID not found. Please re-enroll.");
+        return;
+      }
+
       const formData = new FormData();
       const keyName = "patientprofile_update_data";
 
       const updateData = {
-        patient_profile_updateid: selectedPatient?.id || "",
+        patient_profile_updateid: storedProfileId, // ✅ Correct ID (profile.id)
         patient_dob: editedData.patient_dob || "",
         patient_gender: editedData.patient_gender || "",
         blood_group: editedData.blood_group || "",
@@ -297,25 +332,24 @@ export default function HeaderComponent() {
       formData.append(keyName, JSON.stringify(updateData));
 
       if (editedData.patient_upload_files?.length > 0) {
-        editedData.patient_upload_files.forEach((file) => {
-          formData.append("patient_upload_files", file);
-        });
+        editedData.patient_upload_files.forEach((file) =>
+          formData.append("patient_upload_files", file)
+        );
       }
 
       const endpoint = `${base_url}/patientprofile_update/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-        "Content-Type": "multipart/form-data",
-      };
+      const res = await axios.patch(endpoint, formData, {
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      const res = await axios.patch(endpoint, formData, { headers });
       message.success("Patient details updated successfully!");
       setIsSecondModalVisible(false);
     } catch (error) {
       console.error("Update failed:", error);
-      message.error(
-        error.response?.data?.detail || "Unable to update patient profile."
-      );
+      message.error("Unable to update patient profile.");
     }
   };
 
@@ -435,7 +469,6 @@ export default function HeaderComponent() {
         </Space>
       </Header>
 
-      {/* 🟢 Enroll Loved One Modal */}
       <Modal
         open={isModalVisible}
         title="Enroll Loved One"
@@ -1037,6 +1070,47 @@ export default function HeaderComponent() {
             </div>{" "}
           </div>{" "}
         </div>
+      </Modal>
+      <Modal
+        title="Enrollment Successful"
+        open={isSuccessModalVisible}
+        onCancel={() => setIsSuccessModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsSuccessModalVisible(false)}>
+            Close
+          </Button>,
+          <Button
+            key="details"
+            type="primary"
+            onClick={() => {
+              setIsSuccessModalVisible(false);
+              setIsSecondModalVisible(true);
+            }}
+          >
+            View Details
+          </Button>,
+        ]}
+        centered
+      >
+        {newUser && (
+          <div style={{ padding: "10px 0" }}>
+            <p>
+              <b>Username:</b> {newUser.username}
+            </p>
+            <p>
+              <b>User ID:</b> {newUser.id}
+            </p>
+            <p>
+              <b>Name:</b> {newUser.first_name} {newUser.last_name}
+            </p>
+            <p>
+              <b>Email:</b> {newUser.email}
+            </p>
+            <p>
+              <b>Phone:</b> {newUser.phone}
+            </p>
+          </div>
+        )}
       </Modal>
     </>
   );
