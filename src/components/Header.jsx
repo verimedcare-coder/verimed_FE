@@ -13,6 +13,9 @@ import {
   Form,
   Upload,
   message,
+  Checkbox,
+  Radio,
+  DatePicker,
 } from "antd";
 import {
   DownOutlined,
@@ -24,6 +27,7 @@ import flagIcon from "../assets/icons/flag.svg";
 import Primarybtn from "./PrimaryBtn";
 import { useNavigate } from "react-router-dom";
 import { base_url } from "../constants/constants";
+import dayjs from "dayjs";
 
 const { Header } = Layout;
 const { Option } = Select;
@@ -114,7 +118,8 @@ export default function HeaderComponent() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [form] = Form.useForm();
   const [newUser, setNewUser] = useState(null);
-
+  const [loading, setLoading] = useState(false);
+  const [caretakerList, setCaretakerList] = useState([]);
   const openModal = () => setIsModalVisible(true);
   const navigate = useNavigate();
 
@@ -217,6 +222,26 @@ export default function HeaderComponent() {
     showPatientDetails(value);
   };
 
+  const fetchCareTakerList = async () => {
+    try {
+      setLoading(true);
+      const endpoint = `https://verimedramja.pythonanywhere.com/verimed/caretakerprofile_list/`;
+
+      const res = await axios.get(endpoint);
+
+      setCaretakerList(res.data || []);
+      console.log(res.data);
+    } catch (error) {
+      console.error("Error fetching caretaker list:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCareTakerList();
+  }, []);
+
   const handleEnrollSubmit = async (values) => {
     try {
       const user_signup = {
@@ -307,9 +332,19 @@ export default function HeaderComponent() {
       const formData = new FormData();
       const keyName = "patientprofile_update_data";
 
+      const storedSponsorId = localStorage.getItem("sponsorProfileId");
+
+      const formattedDOB =
+        editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
+          ? new Date(editedData.patient_dob).toISOString().split("T")[0]
+          : "";
+
       const updateData = {
-        patient_profile_updateid: storedProfileId, // ✅ Correct ID (profile.id)
-        patient_dob: editedData.patient_dob || "",
+        patient_profile_updateid: storedProfileId,
+        sponsorid: storedSponsorId || "",
+        doctorid: null,
+        caretakerid: editedData.caretakerid || "",
+        patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
         blood_group: editedData.blood_group || "",
         patient_home_address: editedData.patient_home_address || "",
@@ -318,15 +353,58 @@ export default function HeaderComponent() {
         escalate_to_physician: editedData.escalate_to_physician || "",
         emer_con_name: editedData.emer_con_name || "",
         emer_con_relation: editedData.emer_con_relation || "",
+        emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
+        emer_con_country_code: editedData.emer_con_country_code || "",
         emer_con_phone: editedData.emer_con_phone || "",
         emer_con_email: editedData.emer_con_email || "",
         local_con_name: editedData.local_con_name || "",
+        local_con_relation: editedData.local_con_relation || "",
+        local_con_country_code: editedData.local_con_country_code || "",
         local_con_phone: editedData.local_con_phone || "",
+        reason_enrollment: editedData.reason_enrollment || "",
+        reason_other: editedData.reason_other || "",
         medical_his_diagnosis: editedData.medical_his_diagnosis || "",
+        medical_his_cancer: editedData.medical_his_cancer || "",
+        medical_his_other: editedData.medical_his_other || "",
+        medical_his_provided_medi_care:
+          editedData.medical_his_provided_medi_care || "",
+        medical_his_major_surgeries:
+          editedData.medical_his_major_surgeries || "",
+        medical_his_curr_symp: editedData.medical_his_curr_symp || "",
         medication_name: editedData.medication_name || "",
+        medication_dose: editedData.medication_dose || "",
+        medication_frequency: editedData.medication_frequency || "",
+        medication_reason: editedData.medication_reason || "",
+        medication_issues: editedData.medication_issues || false,
+        medication_issues_explain: editedData.medication_issues_explain || "",
+        allergies_issues: editedData.allergies_issues || false,
+        allergies_drug: editedData.allergies_drug || "",
         allergies_food: editedData.allergies_food || "",
+        functional_bathe: editedData.functional_bathe || "",
+        functional_dress: editedData.functional_dress || "",
+        functional_eat: editedData.functional_eat || "",
+        functional_walk: editedData.functional_walk || "",
+        functional_use_bathroom: editedData.functional_use_bathroom || "",
+        functional_daily_activity: editedData.functional_daily_activity || "",
+        functional_manage_finance: editedData.functional_manage_finance || "",
+        functional_any_falls: editedData.functional_any_falls || false,
+        functional_how_many: editedData.functional_how_many || "",
+        functional_memory_pbms: editedData.functional_memory_pbms || false,
         lifestyle_daily_routine: editedData.lifestyle_daily_routine || "",
+        lifestyle_dietary_habits: editedData.lifestyle_dietary_habits || "",
+        lifestyle_sleep_quality: editedData.lifestyle_sleep_quality || "",
+        lifestyle_physical_activity:
+          editedData.lifestyle_physical_activity || "",
+        lifestyle_alcohol_use: editedData.lifestyle_alcohol_use || "",
+        lifestyle_pain_complaints: editedData.lifestyle_pain_complaints || "",
+        lifestyle_pain_where: editedData.lifestyle_pain_where || "",
+        social_emotion_health: editedData.social_emotion_health || "",
+        social_spiritual_needs: editedData.social_spiritual_needs || "",
+        social_trusted_person: editedData.social_trusted_person || false,
+        social_name: editedData.social_name || "",
         goals_family_hope: editedData.goals_family_hope || "",
+        goals_special_instructions: editedData.goals_special_instructions || "",
+        goals_term_membership: editedData.goals_term_membership || "",
       };
 
       formData.append(keyName, JSON.stringify(updateData));
@@ -478,126 +556,97 @@ export default function HeaderComponent() {
       >
         <UserForm onFinish={handleEnrollSubmit} />
       </Modal>
+
+      {/* patient update */}
       <Modal
+        title="Update Patient Details"
         open={isSecondModalVisible}
-        title="Patient Detailed Information"
         onCancel={() => setIsSecondModalVisible(false)}
+        width={900}
         footer={[
           <Button key="cancel" onClick={() => setIsSecondModalVisible(false)}>
             Cancel
           </Button>,
-          <Button key="submit" type="primary" onClick={handleUpdateClick}>
-            Save Details
+          <Button key="update" type="primary" onClick={handleUpdateClick}>
+            Update
           </Button>,
         ]}
-        width="80%"
-        bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "32px" }}
-        centered
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-            maxHeight: "70vh",
-            overflowY: "auto",
-            paddingRight: 10,
-          }}
-        >
-          {" "}
-          {/* ---------- PROFILE IMAGE ---------- */}{" "}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 12,
-            }}
-          >
-            {" "}
-            <p style={labelStyle}>Profile Image</p>{" "}
-            <div style={{ position: "relative", width: 72, height: 72 }}>
-              {" "}
-              {/* <Avatar
-                size={72}
-                src={uploadedImage || selectedPatient.avatar}
-                style={{ borderRadius: "50%", objectFit: "cover" }}
-              />{" "} */}
-              <label
-                htmlFor="patient-image-upload"
-                style={{
-                  position: "absolute",
-                  bottom: -10,
-                  right: "50%",
-                  transform: "translateX(50%)",
-                  background: "#fff",
-                  borderRadius: "50%",
-                  padding: 4,
-                  cursor: "pointer",
-                  boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-                }}
-              >
-                {" "}
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-                  alt="Upload"
-                  width={16}
-                  height={16}
-                />{" "}
-              </label>{" "}
-              <input
-                id="patient-image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                style={{ display: "none" }}
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- PERSONAL INFO ---------- */}{" "}
-          <h3 style={sectionTitle}>Personal Information</h3>{" "}
+        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
+          {/* ---------- SECTION 1: PERSONAL INFORMATION ---------- */}
+          <h3 style={sectionTitle}>1. Personal Information</h3>
           <div style={twoColGrid}>
-            {" "}
             <div>
-              {" "}
-              <label style={labelStyle}>Date of Birth</label>{" "}
-              <Input
-                value={editedData.patient_dob}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, patient_dob: e.target.value })
+              <label style={labelStyle}>Date of Birth</label>
+              <DatePicker
+                style={{ width: "100%" }}
+                value={
+                  editedData.patient_dob ? dayjs(editedData.patient_dob) : null
                 }
-              />{" "}
-            </div>{" "}
+                onChange={(date) =>
+                  setEditedData({
+                    ...editedData,
+                    patient_dob: date ? date.format("YYYY-MM-DD") : "",
+                  })
+                }
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Gender</label>{" "}
+              <label style={labelStyle}>Gender</label>
               <Select
+                placeholder="Select gender"
                 value={editedData.patient_gender}
                 onChange={(val) =>
                   setEditedData({ ...editedData, patient_gender: val })
                 }
-                style={{ width: "100%" }}
-              >
-                {" "}
-                <Select.Option value="Male">Male</Select.Option>{" "}
-                <Select.Option value="Female">Female</Select.Option>{" "}
-                <Select.Option value="Other">Other</Select.Option>{" "}
-              </Select>{" "}
-            </div>{" "}
+                options={[
+                  { label: "Male", value: "male" },
+                  { label: "Female", value: "female" },
+                  { label: "Other", value: "other" },
+                ]}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Blood Group</label>{" "}
-              <Input
+              <label style={labelStyle}>Blood Group</label>
+              <Select
+                placeholder="Select blood group"
                 value={editedData.blood_group}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, blood_group: e.target.value })
+                onChange={(val) =>
+                  setEditedData({ ...editedData, blood_group: val })
                 }
-              />{" "}
-            </div>{" "}
+                options={[
+                  { label: "A+", value: "A+" },
+                  { label: "A−", value: "A−" },
+                  { label: "B+", value: "B+" },
+                  { label: "B−", value: "B−" },
+                  { label: "AB+", value: "AB+" },
+                  { label: "AB−", value: "AB−" },
+                  { label: "O+", value: "O+" },
+                  { label: "O−", value: "O−" },
+                ]}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Primary Language</label>{" "}
+              <label style={labelStyle}>Home Address</label>
               <Input
+                placeholder="Enter address"
+                value={editedData.patient_home_address}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    patient_home_address: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Primary Language</label>
+              <Input
+                placeholder="e.g. English"
                 value={editedData.primary_language}
                 onChange={(e) =>
                   setEditedData({
@@ -605,56 +654,61 @@ export default function HeaderComponent() {
                     primary_language: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Religion</label>{" "}
+              <label style={labelStyle}>Religion</label>
               <Input
+                placeholder="Enter religion"
                 value={editedData.religion}
                 onChange={(e) =>
                   setEditedData({ ...editedData, religion: e.target.value })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Escalate to Physician</label>{" "}
-              <Select
+              <label style={labelStyle}>Escalate to Physician?</label>
+              <Radio.Group
                 value={editedData.escalate_to_physician}
-                onChange={(val) =>
-                  setEditedData({ ...editedData, escalate_to_physician: val })
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    escalate_to_physician: e.target.value,
+                  })
                 }
-                style={{ width: "100%" }}
               >
-                {" "}
-                <Select.Option value="Yes">Yes</Select.Option>{" "}
-                <Select.Option value="No">No</Select.Option>{" "}
-              </Select>{" "}
-            </div>{" "}
-          </div>{" "}
-          <div>
-            {" "}
-            <label style={labelStyle}>Home Address</label>{" "}
-            <Input.TextArea
-              rows={2}
-              value={editedData.patient_home_address}
-              onChange={(e) =>
-                setEditedData({
-                  ...editedData,
-                  patient_home_address: e.target.value,
-                })
-              }
-            />{" "}
-          </div>{" "}
-          {/* ---------- EMERGENCY CONTACT ---------- */}{" "}
-          <h3 style={sectionTitle}>Emergency Contact</h3>{" "}
-          <div style={twoColGrid}>
-            {" "}
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Name</label>{" "}
+              <label style={labelStyle}>Caretaker</label>
+              <Select
+                placeholder="Select caretaker"
+                value={editedData.caretakerid}
+                onChange={(val) =>
+                  setEditedData({ ...editedData, caretakerid: val })
+                }
+              >
+                {caretakerList.map((ct) => (
+                  <Select.Option key={ct.id} value={ct.id}>
+                    {ct.caretaker_id}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* ---------- SECTION 2: EMERGENCY CONTACT ---------- */}
+          <h3 style={sectionTitle}>2. Emergency Contact</h3>
+          <div style={twoColGrid}>
+            <div>
+              <label style={labelStyle}>Full Name</label>
               <Input
+                placeholder="Enter name"
                 value={editedData.emer_con_name}
                 onChange={(e) =>
                   setEditedData({
@@ -662,12 +716,13 @@ export default function HeaderComponent() {
                     emer_con_name: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Relation</label>{" "}
+              <label style={labelStyle}>Relationship</label>
               <Input
+                placeholder="e.g. Spouse, Child"
                 value={editedData.emer_con_relation}
                 onChange={(e) =>
                   setEditedData({
@@ -675,12 +730,13 @@ export default function HeaderComponent() {
                     emer_con_relation: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Country of Residence</label>{" "}
+              <label style={labelStyle}>Country of Residence</label>
               <Input
+                placeholder="Enter country"
                 value={editedData.emer_con_coun_of_residen}
                 onChange={(e) =>
                   setEditedData({
@@ -688,12 +744,13 @@ export default function HeaderComponent() {
                     emer_con_coun_of_residen: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Country Code</label>{" "}
+              <label style={labelStyle}>Country Code</label>
               <Input
+                placeholder="+XX"
                 value={editedData.emer_con_country_code}
                 onChange={(e) =>
                   setEditedData({
@@ -701,12 +758,13 @@ export default function HeaderComponent() {
                     emer_con_country_code: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Phone</label>{" "}
+              <label style={labelStyle}>Phone</label>
               <Input
+                placeholder="Enter phone"
                 value={editedData.emer_con_phone}
                 onChange={(e) =>
                   setEditedData({
@@ -714,12 +772,13 @@ export default function HeaderComponent() {
                     emer_con_phone: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Email</label>{" "}
+              <label style={labelStyle}>Email</label>
               <Input
+                placeholder="Enter email"
                 value={editedData.emer_con_email}
                 onChange={(e) =>
                   setEditedData({
@@ -727,17 +786,17 @@ export default function HeaderComponent() {
                     emer_con_email: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- LOCAL CONTACT ---------- */}{" "}
-          <h3 style={sectionTitle}>Local Contact</h3>{" "}
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 3: LOCAL CONTACT ---------- */}
+          <h3 style={sectionTitle}>3. Local Contact (if different)</h3>
           <div style={twoColGrid}>
-            {" "}
             <div>
-              {" "}
-              <label style={labelStyle}>Name</label>{" "}
+              <label style={labelStyle}>Full Name</label>
               <Input
+                placeholder="Enter local contact name"
                 value={editedData.local_con_name}
                 onChange={(e) =>
                   setEditedData({
@@ -745,12 +804,13 @@ export default function HeaderComponent() {
                     local_con_name: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Relation</label>{" "}
+              <label style={labelStyle}>Relationship</label>
               <Input
+                placeholder="e.g. Friend, Neighbor"
                 value={editedData.local_con_relation}
                 onChange={(e) =>
                   setEditedData({
@@ -758,12 +818,13 @@ export default function HeaderComponent() {
                     local_con_relation: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Country Code</label>{" "}
+              <label style={labelStyle}>Country Code</label>
               <Input
+                placeholder="+XX"
                 value={editedData.local_con_country_code}
                 onChange={(e) =>
                   setEditedData({
@@ -771,12 +832,13 @@ export default function HeaderComponent() {
                     local_con_country_code: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Phone</label>{" "}
+              <label style={labelStyle}>Phone</label>
               <Input
+                placeholder="Enter phone"
                 value={editedData.local_con_phone}
                 onChange={(e) =>
                   setEditedData({
@@ -784,18 +846,16 @@ export default function HeaderComponent() {
                     local_con_phone: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- MEDICAL HISTORY ---------- */}{" "}
-          <h3 style={sectionTitle}>Medical History</h3>{" "}
+              />
+            </div>
+          </div>
+          {/* ---------- SECTION 4: MEDICAL HISTORY ---------- */}
+          <h3 style={sectionTitle}>4. Medical History</h3>
           <div style={twoColGrid}>
-            {" "}
             <div>
-              {" "}
-              <label style={labelStyle}>Diagnosis</label>{" "}
+              <label style={labelStyle}>Diagnosis</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Enter diagnosis"
                 value={editedData.medical_his_diagnosis}
                 onChange={(e) =>
                   setEditedData({
@@ -803,13 +863,55 @@ export default function HeaderComponent() {
                     medical_his_diagnosis: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Major Surgeries</label>{" "}
-              <Input.TextArea
-                rows={2}
+              <label style={labelStyle}>Cancer History</label>
+              <Input
+                placeholder="Enter cancer history"
+                value={editedData.medical_his_cancer}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    medical_his_cancer: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Other Medical History</label>
+              <Input
+                placeholder="Other medical history"
+                value={editedData.medical_his_other}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    medical_his_other: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Provided MediCare</label>
+              <Input
+                placeholder="Provided medi care"
+                value={editedData.medical_his_provided_medi_care}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    medical_his_provided_medi_care: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Major Surgeries</label>
+              <Input
+                placeholder="Enter major surgeries"
                 value={editedData.medical_his_major_surgeries}
                 onChange={(e) =>
                   setEditedData({
@@ -817,13 +919,13 @@ export default function HeaderComponent() {
                     medical_his_major_surgeries: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Current Symptoms</label>{" "}
+              <label style={labelStyle}>Current Symptoms</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Enter current symptoms"
                 value={editedData.medical_his_curr_symp}
                 onChange={(e) =>
                   setEditedData({
@@ -831,17 +933,17 @@ export default function HeaderComponent() {
                     medical_his_curr_symp: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- MEDICATIONS ---------- */}{" "}
-          <h3 style={sectionTitle}>Medications & Allergies</h3>{" "}
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 5: MEDICATIONS ---------- */}
+          <h3 style={sectionTitle}>5. Medications</h3>
           <div style={twoColGrid}>
-            {" "}
             <div>
-              {" "}
-              <label style={labelStyle}>Medication Name</label>{" "}
+              <label style={labelStyle}>Medication Name</label>
               <Input
+                placeholder="Medication name"
                 value={editedData.medication_name}
                 onChange={(e) =>
                   setEditedData({
@@ -849,12 +951,13 @@ export default function HeaderComponent() {
                     medication_name: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Dose</label>{" "}
+              <label style={labelStyle}>Dose</label>
               <Input
+                placeholder="Dose"
                 value={editedData.medication_dose}
                 onChange={(e) =>
                   setEditedData({
@@ -862,12 +965,13 @@ export default function HeaderComponent() {
                     medication_dose: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Frequency</label>{" "}
+              <label style={labelStyle}>Frequency</label>
               <Input
+                placeholder="Frequency"
                 value={editedData.medication_frequency}
                 onChange={(e) =>
                   setEditedData({
@@ -875,13 +979,13 @@ export default function HeaderComponent() {
                     medication_frequency: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Medication Reason</label>{" "}
-              <Input.TextArea
-                rows={2}
+              <label style={labelStyle}>Reason</label>
+              <Input
+                placeholder="Reason for medication"
                 value={editedData.medication_reason}
                 onChange={(e) =>
                   setEditedData({
@@ -889,30 +993,61 @@ export default function HeaderComponent() {
                     medication_reason: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-            <div style={{ gridColumn: "1 / span 2" }}>
-              {" "}
-              <label style={labelStyle}>Allergy Issues</label>{" "}
-              <Select
-                value={editedData.allergies_issues ? "Yes" : "No"}
-                onChange={(val) =>
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Medication Issues?</label>
+              <Checkbox
+                checked={editedData.medication_issues}
+                onChange={(e) =>
                   setEditedData({
                     ...editedData,
-                    allergies_issues: val === "Yes",
+                    medication_issues: e.target.checked,
                   })
                 }
-                style={{ width: "100%" }}
               >
-                {" "}
-                <Select.Option value="Yes">Yes</Select.Option>{" "}
-                <Select.Option value="No">No</Select.Option>{" "}
-              </Select>{" "}
-            </div>{" "}
+                Yes
+              </Checkbox>
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Drug Allergies</label>{" "}
+              <label style={labelStyle}>Explain Issues</label>
+              <Input.TextArea
+                placeholder="Explain medication issues"
+                value={editedData.medication_issues_explain}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    medication_issues_explain: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 6: ALLERGIES ---------- */}
+          <h3 style={sectionTitle}>6. Allergies</h3>
+          <div style={twoColGrid}>
+            <div>
+              <label style={labelStyle}>Allergies to Drugs?</label>
+              <Checkbox
+                checked={editedData.allergies_issues}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    allergies_issues: e.target.checked,
+                  })
+                }
+              >
+                Yes
+              </Checkbox>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Drug Allergies</label>
               <Input
+                placeholder="Enter drug allergies"
                 value={editedData.allergies_drug}
                 onChange={(e) =>
                   setEditedData({
@@ -920,12 +1055,13 @@ export default function HeaderComponent() {
                     allergies_drug: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Food Allergies</label>{" "}
+              <label style={labelStyle}>Food Allergies</label>
               <Input
+                placeholder="Enter food allergies"
                 value={editedData.allergies_food}
                 onChange={(e) =>
                   setEditedData({
@@ -933,18 +1069,162 @@ export default function HeaderComponent() {
                     allergies_food: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- LIFESTYLE ---------- */}{" "}
-          <h3 style={sectionTitle}>Functional & Lifestyle</h3>{" "}
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 7: FUNCTIONAL STATUS ---------- */}
+          <h3 style={sectionTitle}>7. Functional Status</h3>
           <div style={twoColGrid}>
-            {" "}
             <div>
-              {" "}
-              <label style={labelStyle}>Daily Routine</label>{" "}
+              <label style={labelStyle}>Bathing</label>
+              <Input
+                placeholder="Can the patient bathe independently?"
+                value={editedData.functional_bathe}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_bathe: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Dressing</label>
+              <Input
+                placeholder="Can the patient dress independently?"
+                value={editedData.functional_dress}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_dress: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Eating</label>
+              <Input
+                placeholder="Can the patient eat independently?"
+                value={editedData.functional_eat}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_eat: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Walking</label>
+              <Input
+                placeholder="Can the patient walk independently?"
+                value={editedData.functional_walk}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_walk: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Use Bathroom</label>
+              <Input
+                placeholder="Can the patient use bathroom independently?"
+                value={editedData.functional_use_bathroom}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_use_bathroom: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Daily Activity</label>
+              <Input
+                placeholder="Can the patient manage daily activity?"
+                value={editedData.functional_daily_activity}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_daily_activity: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Manage Finance</label>
+              <Input
+                placeholder="Can the patient manage finances?"
+                value={editedData.functional_manage_finance}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_manage_finance: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Any Falls?</label>
+              <Checkbox
+                checked={editedData.functional_any_falls}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_any_falls: e.target.checked,
+                  })
+                }
+              >
+                Yes
+              </Checkbox>
+            </div>
+
+            <div>
+              <label style={labelStyle}>How Many?</label>
+              <Input
+                placeholder="Number of falls"
+                value={editedData.functional_how_many}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_how_many: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Memory Problems?</label>
+              <Checkbox
+                checked={editedData.functional_memory_pbms}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    functional_memory_pbms: e.target.checked,
+                  })
+                }
+              >
+                Yes
+              </Checkbox>
+            </div>
+          </div>
+          {/* ---------- SECTION 8: LIFESTYLE ---------- */}
+          <h3 style={sectionTitle}>8. Lifestyle</h3>
+          <div style={twoColGrid}>
+            <div>
+              <label style={labelStyle}>Daily Routine</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Describe daily routine"
                 value={editedData.lifestyle_daily_routine}
                 onChange={(e) =>
                   setEditedData({
@@ -952,13 +1232,13 @@ export default function HeaderComponent() {
                     lifestyle_daily_routine: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Dietary Habits</label>{" "}
-              <Input.TextArea
-                rows={2}
+              <label style={labelStyle}>Dietary Habits</label>
+              <Input
+                placeholder="Dietary habits"
                 value={editedData.lifestyle_dietary_habits}
                 onChange={(e) =>
                   setEditedData({
@@ -966,12 +1246,27 @@ export default function HeaderComponent() {
                     lifestyle_dietary_habits: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Physical Activity</label>{" "}
+              <label style={labelStyle}>Sleep Quality</label>
               <Input
+                placeholder="Sleep quality"
+                value={editedData.lifestyle_sleep_quality}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    lifestyle_sleep_quality: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Physical Activity</label>
+              <Input
+                placeholder="Physical activity"
                 value={editedData.lifestyle_physical_activity}
                 onChange={(e) =>
                   setEditedData({
@@ -979,18 +1274,59 @@ export default function HeaderComponent() {
                     lifestyle_physical_activity: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- SOCIAL & GOALS ---------- */}{" "}
-          <h3 style={sectionTitle}>Social & Goals</h3>{" "}
-          <div style={twoColGrid}>
-            {" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Emotional Health</label>{" "}
+              <label style={labelStyle}>Alcohol Use</label>
+              <Input
+                placeholder="Alcohol use"
+                value={editedData.lifestyle_alcohol_use}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    lifestyle_alcohol_use: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Pain Complaints</label>
+              <Input
+                placeholder="Pain complaints"
+                value={editedData.lifestyle_pain_complaints}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    lifestyle_pain_complaints: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Pain Location</label>
+              <Input
+                placeholder="Pain location"
+                value={editedData.lifestyle_pain_where}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    lifestyle_pain_where: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 9: SOCIAL & EMOTIONAL ---------- */}
+          <h3 style={sectionTitle}>9. Social & Emotional</h3>
+          <div style={twoColGrid}>
+            <div>
+              <label style={labelStyle}>Social / Emotional Health</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Social / Emotional Health"
                 value={editedData.social_emotion_health}
                 onChange={(e) =>
                   setEditedData({
@@ -998,13 +1334,13 @@ export default function HeaderComponent() {
                     social_emotion_health: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Spiritual Needs</label>{" "}
+              <label style={labelStyle}>Spiritual Needs</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Spiritual needs"
                 value={editedData.social_spiritual_needs}
                 onChange={(e) =>
                   setEditedData({
@@ -1012,13 +1348,43 @@ export default function HeaderComponent() {
                     social_spiritual_needs: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
+              />
+            </div>
+
             <div>
-              {" "}
-              <label style={labelStyle}>Goals or Hopes</label>{" "}
+              <label style={labelStyle}>Trusted Person?</label>
+              <Checkbox
+                checked={editedData.social_trusted_person}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    social_trusted_person: e.target.checked,
+                  })
+                }
+              >
+                Yes
+              </Checkbox>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Trusted Person Name</label>
+              <Input
+                placeholder="Trusted person name"
+                value={editedData.social_name}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, social_name: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 10: GOALS ---------- */}
+          <h3 style={sectionTitle}>10. Goals</h3>
+          <div style={twoColGrid}>
+            <div>
+              <label style={labelStyle}>Family Hopes</label>
               <Input.TextArea
-                rows={2}
+                placeholder="Family hopes / goals"
                 value={editedData.goals_family_hope}
                 onChange={(e) =>
                   setEditedData({
@@ -1026,51 +1392,67 @@ export default function HeaderComponent() {
                     goals_family_hope: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* ---------- FILE UPLOAD ---------- */}{" "}
-          <h3 style={sectionTitle}>Upload Documents</h3>{" "}
-          <div style={twoColGrid}>
-            {" "}
-            <div style={{ gridColumn: "1 / span 2" }}>
-              {" "}
-              <label style={labelStyle}>
-                File Names (comma separated)
-              </label>{" "}
-              <Input
-                value={editedData.patient_files_name}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Special Instructions</label>
+              <Input.TextArea
+                placeholder="Special instructions"
+                value={editedData.goals_special_instructions}
                 onChange={(e) =>
                   setEditedData({
                     ...editedData,
-                    patient_files_name: e.target.value,
+                    goals_special_instructions: e.target.value,
                   })
                 }
-              />{" "}
-            </div>{" "}
-            <div style={{ gridColumn: "1 / span 2" }}>
-              {" "}
-              <Upload
-                multiple
-                beforeUpload={(file) => {
-                  setEditedData((prev) => ({
-                    ...prev,
-                    patient_upload_files: [
-                      ...(prev.patient_upload_files || []),
-                      file,
-                    ],
-                  }));
-                  return false;
-                }}
-                showUploadList
-              >
-                {" "}
-                <Button icon={<UploadOutlined />}>Choose Files</Button>{" "}
-              </Upload>{" "}
-            </div>{" "}
-          </div>{" "}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Term Membership</label>
+              <Input
+                placeholder="Term membership"
+                value={editedData.goals_term_membership}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    goals_term_membership: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          {/* ---------- SECTION 11: FILE UPLOADS ---------- */}
+          <h3 style={sectionTitle}>11. Upload Files</h3>
+          <Upload
+            multiple
+            beforeUpload={(file) => {
+              setEditedData({
+                ...editedData,
+                patient_upload_files: [
+                  ...(editedData.patient_upload_files || []),
+                  file,
+                ],
+              });
+              return false; // prevent auto-upload
+            }}
+            fileList={editedData.patient_upload_files || []}
+            onRemove={(file) => {
+              setEditedData({
+                ...editedData,
+                patient_upload_files: (
+                  editedData.patient_upload_files || []
+                ).filter((f) => f.uid !== file.uid),
+              });
+            }}
+          >
+            <Button icon={<UploadOutlined />}>Select Files</Button>
+          </Upload>
         </div>
       </Modal>
+
       <Modal
         title="Enrollment Successful"
         open={isSuccessModalVisible}
