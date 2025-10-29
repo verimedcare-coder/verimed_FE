@@ -226,17 +226,23 @@ export default function HeaderComponent() {
     try {
       setLoading(true);
       const endpoint = `https://verimedramja.pythonanywhere.com/verimed/caretakerprofile_list/`;
+      const headers = {
+        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
+      };
 
-      const res = await axios.get(endpoint);
+      const res = await axios.get(endpoint, { headers });
 
       setCaretakerList(res.data || []);
-      console.log(res.data);
     } catch (error) {
       console.error("Error fetching caretaker list:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCareTakerList();
+  }, []);
 
   useEffect(() => {
     fetchCareTakerList();
