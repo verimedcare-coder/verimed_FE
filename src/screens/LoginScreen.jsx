@@ -54,7 +54,6 @@ export default function LoginScreen() {
     }
   };
 
-  // ✅ Fetch Sponsor Patients
   const fetchSponsorPatients = async (sponsorProfileId, token) => {
     if (!sponsorProfileId || !token) return;
     try {
@@ -81,7 +80,6 @@ export default function LoginScreen() {
     }
   };
 
-  // ✅ Fetch Sponsor Appointments
   const fetchSponsorAppointments = async (token) => {
     try {
       const sponsorProfileId = localStorage.getItem("sponsorProfileId");
@@ -127,7 +125,6 @@ export default function LoginScreen() {
     }
   };
 
-  // ✅ Login Submit
   const onFinish = async (values) => {
     const { username, password } = values;
     setLoading(true);
