@@ -186,33 +186,76 @@ export default function HeaderComponent() {
     }
   }, []);
 
+  // const showPatientDetails = (patientId) => {
+  //   const storedAppointments = localStorage.getItem("sponsorAppointments");
+  //   if (storedAppointments) {
+  //     try {
+  //       const parsedAppointments = JSON.parse(storedAppointments);
+  //       const patientAppointments = parsedAppointments.filter(
+  //         (item) => item?.patient?.user?.id === patientId
+  //       );
+
+  //       if (patientAppointments.length > 0) {
+  //         const patientDetails = patientAppointments[0]?.patient?.user;
+
+  //         localStorage.setItem(
+  //           "selectedPatientDetails",
+  //           JSON.stringify(patientDetails)
+  //         );
+  //         localStorage.setItem(
+  //           "selectedPatientAppointments",
+  //           JSON.stringify(patientAppointments)
+  //         );
+  //       } else {
+  //         localStorage.removeItem("selectedPatientDetails");
+  //         localStorage.removeItem("selectedPatientAppointments");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error retrieving patient details:", error);
+  //     }
+  //   }
+  // };
+
   const showPatientDetails = (patientId) => {
-    const storedAppointments = localStorage.getItem("sponsorAppointments");
-    if (storedAppointments) {
-      try {
-        const parsedAppointments = JSON.parse(storedAppointments);
-        const patientAppointments = parsedAppointments.filter(
-          (item) => item?.patient?.user?.id === patientId
+    try {
+      const storedAppointments = JSON.parse(
+        localStorage.getItem("sponsorAppointments") || "[]"
+      );
+      const sponsorPatientData = JSON.parse(
+        localStorage.getItem("sponsorPatientData") || "[]"
+      );
+
+      // Try to find appointment-based details first
+      const patientAppointments = storedAppointments.filter(
+        (item) => item?.patient?.user?.id === patientId
+      );
+
+      let patientDetails = null;
+
+      if (patientAppointments.length > 0) {
+        patientDetails = patientAppointments[0]?.patient?.user;
+        localStorage.setItem(
+          "selectedPatientAppointments",
+          JSON.stringify(patientAppointments)
         );
-
-        if (patientAppointments.length > 0) {
-          const patientDetails = patientAppointments[0]?.patient?.user;
-
-          localStorage.setItem(
-            "selectedPatientDetails",
-            JSON.stringify(patientDetails)
-          );
-          localStorage.setItem(
-            "selectedPatientAppointments",
-            JSON.stringify(patientAppointments)
-          );
-        } else {
-          localStorage.removeItem("selectedPatientDetails");
-          localStorage.removeItem("selectedPatientAppointments");
+      } else {
+        localStorage.removeItem("selectedPatientAppointments");
+        const match = sponsorPatientData.find((p) => p?.user?.id === patientId);
+        if (match) {
+          patientDetails = match.user;
         }
-      } catch (error) {
-        console.error("Error retrieving patient details:", error);
       }
+
+      if (patientDetails) {
+        localStorage.setItem(
+          "selectedPatientDetails",
+          JSON.stringify(patientDetails)
+        );
+      } else {
+        localStorage.removeItem("selectedPatientDetails");
+      }
+    } catch (error) {
+      console.error("Error retrieving patient details:", error);
     }
   };
 
@@ -221,6 +264,42 @@ export default function HeaderComponent() {
     localStorage.setItem("selectedPatientId", value);
     showPatientDetails(value);
   };
+
+  useEffect(() => {
+    const storedAppointments = JSON.parse(
+      localStorage.getItem("sponsorAppointments") || "[]"
+    );
+    const sponsorPatientData = JSON.parse(
+      localStorage.getItem("sponsorPatientData") || "[]"
+    );
+
+    const uniquePatientsMap = new Map();
+
+    // Include all patients from sponsorPatientData
+    sponsorPatientData.forEach((p) => {
+      if (p?.user && !uniquePatientsMap.has(p.user.id)) {
+        uniquePatientsMap.set(p.user.id, p.user);
+      }
+    });
+
+    // Also include any patients found in appointments
+    storedAppointments.forEach((item) => {
+      const patientUser = item?.patient?.user;
+      if (patientUser && !uniquePatientsMap.has(patientUser.id)) {
+        uniquePatientsMap.set(patientUser.id, patientUser);
+      }
+    });
+
+    const patientList = Array.from(uniquePatientsMap.values());
+    setPatients(patientList);
+
+    if (patientList.length > 0) {
+      const defaultPatient = patientList[0];
+      setSelectedPatient(defaultPatient.id);
+      localStorage.setItem("selectedPatientId", defaultPatient.id);
+      showPatientDetails(defaultPatient.id);
+    }
+  }, []);
 
   const fetchCareTakerList = async () => {
     try {
