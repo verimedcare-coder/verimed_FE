@@ -62,12 +62,11 @@ export default function Appointments() {
   const [deptList, setDeptList] = useState([]);
   const [sponsorUser, setSponsorUser] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [doctors, setDoctors] = useState([]);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
 
-  const patientId = localStorage.getItem("sponsorPatientIds");
-
-  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+  const patientId = Number(localStorage.getItem("selectedPatientId"));
 
   const handleDateSelect = (date) => {
     if (!date) return;
@@ -83,10 +82,9 @@ export default function Appointments() {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const endpoint = `${base_url}/vb_patientappoinment_list/`;
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = { Authorization: `Token ${token}` };
-      const payload = { patientprofileid: cleanedPatientId };
-      const res = await axios.post(endpoint, payload, { headers });
+      const res = await axios.get(endpoint, { headers });
       setAppointmentList(res.data);
     } catch (error) {
       console.log(error);
@@ -115,6 +113,11 @@ export default function Appointments() {
     fetchDeptList();
   }, []);
 
+  const caretakerId = JSON.parse(
+    localStorage.getItem("selectedPatientData")
+  )?.caretaker;
+  const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
+
   const bookAppointment = async (values) => {
     setLoading(true);
     try {
@@ -130,8 +133,9 @@ export default function Appointments() {
 
       const bookappoinment_data = {
         dep: values.depId,
-        patient: cleanedPatientId,
-        caretaker: 1,
+        patient: patientId,
+        sponsor: sponsorId,
+        caretaker: caretakerId,
         appointment_date: null,
         appointment_time: null,
         preferred_dates: selectedDates,
@@ -141,15 +145,11 @@ export default function Appointments() {
         care_taker_notes: values.notes || null,
         amount: values.amount || null,
         subscription_plan: values.subscription_plan || null,
-        height: values.height || null,
-        weight: values.weight || null,
-        blood_pressure: values.blood_pressure || null,
-        blood_sugar: values.blood_sugar || null,
-        medical_history: values.medical_history || null,
         appointment_history: values.appointment_history || null,
         time_line: values.time_line || null,
         appointment_reason: values.appointment_reason || null,
         appointment_status: values.appointment_status || null,
+        service_purchased: true,
       };
 
       const formData = new FormData();
@@ -198,6 +198,20 @@ export default function Appointments() {
   };
 
   useEffect(() => {
+    const fetchDocList = async () => {
+      try {
+        const endpoint = `${base_url}/doctorprofile_list/`;
+        const headers = { Authorization: `Token ${token}` };
+        const res = await axios.get(endpoint, { headers });
+        setDoctors(res.data);
+      } catch (error) {
+        console.log("Error fetching doctors: ", error);
+      }
+    };
+    fetchDocList();
+  }, []);
+
+  useEffect(() => {
     const fetchSponsorData = async () => {
       try {
         const endpoint = `${base_url}/user_view/`;
@@ -212,95 +226,81 @@ export default function Appointments() {
     fetchSponsorData();
   }, []);
 
+  // Updated status logic: treat empty string or null appointment_date as upcoming
   const getAppointmentStatus = (appointment) => {
     const today = new Date();
-
     if (appointment.appointment_status === "cancelled") return "cancelled";
-
-    if (appointment.appointment_date) {
-      const apptDate = new Date(appointment.appointment_date);
-      if (apptDate.toDateString() === today.toDateString()) return "upcoming";
-      return apptDate > today ? "upcoming" : "past";
+    // If appointment_date is empty string or null, treat as upcoming
+    if (!appointment.appointment_date || appointment.appointment_date === "") {
+      return "upcoming";
     }
-
-    if (
-      Array.isArray(appointment.preferred_dates) &&
-      appointment.preferred_dates.length > 0
-    ) {
-      const firstPreferred = new Date(appointment.preferred_dates[0]);
-      return firstPreferred >= today ? "upcoming" : "past";
-    }
-
-    return "upcoming";
+    // Otherwise, check date
+    const apptDate = new Date(appointment.appointment_date);
+    if (apptDate.toDateString() === today.toDateString()) return "upcoming";
+    return apptDate > today ? "upcoming" : "past";
   };
 
+  // Updated mapping to match provided object structure
   const mappedAppointments = useMemo(() => {
     return appointmentList.map((appt) => {
-      const sponsor = sponsorUser?.find((s) => s.id === appt.sponsor?.user);
       const status = getAppointmentStatus(appt);
-
+      // For upcoming, use preferred_dates[0] if appointment_date is empty/null
       let displayDate = null;
-      if (
-        status === "upcoming" &&
-        Array.isArray(appt.preferred_dates) &&
-        appt.preferred_dates.length > 0
-      ) {
-        displayDate = new Date(appt.preferred_dates[0]);
+      if (status === "upcoming") {
+        if (
+          Array.isArray(appt.preferred_dates) &&
+          appt.preferred_dates.length > 0
+        ) {
+          displayDate = new Date(appt.preferred_dates[0]);
+        } else if (appt.appointment_date) {
+          displayDate = new Date(appt.appointment_date);
+        }
       } else if (status === "past" || status === "cancelled") {
         displayDate = appt.appointment_date
           ? new Date(appt.appointment_date)
           : null;
       }
 
+      // Time: use preferred_times for upcoming, else appointment_time
       let formattedTimes = [];
-      if (Array.isArray(appt.appointment_time)) {
-        formattedTimes = appt.appointment_time.map((t) =>
-          new Date(`1970-01-01T${t}`).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        );
+      if (status === "upcoming" && Array.isArray(appt.preferred_times)) {
+        formattedTimes = appt.preferred_times.map((t) => t);
       } else if (appt.appointment_time) {
-        formattedTimes = [
-          new Date(`1970-01-01T${appt.appointment_time}`).toLocaleTimeString(
-            [],
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          ),
-        ];
+        formattedTimes = [appt.appointment_time];
       }
+
+      // Doctor name
+      let doctorName = "Doctor";
+      if (appt.doc && appt.doc.doctor_id) {
+        doctorName = `Dr. ${appt.doc.doctor_id}`;
+      }
+
+      // Patient name
+      let patientName = appt.patient?.patient_name || "Patient";
+
+      // Department name
+      let depName = appt.dep?.dep_name || "Department";
 
       return {
         id: appt.id,
-        appointment_type: appt.appointment_type,
+        appointment_type: appt.appointment_type || depName,
         date: displayDate,
-        doctor: appt.doc?.doctor_id ? `Dr. ${appt.doc.doctor_id}` : "Doctor",
-        doctorName: appt.doc?.doctor_id
-          ? `Dr. ${appt.doc.doctor_id}`
-          : "Doctor",
+        doctor: doctorName,
+        doctorName,
         time: formattedTimes,
         status,
-        name: appt.patient?.patient_id
-          ? `Sponsor: ${
-              sponsor
-                ? `${sponsor.first_name || ""} ${sponsor.last_name || ""}`
-                : "N/A"
-            } - Patient: ${
-              appt.patient?.user
-                ? `${appt.patient.user.first_name || ""} ${
-                    appt.patient.user.last_name || ""
-                  }`
-                : "Unknown"
-            }`
-          : "Patient",
-        issue: appt.appointment_reason || appt.appointment_type || "",
+        name: patientName,
+        issue:
+          appt.appointment_reason ||
+          appt.treatment_performed ||
+          appt.appointment_type ||
+          "",
         docs: appt.documents && appt.documents.length > 0,
         documents: appt.documents || [],
+        fullData: appt,
       };
     });
-  }, [appointmentList, sponsorUser]);
+  }, [appointmentList]);
 
   const handleDetailsCardClick = (appt) => {
     if (userData?.user_role === "care_taker" && appt.status === "upcoming") {
@@ -602,24 +602,6 @@ export default function Appointments() {
               </div>
               {renderAppointments(activeTab)}
             </div>
-            {/* {userData?.user_role === "care_taker" && (
-              <Modal
-                title="Appointment Details"
-                open={isAppointmentDetailsModal}
-                onCancel={handleCloseModal}
-                footer={null}
-              >
-                {selectedAppointment ? (
-                  <div>
-                    <p>
-                      <b>Appointment ID:</b> {selectedAppointment.id}
-                    </p>
-                  </div>
-                ) : (
-                  <p>No appointment selected.</p>
-                )}
-              </Modal>
-            )} */}
             {userData?.user_role === "care_taker" && (
               <Modal
                 title="Appointment Details"
@@ -630,91 +612,220 @@ export default function Appointments() {
                 centered
               >
                 {selectedAppointment ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      columnGap: "20px",
-                      rowGap: "12px",
-                      fontSize: "15px",
-                    }}
-                  >
-                    {/* <div>
-                      <b>Appointment ID:</b> {selectedAppointment.id}
-                    </div> */}
-
-                    <div>
-                      <b>Appointment Type:</b>{" "}
-                      {selectedAppointment.appointment_type}
-                    </div>
-
-                    <div>
-                      <b>Date:</b>{" "}
-                      {selectedAppointment.date
-                        ? new Date(
-                            selectedAppointment.date
-                          ).toLocaleDateString()
-                        : "N/A"}
-                    </div>
-
-                    <div>
-                      <b>Time:</b> {selectedAppointment.time || "N/A"}
-                    </div>
-
-                    <div>
-                      <b>Doctor:</b> {selectedAppointment.doctorName || "N/A"}
-                    </div>
-
-                    <div>
-                      <b>Patient:</b> {selectedAppointment.name || "N/A"}
-                    </div>
-
-                    <div>
-                      <b>Issue/Reason:</b> {selectedAppointment.issue || "N/A"}
-                    </div>
-                    <div>
-                      {" "}
-                      <b>Status:</b>{" "}
-                      <Tag
-                        color={
-                          selectedAppointment.status === "upcoming"
-                            ? "blue"
-                            : selectedAppointment.status === "past"
-                            ? "gray"
-                            : "red"
-                        }
-                      >
-                        {selectedAppointment.status.toUpperCase()}
-                      </Tag>
-                    </div>
-
-                    {selectedAppointment.documents?.length > 0 && (
+                  <>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        columnGap: "20px",
+                        rowGap: "12px",
+                        fontSize: "15px",
+                        marginBottom: "24px",
+                      }}
+                    >
                       <div>
-                        <b>Documents:</b>
-                        <div style={{ marginTop: "8px", marginLeft: "16px" }}>
-                          {selectedAppointment.documents.map((doc) => (
-                            <div key={doc.id}>
-                              <a
-                                href={doc.view_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  color: "#004C91",
-                                  textDecoration: "underline",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                <FileTextOutlined />
-                                {doc.filename.split("/").pop()}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
+                        <b>Appointment Type:</b>{" "}
+                        {selectedAppointment.appointment_type}
                       </div>
-                    )}
-                  </div>
+                      <div>
+                        <b>Date:</b>{" "}
+                        {selectedAppointment.date
+                          ? new Date(
+                              selectedAppointment.date
+                            ).toLocaleDateString()
+                          : "N/A"}
+                      </div>
+                      <div>
+                        <b>Time:</b>{" "}
+                        {Array.isArray(selectedAppointment.time)
+                          ? selectedAppointment.time.join(", ")
+                          : selectedAppointment.time || "N/A"}
+                      </div>
+                      <div>
+                        <b>Doctor:</b> {selectedAppointment.doctorName || "N/A"}
+                      </div>
+                      <div>
+                        <b>Patient:</b> {selectedAppointment.name || "N/A"}
+                      </div>
+                      <div>
+                        <b>Issue/Reason:</b>{" "}
+                        {selectedAppointment.issue || "N/A"}
+                      </div>
+                      <div>
+                        <b>Status:</b>{" "}
+                        <Tag
+                          color={
+                            selectedAppointment.status === "upcoming"
+                              ? "blue"
+                              : selectedAppointment.status === "past"
+                              ? "gray"
+                              : "red"
+                          }
+                        >
+                          {selectedAppointment.status.toUpperCase()}
+                        </Tag>
+                      </div>
+                      {selectedAppointment.documents?.length > 0 && (
+                        <div>
+                          <b>Documents:</b>
+                          <div style={{ marginTop: "8px", marginLeft: "16px" }}>
+                            {selectedAppointment.documents.map((doc) => (
+                              <div key={doc.id}>
+                                <a
+                                  href={doc.view_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    color: "#004C91",
+                                    textDecoration: "underline",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <FileTextOutlined />
+                                  {doc.filename.split("/").pop()}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Book Appointment Form */}
+                    <div style={{ marginTop: "32px" }}>
+                      <h3
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "16px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        Book Appointment
+                      </h3>
+                      <Form
+                        layout="vertical"
+                        onFinish={async (values) => {
+                          const bookappoinment_data = {
+                            update_appoinmentid: selectedAppointment?.id,
+                            sponsor: selectedAppointment?.fullData?.sponsor?.id,
+                            dep: selectedAppointment?.fullData?.dep?.id,
+                            doc: values?.docId,
+                            patient: selectedAppointment?.fullData?.patient?.id,
+                            caretaker:
+                              selectedAppointment?.fullData?.caretaker?.id,
+                            appointment_date: values.appointment_date,
+                            appointment_time: values.appointment_time,
+                            appointment_type:
+                              selectedAppointment.appointment_type,
+                            treatment_performed: selectedAppointment.issue,
+                            care_taker_notes: values.care_taker_notes || "",
+                          };
+                          try {
+                            const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+                            const headers = { Authorization: `Token ${token}` };
+                            const formData = new FormData();
+                            formData.append(
+                              "bookappoinment_data",
+                              JSON.stringify(bookappoinment_data)
+                            );
+                            await axios.patch(endpoint, formData, { headers });
+                            message.success("Appointment booked successfully!");
+                            handleCloseModal();
+                            fetchAppointments();
+                          } catch (error) {
+                            message.error("Failed to book appointment.");
+                          }
+                        }}
+                      >
+                        <Form.Item
+                          name="docId"
+                          label="Doctor"
+                          rules={[
+                            {
+                              required: true,
+                              message: "Please select a doctor",
+                            },
+                          ]}
+                        >
+                          <Select placeholder="Select doctor">
+                            {doctors &&
+                              doctors.length > 0 &&
+                              doctors.map((doctor) => (
+                                <Option key={doctor.id} value={doctor.id}>
+                                  {doctor.user?.first_name}{" "}
+                                  {doctor.user?.last_name}
+                                </Option>
+                              ))}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item
+                          name="appointment_date"
+                          label="Appointment Date"
+                          rules={[
+                            { required: true, message: "Please select a date" },
+                          ]}
+                        >
+                          <Select placeholder="Select date">
+                            {Array.isArray(selectedAppointment.time) &&
+                            Array.isArray(selectedAppointment.date) ? (
+                              selectedAppointment.date.map((d) => (
+                                <Option key={d} value={d}>
+                                  {d}
+                                </Option>
+                              ))
+                            ) : selectedAppointment.date ? (
+                              <Option
+                                value={
+                                  selectedAppointment.date
+                                    .toISOString()
+                                    .split("T")[0]
+                                }
+                              >
+                                {new Date(
+                                  selectedAppointment.date
+                                ).toLocaleDateString()}
+                              </Option>
+                            ) : null}
+                            {/* If preferred_dates available, use them */}
+                            {selectedAppointment.preferred_dates &&
+                              selectedAppointment.preferred_dates.map((d) => (
+                                <Option key={d} value={d}>
+                                  {d}
+                                </Option>
+                              ))}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item
+                          name="appointment_time"
+                          label="Appointment Time"
+                          rules={[
+                            { required: true, message: "Please select a time" },
+                          ]}
+                        >
+                          <Select placeholder="Select time">
+                            {selectedAppointment.time &&
+                              selectedAppointment.time.map((t) => (
+                                <Option key={t} value={t}>
+                                  {t}
+                                </Option>
+                              ))}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item
+                          name="care_taker_notes"
+                          label="Care Taker Notes"
+                        >
+                          <Input.TextArea rows={2} placeholder="Enter notes" />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Book Appointment
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </div>
+                  </>
                 ) : (
                   <p>No appointment selected.</p>
                 )}

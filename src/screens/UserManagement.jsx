@@ -83,7 +83,7 @@ export default function UserManagement() {
       const allusers = userRes.data;
 
       const sponsorListEndpoint = `${base_url}/sponsorprofile_list/`;
-      const res = await axios.get(sponsorListEndpoint, { headers });
+      const res = await axios.get(sponsorListEndpoint);
       const sponsors = res.data;
 
       const sponsorUserIds = sponsors.map((doc) => doc.user);

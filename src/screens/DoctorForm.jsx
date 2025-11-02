@@ -5,7 +5,18 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import Success from "../assets/icons/success.svg";
-import { Form, Input, Select, Button, Modal, message } from "antd";
+import {
+  Form,
+  Input,
+  Select,
+  Button,
+  Modal,
+  message,
+  Upload,
+  DatePicker,
+  Checkbox,
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { base_url } from "../constants/constants";
 
@@ -31,12 +42,20 @@ function SectionHeader({ title, children }) {
   );
 }
 
-export default function DoctorForm(doc_reports_data) {
+export default function DoctorForm(doc_data) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const token = localStorage.getItem("token");
+
+  // normalize upload value for Form
+  const normFile = (e) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e && e.fileList;
+  };
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -46,38 +65,33 @@ export default function DoctorForm(doc_reports_data) {
         Authorization: `Token ${token}`,
       };
 
-      // Fixed payload
-      const payload = {
-        doc_reports_data: {
-          doc_report_updateid: doc_reports_data.doc_report_updateid,
-          patient: doc_reports_data.patient,
-          doc: doc_reports_data.doc,
-          sponsor: doc_reports_data.sponsor,
-          caretaker: doc_reports_data.caretaker,
-          patient_name: values.patientName,
-          patient_age: values.age,
-          patient_gender: values.gender,
-          nationality: values.nationality,
-          blood_group: values.bloodGroup,
-          bp: values.bp,
-          heart_rate: values.heartRate,
-          sugar: values.sugar,
-          oxygen: values.oxygen,
-          temperature: values.temperature,
-          respiratory_rate: values.respiratoryRate,
-          weight: values.weight,
-          status: values.status,
-          address_1: values.address1,
-          address_2: values.address2,
-          city: values.city,
-          state: values.state,
-          country: values.country,
-          pincode: values.pincode,
-          doctor_notes: values.doctorNotes,
-        },
+      const payloadData = {
+        doctor: doc_data.doc_report_updateid,
+        patient: values.patient,
+        sponsor: doc_data.sponsor,
+        caretaker: doc_data.caretaker,
+        patient_name: values.patient_name,
+        blood_group: values.bloodGroup,
+        bp: values.bp,
+        heart_rate: values.heartRate,
+        sugar: values.sugar,
+        oxygen: values.oxygen,
+        temperature: values.temperature,
+        respiratory_rate: values.respiratoryRate,
+        weight: values.weight,
+        doctor_notes: values.doctorNotes,
       };
 
-      const response = await axios.post(endpoint, payload, { headers });
+      const formData = new FormData();
+      formData.append("doc_reports_data", JSON.stringify(payloadData));
+
+      const files = values.documents || [];
+      files.forEach((file) => {
+        const fileObj = file.originFileObj || file;
+        if (fileObj) formData.append("doc_reports", fileObj);
+      });
+
+      const response = await axios.post(endpoint, formData, { headers });
       console.log("API Response:", response.data);
 
       message.success("Report submitted successfully!");
@@ -379,26 +393,18 @@ export default function DoctorForm(doc_reports_data) {
               onFinish={onFinish}
               style={{ width: "100%" }}
               initialValues={{
-                patientName: doc_reports_data.patient_name,
-                age: doc_reports_data.patient_age,
-                gender: doc_reports_data.patient_gender,
-                nationality: doc_reports_data.nationality,
-                bloodGroup: doc_reports_data.blood_group,
-                bp: doc_reports_data.bp,
-                heartRate: doc_reports_data.heart_rate,
-                sugar: doc_reports_data.sugar,
-                oxygen: doc_reports_data.oxygen,
-                temperature: doc_reports_data.temperature,
-                respiratoryRate: doc_reports_data.respiratory_rate,
-                weight: doc_reports_data.weight,
-                status: doc_reports_data.status,
-                address1: doc_reports_data.address_1,
-                address2: doc_reports_data.address_2,
-                city: doc_reports_data.city,
-                state: doc_reports_data.state,
-                country: doc_reports_data.country,
-                pincode: doc_reports_data.pincode,
-                doctorNotes: doc_reports_data.doctor_notes,
+                patientName: doc_data.patient_name,
+                bloodGroup: doc_data.blood_group,
+                bp: doc_data.bp,
+                heartRate: doc_data.heart_rate,
+                sugar: doc_data.sugar,
+                oxygen: doc_data.oxygen,
+                temperature: doc_data.temperature,
+                respiratoryRate: doc_data.respiratory_rate,
+                weight: doc_data.weight,
+                doctorNotes: doc_data.doctor_notes,
+                initial_visit: doc_data.initialVisit,
+                doc_reports: doc_data.documents,
               }}
             >
               {/* Patient Info */}
@@ -410,19 +416,6 @@ export default function DoctorForm(doc_reports_data) {
                 }}
               >
                 <Form.Item label="Patient Name" name="patientName">
-                  <Input />
-                </Form.Item>
-                <Form.Item label="Age" name="age">
-                  <Input type="number" />
-                </Form.Item>
-                <Form.Item label="Gender" name="gender">
-                  <Select>
-                    <Option value="Male">Male</Option>
-                    <Option value="Female">Female</Option>
-                    <Option value="Other">Other</Option>
-                  </Select>
-                </Form.Item>
-                <Form.Item label="Nationality" name="nationality">
                   <Input />
                 </Form.Item>
               </div>
@@ -459,6 +452,7 @@ export default function DoctorForm(doc_reports_data) {
                 </Form.Item>
               </div>
 
+              {/* Vitals 2 */}
               <div
                 style={{
                   display: "grid",
@@ -481,45 +475,28 @@ export default function DoctorForm(doc_reports_data) {
                 </Form.Item>
               </div>
 
-              <Form.Item label="Status" name="status" style={{ marginTop: 16 }}>
-                <Input />
-              </Form.Item>
-
-              {/* Address */}
-              <h3 style={{ marginTop: 20, color: "#007F5F" }}>
-                Address Information
-              </h3>
+              {/* Upload Documents & Initial Visits */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
                   gap: 16,
+                  marginTop: 16,
                 }}
               >
-                <Form.Item label="Address Line 1" name="address1">
-                  <Input />
+                <Form.Item
+                  label="Upload Documents"
+                  name="documents"
+                  valuePropName="fileList"
+                  getValueFromEvent={normFile}
+                  style={{ margin: 0 }}
+                >
+                  <Upload multiple beforeUpload={() => false} listType="text">
+                    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                  </Upload>
                 </Form.Item>
-                <Form.Item label="Address Line 2" name="address2">
-                  <Input />
-                </Form.Item>
-                <Form.Item label="City" name="city">
-                  <Input />
-                </Form.Item>
-                <Form.Item label="State" name="state">
-                  <Input />
-                </Form.Item>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: 16,
-                }}
-              >
-                <Form.Item label="Country" name="country">
-                  <Input />
-                </Form.Item>
-                <Form.Item label="Pincode" name="pincode">
+
+                <Form.Item label="Initial Visit" name="initialVisit">
                   <Input />
                 </Form.Item>
               </div>

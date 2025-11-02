@@ -129,6 +129,10 @@ export default function HeaderComponent() {
 
   const handleLanguageChange = (lang) => setLanguage(lang);
 
+  const careTakerPatients = JSON.parse(
+    localStorage.getItem("careTakerPatients")
+  );
+
   const languageMenu = (
     <Menu
       onClick={(e) => handleLanguageChange(e.key)}
@@ -157,65 +161,6 @@ export default function HeaderComponent() {
     }
   };
 
-  useEffect(() => {
-    const storedAppointments = localStorage.getItem("sponsorAppointments");
-    if (storedAppointments) {
-      try {
-        const parsedAppointments = JSON.parse(storedAppointments);
-        const uniquePatientsMap = new Map();
-
-        parsedAppointments.forEach((item) => {
-          const patientUser = item?.patient?.user;
-          if (patientUser && !uniquePatientsMap.has(patientUser.id)) {
-            uniquePatientsMap.set(patientUser.id, patientUser);
-          }
-        });
-
-        const patientList = Array.from(uniquePatientsMap.values());
-        setPatients(patientList);
-
-        if (patientList.length > 0) {
-          const defaultPatient = patientList[0];
-          setSelectedPatient(defaultPatient.id);
-          localStorage.setItem("selectedPatientId", defaultPatient.id);
-          showPatientDetails(defaultPatient.id);
-        }
-      } catch (error) {
-        console.error("Error parsing sponsor appointments:", error);
-      }
-    }
-  }, []);
-
-  // const showPatientDetails = (patientId) => {
-  //   const storedAppointments = localStorage.getItem("sponsorAppointments");
-  //   if (storedAppointments) {
-  //     try {
-  //       const parsedAppointments = JSON.parse(storedAppointments);
-  //       const patientAppointments = parsedAppointments.filter(
-  //         (item) => item?.patient?.user?.id === patientId
-  //       );
-
-  //       if (patientAppointments.length > 0) {
-  //         const patientDetails = patientAppointments[0]?.patient?.user;
-
-  //         localStorage.setItem(
-  //           "selectedPatientDetails",
-  //           JSON.stringify(patientDetails)
-  //         );
-  //         localStorage.setItem(
-  //           "selectedPatientAppointments",
-  //           JSON.stringify(patientAppointments)
-  //         );
-  //       } else {
-  //         localStorage.removeItem("selectedPatientDetails");
-  //         localStorage.removeItem("selectedPatientAppointments");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error retrieving patient details:", error);
-  //     }
-  //   }
-  // };
-
   const showPatientDetails = (patientId) => {
     try {
       const storedAppointments = JSON.parse(
@@ -225,7 +170,6 @@ export default function HeaderComponent() {
         localStorage.getItem("sponsorPatientData") || "[]"
       );
 
-      // Try to find appointment-based details first
       const patientAppointments = storedAppointments.filter(
         (item) => item?.patient?.user?.id === patientId
       );
@@ -263,53 +207,42 @@ export default function HeaderComponent() {
     setSelectedPatient(value);
     localStorage.setItem("selectedPatientId", value);
     showPatientDetails(value);
+    const selectedPatientObj = patients.find((p) => p.id === value);
+    if (selectedPatientObj) {
+      localStorage.setItem(
+        "selectedPatientData",
+        JSON.stringify(selectedPatientObj)
+      );
+    } else {
+      localStorage.removeItem("selectedPatientData");
+    }
   };
 
   useEffect(() => {
-    const storedAppointments = JSON.parse(
-      localStorage.getItem("sponsorAppointments") || "[]"
-    );
-    const sponsorPatientData = JSON.parse(
-      localStorage.getItem("sponsorPatientData") || "[]"
-    );
-
-    const uniquePatientsMap = new Map();
-
-    // Include all patients from sponsorPatientData
-    sponsorPatientData.forEach((p) => {
-      if (p?.user && !uniquePatientsMap.has(p.user.id)) {
-        uniquePatientsMap.set(p.user.id, p.user);
+    const fetchSponsorPatients = async () => {
+      try {
+        const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
+        const headers = {
+          Authorization: `Token ${token}`,
+        };
+        const payload = {
+          sponsorid: localStorage.getItem("sponsorProfileId"),
+        };
+        const res = await axios.post(endpoint, payload, { headers });
+        setPatients(res.data || []);
+      } catch (error) {
+        console.log("Error fetching sponsor patients:", error);
       }
-    });
-
-    // Also include any patients found in appointments
-    storedAppointments.forEach((item) => {
-      const patientUser = item?.patient?.user;
-      if (patientUser && !uniquePatientsMap.has(patientUser.id)) {
-        uniquePatientsMap.set(patientUser.id, patientUser);
-      }
-    });
-
-    const patientList = Array.from(uniquePatientsMap.values());
-    setPatients(patientList);
-
-    if (patientList.length > 0) {
-      const defaultPatient = patientList[0];
-      setSelectedPatient(defaultPatient.id);
-      localStorage.setItem("selectedPatientId", defaultPatient.id);
-      showPatientDetails(defaultPatient.id);
-    }
+    };
+    fetchSponsorPatients();
   }, []);
 
   const fetchCareTakerList = async () => {
     try {
       setLoading(true);
-      const endpoint = `https://verimedramja.pythonanywhere.com/verimed/caretakerprofile_list/`;
-      const headers = {
-        Authorization: "Token 7d406eecd7d9be342a7dbad264a73c5ac761f19a",
-      };
+      const endpoint = `${base_url}/caretakerprofile_list/`;
 
-      const res = await axios.get(endpoint, { headers });
+      const res = await axios.get(endpoint);
 
       setCaretakerList(res.data || []);
     } catch (error) {
@@ -332,7 +265,7 @@ export default function HeaderComponent() {
       const user_signup = {
         first_name: values.first_name,
         last_name: values.last_name,
-        role: "patient",
+        role: "sponsor",
         email: values.email,
         countrycode: "IN",
         phone: values.phone,
@@ -343,16 +276,15 @@ export default function HeaderComponent() {
       formData.append("user_signup", JSON.stringify(user_signup));
       if (values.photo) formData.append("photo", values.photo);
 
-      const res = await axios.post(`${base_url}/user_create/`, formData, {
+      await axios.post(`${base_url}/user_create/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Token ${token}`,
         },
       });
 
-      message.success("Patient enrolled successfully!");
+      message.success("Sponsor enrolled successfully!");
 
-      // 🟩 Step 1: Fetch username from user_view
       const userViewRes = await axios.get(`${base_url}/user_view/`, {
         headers: { Authorization: `Token ${token}` },
       });
@@ -362,7 +294,7 @@ export default function HeaderComponent() {
         (u) =>
           u.first_name.toLowerCase() === values.first_name.toLowerCase() &&
           u.last_name.toLowerCase() === values.last_name.toLowerCase() &&
-          u.user_role === "patient"
+          u.user_role === "sponsor"
       );
 
       if (!matchedUser) {
@@ -373,7 +305,6 @@ export default function HeaderComponent() {
       localStorage.setItem("enrolledUsername", matchedUser.username);
       console.log("✅ Username:", matchedUser.username);
 
-      // 🟩 Step 2: Get correct patient profile ID (id, not user.id)
       const profileRes = await axios.get(`${base_url}/patientprofile_list/`, {
         headers: { Authorization: `Token ${token}` },
       });
@@ -383,7 +314,7 @@ export default function HeaderComponent() {
       );
 
       if (matchedProfile) {
-        console.log("✅ Patient Profile ID:", matchedProfile.id);
+        console.log("✅ Sponsor Profile ID:", matchedProfile.id);
         localStorage.setItem("patient_profile_updateid", matchedProfile.id);
         setNewUser({
           username: matchedUser.username,
@@ -397,7 +328,6 @@ export default function HeaderComponent() {
         message.warning("No patient profile found for this user.");
       }
 
-      // 🟩 Step 3: Show success modal
       setIsModalVisible(false);
       setIsSuccessModalVisible(true);
     } catch (error) {
@@ -408,14 +338,8 @@ export default function HeaderComponent() {
 
   const handleUpdateClick = async () => {
     try {
-      const storedProfileId = localStorage.getItem("patient_profile_updateid");
-      if (!storedProfileId) {
-        message.error("Patient profile ID not found. Please re-enroll.");
-        return;
-      }
-
       const formData = new FormData();
-      const keyName = "patientprofile_update_data";
+      const keyName = "patientprofile_data";
 
       const storedSponsorId = localStorage.getItem("sponsorProfileId");
 
@@ -425,9 +349,7 @@ export default function HeaderComponent() {
           : "";
 
       const updateData = {
-        patient_profile_updateid: storedProfileId,
         sponsorid: storedSponsorId || "",
-        doctorid: null,
         caretakerid: editedData.caretakerid || "",
         patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
@@ -500,8 +422,8 @@ export default function HeaderComponent() {
         );
       }
 
-      const endpoint = `${base_url}/patientprofile_update/`;
-      const res = await axios.patch(endpoint, formData, {
+      const endpoint = `${base_url}/patientprofile_create_update/`;
+      await axios.patch(endpoint, formData, {
         headers: {
           Authorization: `Token ${token}`,
           "Content-Type": "multipart/form-data",
@@ -554,9 +476,14 @@ export default function HeaderComponent() {
             style={{ width: 200, borderRadius: 6 }}
             placeholder="Select Patient"
           >
-            {patients.map((p) => (
+            {(Array.isArray(patients) && patients.length > 0
+              ? patients
+              : Array.isArray(careTakerPatients) && careTakerPatients.length > 0
+              ? careTakerPatients
+              : []
+            ).map((p) => (
               <Option key={p.id} value={p.id}>
-                {`${p.first_name} ${p.last_name}`}
+                {careTakerPatients ? p.patient.patient_name : p.patient_name}
               </Option>
             ))}
           </Select>

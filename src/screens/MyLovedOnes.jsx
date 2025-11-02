@@ -32,16 +32,9 @@ export default function MyLovedOnes() {
     flexShrink: 0,
   });
 
-  const patientInfo = [
-    { label: "Name", value: "Mr. Samuel N. (VM–976–324)" },
-    { label: "Condition", value: "Hypertension, Diabetes" },
-    { label: "Assigned Doctor", value: "Dr. Paul M." },
-    { label: "Care Taker", value: "Nurse Clarisse A." },
-  ];
+  const patientId = localStorage.getItem("selectedPatientId");
 
-  const patientId = localStorage.getItem("sponsorPatientIds");
-
-  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+  const cleanedPatientId = Number(patientId);
 
   useEffect(() => {
     const fetchMedicalHistory = async () => {
@@ -133,61 +126,32 @@ export default function MyLovedOnes() {
     },
   ];
 
-  // Timeline (right)
-  const timelineData = [
-    {
-      title: "Vitals Recorded",
-      details: [
-        "BP: 128/78 mmHg",
-        "Blood Sugar: 110 mg/dL",
-        "Heart Rate: 78 bpm",
-      ],
-      date: "Aug 15, 2025 – 11:00 am",
-    },
-    {
-      title: "Doctor: Dr. Paul M.",
-      details: [
-        "Hypertension follow-up. Patient responding well to medication. Advised hydration and light exercise.",
-        "Next Appointment: Aug 24, 2025 (Virtual)",
-      ],
-      date: "Aug 15, 2025 – 10:30 am",
-    },
-    {
-      title: "Change: Dosage adjusted for hypertension medication.",
-      details: [
-        "Action: Care coordinator confirmed new prescription with local pharmacy.",
-        "Sponsor Notified: Yes (Email & App Notification)",
-      ],
-      date: "Aug 14, 2025 – 10:30 am",
-    },
-  ];
-
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
   if (!user) {
     window.location.href = "/";
   }
 
-  const fetchPatientDetailsAndVitals = async () => {
-    try {
-      const endpoint = `${base_url}/vb_patientappoinment_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { patientprofileid: user?.profile_id || 4 };
-      console.log(payload);
-      const res = await axios.post(endpoint, payload, { headers });
+  const sponsorId = localStorage.getItem("sponsorProfileId");
 
-      if (res.data && res.data.length > 0) {
-        const appointment = res.data[0];
-        setPatientData(appointment.patient);
-        setVitalsData(appointment);
-      }
+  const fetchPatientDetails = async () => {
+    try {
+      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
+      const headers = { Authorization: `Token ${token}` };
+      const payload = { sponsorid: sponsorId };
+      const res = await axios.post(endpoint, payload, { headers });
+      const patients = res.data;
+      const selectedPatient = patients.find(
+        (p) => p.id === Number(localStorage.getItem("selectedPatientId"))
+      );
+      setPatientData(selectedPatient);
     } catch (error) {
-      console.error("Error fetching patient + vitals:", error);
+      console.error("Error fetching patient details:", error);
     }
   };
 
   useEffect(() => {
-    fetchPatientDetailsAndVitals();
+    fetchPatientDetails();
   }, []);
 
   const getVitalColor = (label, value) => {
@@ -371,8 +335,8 @@ export default function MyLovedOnes() {
             <div style={profileBox}>
               <img
                 src={
-                  patientData?.user?.photo_view_url
-                    ? `${base_url}${patientData.user.photo_view_url}`
+                  patientData?.photo_view_url
+                    ? `${base_url}${patientData.photo_view_url}`
                     : patientdetails
                 }
                 alt="profile"
@@ -390,7 +354,7 @@ export default function MyLovedOnes() {
                   <>
                     <InfoItem
                       label="Name"
-                      value={`${patientData?.user?.first_name} ${patientData?.user?.last_name} (${patientData?.patient_id})`}
+                      value={`${patientData?.patient_name} (${patientData?.id})`}
                     />
                     <InfoItem
                       label="Condition"

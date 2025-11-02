@@ -27,12 +27,11 @@ export default function LoginScreen() {
     if (!userId || !token) return;
     try {
       const endpoint = `${base_url}/sponsorprofile_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const res = await axios.get(endpoint, { headers });
+      const res = await axios.get(endpoint);
       const sponsorList = Array.isArray(res.data) ? res.data : [];
 
       const matchedSponsor = sponsorList.find(
-        (sponsor) => sponsor.user === userId
+        (sponsor) => sponsor.user.id === userId
       );
 
       if (matchedSponsor) {
