@@ -21,7 +21,7 @@ import axios from "axios";
 
 export default function MyPatients() {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
   const [patient, setPatient] = useState(null);
@@ -73,7 +73,11 @@ export default function MyPatients() {
     }
   };
 
-  const careTakerData = JSON.parse(localStorage.getItem("careTakerData"));
+  const careTakerDataRaw = localStorage.getItem("careTakerData");
+  const careTakerData =
+    careTakerDataRaw && careTakerDataRaw !== "undefined"
+      ? JSON.parse(careTakerDataRaw)
+      : null;
   useEffect(() => {
     const fetchCareTakerPatients = async () => {
       try {
@@ -95,50 +99,39 @@ export default function MyPatients() {
 
   console.log("patient data", patient);
 
-  const vitalsData = {
-    blood_pressure: patient?.blood_pressure,
-    heart_rate: patient?.heart_rate,
-    blood_sugar: patient?.blood_sugar,
-    oxygen: patient?.oxygen,
-    temperature: patient?.temperature,
-    respiratory_rate: patient?.respiratory_rate,
-    weight: patient?.weight,
-    status: patient?.appointment_status,
-  };
-
   // Create the vitals array with color
   const vitals = [
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: patient?.blood_pressure || "N/A",
+      value: appointmentData?.blood_pressure || "N/A",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: patient?.heart_rate || "N/A",
+      value: appointmentData?.heart_rate || "N/A",
     },
     {
       icon: sugar,
       label: "Blood Sugar",
-      value: patient?.blood_sugar || "N/A",
+      value: appointmentData?.blood_sugar || "N/A",
     },
-    { icon: oxygen, label: "Oxygen", value: patient?.oxygen || "N/A" },
+    { icon: oxygen, label: "Oxygen", value: appointmentData?.oxygen || "N/A" },
     {
       icon: temperature,
       label: "Temperature",
-      value: patient?.temperature || "N/A",
+      value: appointmentData?.temperature || "N/A",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: patient?.respiratory_rate || "N/A",
+      value: appointmentData?.respiratory_rate || "N/A",
     },
-    { icon: weight, label: "Weight", value: patient?.weight || "N/A" },
+    { icon: weight, label: "Weight", value: appointmentData?.weight || "N/A" },
     {
       icon: statusIcon,
       label: "Status",
-      value: patient?.appointment_status || "N/A",
+      value: appointmentData?.appointment_status || "N/A",
     },
   ].map((v) => ({ ...v, color: getVitalColor(v.label, v.value) }));
 
@@ -152,17 +145,15 @@ export default function MyPatients() {
 
   const careTeam = {
     name:
-      patient?.caretaker?.caretaker_id ||
-      patient?.caretaker?.user?.first_name +
-        patient?.caretaker?.user?.last_name ||
-      "N/A",
+      appointmentData?.caretaker?.user?.first_name +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
     role: "Caretaker",
-    contact: patient?.caretaker?.user?.phone || "N/A",
-    nextVisit: patient?.appointment_date || "N/A",
+    contact: appointmentData?.caretaker?.user?.phone || "N/A",
+    nextVisit: appointmentData?.appointment_date || "N/A",
     frequency: "Weekly",
-    specialization: patient?.caretaker?.skillset || "General Care",
+    specialization: appointmentData?.caretaker?.skillset || "General Care",
     experience: caretaker?.caretaker_exprience || "N/A",
-    languages: patient?.caretaker?.languages || "N/A",
+    languages: appointmentData?.caretaker?.languages || "N/A",
   };
 
   const appointments = appointmentData
@@ -182,15 +173,19 @@ export default function MyPatients() {
     : [];
 
   const handlePrevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
-    );
+    if (currentMonth) {
+      setCurrentMonth(
+        new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+      );
+    }
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
-    );
+    if (currentMonth) {
+      setCurrentMonth(
+        new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+      );
+    }
   };
 
   const handleCardClick = (appointment) => {
@@ -213,11 +208,15 @@ export default function MyPatients() {
   };
 
   const monthDays = getMonthDays(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth()
+    currentMonth ? currentMonth.getFullYear() : new Date().getFullYear(),
+    currentMonth ? currentMonth.getMonth() : new Date().getMonth()
   );
 
-  const appointmentDates = appointments.map((a) => a.date.toDateString());
+  const appointmentDates = appointments.map((a) =>
+    a.date && typeof a.date.toDateString === "function"
+      ? a.date.toDateString()
+      : ""
+  );
 
   const appointmentDetails = appointmentData
     ? [
@@ -337,7 +336,10 @@ export default function MyPatients() {
             <div style={{ display: "flex", gap: "16px" }}>
               {/* Left - Avatar */}
               <img
-                src={patientdetails}
+                src={
+                  appointmentData?.caretaker?.user?.photo_view_url ||
+                  patientdetails
+                }
                 alt="Profile"
                 style={{
                   width: "60px",
@@ -914,6 +916,9 @@ export default function MyPatients() {
               {appointments
                 .filter(
                   (a) =>
+                    a.date &&
+                    typeof a.date.getMonth === "function" &&
+                    typeof a.date.getFullYear === "function" &&
                     a.date.getMonth() === currentMonth.getMonth() &&
                     a.date.getFullYear() === currentMonth.getFullYear()
                 )

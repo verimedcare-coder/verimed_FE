@@ -43,28 +43,32 @@ export default function MyAppointments() {
     window.location.href = "/";
   }
 
-  const fetchDoctorAppointments = async () => {
-    setLoading(true);
-    try {
-      const endpoint = `${base_url}/vb_doctorappoinment_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { doctorprofileid: user?.profile_id || 1 };
-      const res = await axios.post(endpoint, payload, { headers });
-      if (Array.isArray(res.data)) setDoctorAppointments(res.data);
-      else {
-        console.warn("Unexpected response:", res.data);
-        setDoctorAppointments([]);
-      }
-    } catch (error) {
-      console.error("Error fetching doctor appointments:", error);
-      setDoctorAppointments([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const doctorDataRaw = localStorage.getItem("doctorData");
+  let doctorId = null;
+  if (doctorDataRaw && doctorDataRaw !== "undefined") {
+    const doctorData = JSON.parse(doctorDataRaw);
+    doctorId = doctorData?.id || null;
+  }
+
   useEffect(() => {
+    const fetchDoctorAppointments = async () => {
+      try {
+        const endpoint = `${base_url}/vb_doctorappoinment_list/`;
+        const headers = { Authorization: `Token ${token}` };
+
+        const payload = { doctorprofileid: doctorId };
+        const res = await axios.post(endpoint, payload, { headers });
+        if (Array.isArray(res.data)) {
+          setDoctorAppointments(res.data);
+        } else {
+          console.warn("Unexpected doctor appointments response:", res.data);
+        }
+      } catch (error) {
+        console.error("Error fetching doctor appointments:", error);
+      }
+    };
     fetchDoctorAppointments();
-  }, []);
+  }, [doctorId, token]);
 
   const showMore = () =>
     setVisibleCount((prev) => Math.min(prev + 3, doctorAppointments.length));
@@ -139,7 +143,11 @@ export default function MyAppointments() {
             fontWeight: 600,
             cursor: "pointer",
           }}
-          onClick={() => navigate("/view_patient_details")}
+          onClick={() =>
+            navigate("/view_patient_details", {
+              state: { appointmentData: doctorAppointments[record.key] },
+            })
+          }
         >
           View Details
         </span>
@@ -149,7 +157,7 @@ export default function MyAppointments() {
 
   // Map API data for Table
   const dataSource = doctorAppointments.map((appt, index) => {
-    const patientUser = appt.patient?.user;
+    const patientUser = appt?.patient?.user;
     const dateTime = appt.appointment_date
       ? new Date(
           `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`
@@ -169,7 +177,9 @@ export default function MyAppointments() {
         ? `${patientUser.first_name} ${patientUser.last_name}`
         : "Unknown",
       type: appt.appointment_type || "-",
-      careTaker: appt.caretaker?.caretaker_id || "-",
+      careTaker:
+        appt.caretaker?.user?.first_name + appt?.caretaker?.user?.last_name ||
+        "-",
       time: dateTime
         ? dateTime.toLocaleTimeString([], {
             hour: "2-digit",
@@ -240,12 +250,9 @@ export default function MyAppointments() {
                 </div>
               ) : (
                 doctorAppointments.slice(0, visibleCount).map((appt) => {
-                  const patientUser = appt.patient?.user;
-                  const name = patientUser
-                    ? `${patientUser.first_name} ${patientUser.last_name}`
-                    : "Unknown";
-                  const disease = appt.patient?.medical_his_diagnosis || "";
-                  const place = appt.appointment_type || "Home Visit";
+                  const name = appt?.patient?.patient_name;
+                  const disease = appt?.appointment_type;
+                  const place = appt.appointment_place;
 
                   const dt = appt.appointment_date
                     ? new Date(
@@ -290,7 +297,11 @@ export default function MyAppointments() {
                       >
                         <img
                           alt={name}
-                          src={patientdetails}
+                          src={
+                            appt
+                              ? appt?.patient?.photo_view_url
+                              : patientdetails
+                          }
                           style={{
                             height: 65,
                             width: 65,

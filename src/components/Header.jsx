@@ -483,7 +483,7 @@ export default function HeaderComponent() {
               : []
             ).map((p) => (
               <Option key={p.id} value={p.id}>
-                {careTakerPatients ? p.patient.patient_name : p.patient_name}
+                {careTakerPatients ? p?.patient?.patient_name : p?.patient_name}
               </Option>
             ))}
           </Select>

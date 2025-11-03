@@ -19,6 +19,7 @@ import {
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { base_url } from "../constants/constants";
+import { useLocation } from "react-router-dom";
 
 const { Option } = Select;
 
@@ -46,6 +47,8 @@ export default function DoctorForm(doc_data) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const location = useLocation();
+  const { appointmentData } = location.state || {};
 
   const token = localStorage.getItem("token");
 
@@ -66,19 +69,19 @@ export default function DoctorForm(doc_data) {
       };
 
       const payloadData = {
-        doctor: doc_data.doc_report_updateid,
-        patient: values.patient,
-        sponsor: doc_data.sponsor,
-        caretaker: doc_data.caretaker,
+        doctor: appointmentData?.doc?.id,
+        patient: appointmentData?.patient?.id,
+        sponsor: appointmentData?.sponsor?.id,
+        caretaker: appointmentData?.caretaker?.id,
         patient_name: values.patient_name,
-        blood_group: values.bloodGroup,
-        bp: values.bp,
-        heart_rate: values.heartRate,
-        sugar: values.sugar,
-        oxygen: values.oxygen,
-        temperature: values.temperature,
-        respiratory_rate: values.respiratoryRate,
-        weight: values.weight,
+        blood_group: values.bloodGroup || "N/A",
+        bp: appointmentData?.blood_pressure || "N/A",
+        heart_rate: appointmentData?.heartRate || "N/A",
+        sugar: appointmentData?.blood_sugar || "N/A",
+        oxygen: appointmentData?.oxygen || "N/A",
+        temperature: appointmentData?.temperature || "N/A",
+        respiratory_rate: appointmentData?.respiratory_rate || "N/A",
+        weight: appointmentData?.weight || "N/A",
         doctor_notes: values.doctorNotes,
       };
 
@@ -106,18 +109,39 @@ export default function DoctorForm(doc_data) {
   };
 
   const careTeam = {
-    name: "Mr. Samuel N. (VM-976-324)",
-    Condition: "Hypertension, Diabetes",
-    AssignedDoctor: "Dr. Paul M.",
-    CareTaker: "Nurse Clarisse A.",
-    Conditions: "Hypertension, Type 2 Diabetes",
-    AssignedSince: "July 2025",
-    SponsorInfo: "John N. (Toronto, Canada)",
-    SponsorNumber: "+966 558441502",
-    Address: "Douala, Cameroon",
-    PrimaryCareTaker: "Clarisse Abena",
-    AssignedPhysician: "Dr. Paul Ekom",
-    CareCoordinator: "Marie T.",
+    name:
+      appointmentData?.patient?.user?.first_name +
+        " " +
+        appointmentData?.patient?.user?.last_name || "N/A",
+    Condition: appointmentData?.appointment_type,
+    AssignedDoctor:
+      appointmentData?.doctor?.user?.first_name +
+        " " +
+        appointmentData?.doctor?.user?.last_name || "N/A",
+    CareTaker:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
+    Conditions: appointmentData?.appointment_type,
+    AssignedSince: appointmentData?.appointment_date || "N/A",
+    SponsorInfo:
+      appointmentData?.sponsor?.user?.first_name +
+        " " +
+        appointmentData?.sponsor?.user?.last_name || "N/A",
+    SponsorNumber: appointmentData?.sponsor?.user?.phone || "N/A",
+    Address: appointmentData?.patient?.patient_home_address || "N/A",
+    PrimaryCareTaker:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
+    AssignedPhysician:
+      appointmentData?.doctor?.user?.first_name +
+        " " +
+        appointmentData?.doctor?.user?.last_name || "N/A",
+    CareCoordinator:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
   };
 
   return (
@@ -151,7 +175,11 @@ export default function DoctorForm(doc_data) {
           <div style={{ display: "flex", gap: "16px", width: "100%" }}>
             {/* Left - Avatar */}
             <img
-              src={patientdetails}
+              src={
+                appointmentData
+                  ? appointmentData?.patient?.photo_view_url
+                  : patientdetails
+              }
               alt="Profile"
               style={{
                 width: "60px",
@@ -545,7 +573,7 @@ export default function DoctorForm(doc_data) {
                       margin: 0,
                     }}
                   >
-                    Appointment Booked Successfully
+                    Report Submitted Successfully
                   </h2>
                 </div>
               }
@@ -558,9 +586,11 @@ export default function DoctorForm(doc_data) {
                   textAlign: "center",
                 }}
               >
-                Your appointment with Dr. Paul Ekom is scheduled for Aug 20,
-                2025 at 10:00 AM. You will receive reminders 24 hours and 1 hour
-                before your visit.
+                Your appointment with Dr.
+                {appointmentData?.patient?.user?.first_name +
+                  " " +
+                  appointmentData?.patient?.user?.last_name}{" "}
+                has been completed successfully. You'll receive email.
               </p>
             </Modal>
           </div>

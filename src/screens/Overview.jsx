@@ -100,12 +100,36 @@ export default function Overview() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchLoggedInDoctor = async () => {
+      try {
+        const endpoint = `${base_url}/doctorprofile_list/`;
+        const headers = {
+          Authorization: `Token ${token}`,
+        };
+        const res = await axios.get(endpoint, { headers });
+        const loggedInDoctor = res.data.find((doc) => doc.user.id === user?.id);
+        localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
+      } catch (error) {
+        console.log("Error fetching logged in doctor:", error);
+      }
+    };
+    fetchLoggedInDoctor();
+  }, [user, token]);
+
+  const doctorDataRaw = localStorage.getItem("doctorData");
+  let doctorId = null;
+  if (doctorDataRaw && doctorDataRaw !== "undefined") {
+    const doctorData = JSON.parse(doctorDataRaw);
+    doctorId = doctorData?.id || null;
+  }
+
   const fetchDoctorAppointments = async () => {
     try {
       const endpoint = `${base_url}/vb_doctorappoinment_list/`;
       const headers = { Authorization: `Token ${token}` };
 
-      const payload = { doctorprofileid: user?.profile_id || 1 };
+      const payload = { doctorprofileid: doctorId };
       const res = await axios.post(endpoint, payload, { headers });
       if (Array.isArray(res.data)) {
         setDoctorAppointments(res.data);
@@ -652,9 +676,11 @@ export default function Overview() {
     // Prepare CSV header and rows
     let csvContent = "Patient Details\n";
     csvContent += `Name,Patient ID,Condition,Assigned Doctor,Care Taker\n`;
-    csvContent += `"${patientData?.patient_name}","${patientData?.id}","${
-      patientData?.medical_his_diagnosis || "N/A"
-    }","${patientData?.caretaker || "N/A"}"\n\n`;
+    csvContent += `"${patientData && patientData?.patient_name}","${
+      patientData && patientData?.id
+    }","${patientData && patientData?.medical_his_diagnosis}","${
+      patientData && patientData?.caretaker
+    }"\n\n`;
 
     csvContent += "Vitals\n";
     csvContent += "Parameter,Value\n";
@@ -711,34 +737,41 @@ export default function Overview() {
   const CaretakerAppointmentCard = ({ appointment }) => (
     <div className="appointment-card">
       <img
-        src={appointment.patient?.photo_view_url}
-        alt={appointment.patient?.patient_name}
+        src={appointment?.patient?.photo_view_url || ""}
+        alt={appointment?.patient?.patient_name || "Unknown"}
         className="patient-photo"
         style={{ width: 80, height: 80, borderRadius: "50%" }}
       />
-      <h3>{appointment?.patient?.patient_name}</h3>
+      <h3>{appointment?.patient?.patient_name || "Unknown"}</h3>
       <p>
-        <strong>Department:</strong> {appointment?.dep?.dep_name}
+        <strong>Department:</strong> {appointment?.dep?.dep_name || "Unknown"}
       </p>
       <p>
-        <strong>Appointment Type:</strong> {appointment?.appointment_type}
+        <strong>Appointment Type:</strong>{" "}
+        {appointment?.appointment_type || "Unknown"}
       </p>
       <p>
-        <strong>Care Taker Notes:</strong> {appointment?.care_taker_notes}
+        <strong>Care Taker Notes:</strong> {appointment?.care_taker_notes || ""}
       </p>
       <p>
         <strong>Preferred Dates:</strong>{" "}
-        {appointment?.preferred_dates.join(", ")}
+        {Array.isArray(appointment?.preferred_dates)
+          ? appointment.preferred_dates.join(", ")
+          : "Unknown"}
       </p>
       <p>
         <strong>Preferred Times:</strong>{" "}
-        {appointment?.preferred_times.join(", ")}
+        {Array.isArray(appointment?.preferred_times)
+          ? appointment.preferred_times.join(", ")
+          : "Unknown"}
       </p>
       {/* Add more fields as needed */}
     </div>
   );
 
-  const userData = JSON.parse(localStorage.getItem("userData"));
+  const userDataRaw = localStorage.getItem("userData");
+  const userData =
+    userDataRaw && userDataRaw !== "undefined" ? JSON.parse(userDataRaw) : null;
 
   useEffect(() => {
     const fetchCareTakerPatients = async () => {
@@ -759,7 +792,11 @@ export default function Overview() {
     fetchCareTakerPatients();
   }, [userData]);
 
-  const careTakerData = JSON.parse(localStorage.getItem("careTakerData"));
+  const careTakerDataRaw = localStorage.getItem("careTakerData");
+  const careTakerData =
+    careTakerDataRaw && careTakerDataRaw !== "undefined"
+      ? JSON.parse(careTakerDataRaw)
+      : null;
   useEffect(() => {
     const fetchCareTakerPatients = async () => {
       try {
@@ -841,11 +878,15 @@ export default function Overview() {
                       <>
                         <InfoItem
                           label="Name"
-                          value={`${patientData?.patient_name} (${patientData?.id})`}
+                          value={`${
+                            patientData && patientData?.patient_name
+                          } (${patientData?.id})`}
                         />
                         <InfoItem
                           label="Condition"
-                          value={patientData?.medical_his_diagnosis}
+                          value={
+                            patientData && patientData?.medical_his_diagnosis
+                          }
                         />
                         {/* <InfoItem
                           label="Assigned Doctor"
@@ -1403,7 +1444,7 @@ export default function Overview() {
             </div>
           )}
 
-          {/* Today's Schedule */}
+          {/* Today's Schedule Doctor */}
           {user?.user_role === "doctor" && (
             <div style={{ width: "100%" }}>
               <div
@@ -1444,21 +1485,14 @@ export default function Overview() {
               >
                 {doctorAppointments.slice(0, visibleCount).map((appt) => {
                   const isApiItem = !!appt.appointment_date || !!appt.patient;
-                  const patientUser = isApiItem ? appt.patient?.user : null;
-                  const name = isApiItem
-                    ? `${patientUser?.first_name || ""} ${
-                        patientUser?.last_name || ""
-                      }`.trim() || "Unknown"
-                    : appt.name;
-                  const disease = isApiItem
-                    ? appt.patient?.medical_his_diagnosis || ""
-                    : appt.disease;
+                  const name = appt?.patient?.patient_name;
+                  const disease = appt?.appointment_type;
                   const place = isApiItem
                     ? appt.appointment_type || "Home Visit"
                     : appt.place;
 
-                  let displayDate = appt.date || "";
-                  let displayTime = appt.time || "";
+                  let displayDate = appt?.appointment_date || "";
+                  let displayTime = appt?.appointment_time || "";
                   if (isApiItem && appt.appointment_date) {
                     const dt = new Date(
                       `${appt.appointment_date}T${
@@ -1498,7 +1532,11 @@ export default function Overview() {
                       >
                         <img
                           alt={name}
-                          src={patientdetails}
+                          src={
+                            appt
+                              ? appt?.patient?.photo_view_url
+                              : patientdetails
+                          }
                           style={{
                             height: 65,
                             width: 65,
@@ -1601,14 +1639,14 @@ export default function Overview() {
 
                           <div>
                             <p style={{ color: "#2E2E2E", fontWeight: "600" }}>
-                              {isApiItem ? appt.amount || "—" : appt.amount}
+                              {isApiItem ? appt?.amount || "—" : appt?.amount}
                             </p>
                             <p style={{ color: "#7A7D84", fontSize: 12 }}>
                               {isApiItem
-                                ? appt.subscription_plan ||
-                                  appt.subscription ||
+                                ? appt?.subscription_plan ||
+                                  appt?.subscription ||
                                   "—"
-                                : appt.subscription}
+                                : appt?.subscription}
                             </p>
                           </div>
                         </div>

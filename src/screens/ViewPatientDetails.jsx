@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import bloodPressure from "../assets/icons/blood-pressure.svg";
 import heartRate from "../assets/icons/heart-rate.svg";
 import oxygen from "../assets/icons/oxygen.svg";
@@ -40,45 +40,89 @@ function SectionHeader({ title, children }) {
 
 export default function ViewPatientDetails() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { appointmentData } = location.state || {};
+
   const vitals = [
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: "100/67 mmHg",
+      value: appointmentData?.blood_pressure || "N/A",
       color: "#27AE60",
     },
-    { icon: heartRate, label: "Heart Rate", value: "89 bpm", color: "#EF1E1E" },
-    { icon: sugar, label: "Sugar", value: "180", color: "#27AE60" },
-    { icon: oxygen, label: "Oxygen", value: "96", color: "#27AE60" },
+    {
+      icon: heartRate,
+      label: "Heart Rate",
+      value: appointmentData?.heartRate || "N/A",
+      color: "#EF1E1E",
+    },
+    {
+      icon: sugar,
+      label: "Sugar",
+      value: appointmentData?.blood_sugar || "N/A",
+      color: "#27AE60",
+    },
+    {
+      icon: oxygen,
+      label: "Oxygen",
+      value: appointmentData?.oxygen || "N/A",
+      color: "#27AE60",
+    },
     {
       icon: temperature,
       label: "Temperature",
-      value: "101 °C",
+      value: appointmentData?.temperature || "N/A",
       color: "#27AE60",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: "24 rpm",
+      value: appointmentData?.respiratory_rate || "N/A",
       color: "#EF1E1E",
     },
-    { icon: weight, label: "Weight", value: "100 kg", color: "#27AE60" },
+    {
+      icon: weight,
+      label: "Weight",
+      value: appointmentData?.weight || "N/A",
+      color: "#27AE60",
+    },
     { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
   ];
 
   const careTeam = {
-    name: "Mr. Samuel N. (VM-976-324)",
-    Condition: "Hypertension, Diabetes",
-    AssignedDoctor: "Dr. Paul M.",
-    CareTaker: "Nurse Clarisse A.",
-    Conditions: "Hypertension, Type 2 Diabetes",
-    AssignedSince: "July 2025",
-    SponsorInfo: "John N. (Toronto, Canada)",
-    SponsorNumber: "+966 558441502",
-    Address: "Douala, Cameroon",
-    PrimaryCareTaker: "Clarisse Abena",
-    AssignedPhysician: "Dr. Paul Ekom",
-    CareCoordinator: "Marie T.",
+    name:
+      appointmentData?.patient?.user?.first_name +
+        " " +
+        appointmentData?.patient?.user?.last_name || "N/A",
+    Condition: appointmentData?.appointment_type,
+    AssignedDoctor:
+      appointmentData?.doctor?.user?.first_name +
+        " " +
+        appointmentData?.doctor?.user?.last_name || "N/A",
+    CareTaker:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
+    Conditions: appointmentData?.appointment_type,
+    AssignedSince: appointmentData?.appointment_date || "N/A",
+    SponsorInfo:
+      appointmentData?.sponsor?.user?.first_name +
+        " " +
+        appointmentData?.sponsor?.user?.last_name || "N/A",
+    SponsorNumber: appointmentData?.sponsor?.user?.phone || "N/A",
+    Address: appointmentData?.patient?.patient_home_address || "N/A",
+    PrimaryCareTaker:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
+    AssignedPhysician:
+      appointmentData?.doctor?.user?.first_name +
+        " " +
+        appointmentData?.doctor?.user?.last_name || "N/A",
+    CareCoordinator:
+      appointmentData?.caretaker?.user?.first_name +
+        " " +
+        appointmentData?.caretaker?.user?.last_name || "N/A",
   };
 
   const medicalHistory = [
@@ -270,14 +314,20 @@ export default function ViewPatientDetails() {
             <SectionHeader title="My details">
               <PrimaryBtn
                 name="submit reports"
-                onClick={() => navigate("/doctor_form")}
+                onClick={() =>
+                  navigate("/doctor_form", { state: { appointmentData } })
+                }
               />
             </SectionHeader>
             <div style={{ display: "flex", gap: "16px" }}>
               {/* Left - Avatar */}
 
               <img
-                src={patientdetails}
+                src={
+                  appointmentData
+                    ? appointmentData?.patient?.photo_view_url
+                    : patientdetails
+                }
                 alt="Profile"
                 style={{
                   width: "60px",
