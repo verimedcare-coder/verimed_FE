@@ -520,6 +520,41 @@ export default function Appointments() {
     .filter((a) => a.date)
     .map((a) => a.date.toDateString());
 
+  const assignAppointment = async (values) => {
+    const bookappoinment_data = {
+      update_appoinmentid: selectedAppointment?.id,
+      sponsor: selectedAppointment?.fullData?.sponsor?.id,
+      dep: selectedAppointment?.fullData?.dep?.id,
+      doc: values?.docId,
+      patient: selectedAppointment?.fullData?.patient?.id,
+      caretaker: selectedAppointment?.fullData?.caretaker?.id,
+      appointment_date: values.appointment_date,
+      appointment_time: values.appointment_time,
+      appointment_type: selectedAppointment.appointment_type,
+      treatment_performed: selectedAppointment.issue,
+      height: `${values.height} cm`,
+      weight: `${values.weight} kg`,
+      blood_pressure: `${values.blood_pressure} mmHg`,
+      blood_sugar: `${values.blood_sugar} mg/dL`,
+      care_taker_notes: values.care_taker_notes || "",
+    };
+    try {
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const headers = { Authorization: `Token ${token}` };
+      const formData = new FormData();
+      formData.append(
+        "bookappoinment_data",
+        JSON.stringify(bookappoinment_data)
+      );
+      await axios.patch(endpoint, formData, { headers });
+      message.success("Appointment booked successfully!");
+      handleCloseModal();
+      fetchAppointments();
+    } catch (error) {
+      message.error("Failed to book appointment.");
+    }
+  };
+
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
       <div style={{ width: "240px", flexShrink: 0 }}>
@@ -703,41 +738,7 @@ export default function Appointments() {
                       >
                         Book Appointment
                       </h3>
-                      <Form
-                        layout="vertical"
-                        onFinish={async (values) => {
-                          const bookappoinment_data = {
-                            update_appoinmentid: selectedAppointment?.id,
-                            sponsor: selectedAppointment?.fullData?.sponsor?.id,
-                            dep: selectedAppointment?.fullData?.dep?.id,
-                            doc: values?.docId,
-                            patient: selectedAppointment?.fullData?.patient?.id,
-                            caretaker:
-                              selectedAppointment?.fullData?.caretaker?.id,
-                            appointment_date: values.appointment_date,
-                            appointment_time: values.appointment_time,
-                            appointment_type:
-                              selectedAppointment.appointment_type,
-                            treatment_performed: selectedAppointment.issue,
-                            care_taker_notes: values.care_taker_notes || "",
-                          };
-                          try {
-                            const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-                            const headers = { Authorization: `Token ${token}` };
-                            const formData = new FormData();
-                            formData.append(
-                              "bookappoinment_data",
-                              JSON.stringify(bookappoinment_data)
-                            );
-                            await axios.patch(endpoint, formData, { headers });
-                            message.success("Appointment booked successfully!");
-                            handleCloseModal();
-                            fetchAppointments();
-                          } catch (error) {
-                            message.error("Failed to book appointment.");
-                          }
-                        }}
-                      >
+                      <Form layout="vertical" onFinish={assignAppointment}>
                         <Form.Item
                           name="docId"
                           label="Doctor"
@@ -812,6 +813,24 @@ export default function Appointments() {
                               ))}
                           </Select>
                         </Form.Item>
+
+                        {/* Vitals / Test inputs inserted here */}
+                        <Form.Item name="height" label="Height">
+                          <Input placeholder="Enter height (e.g., 170 cm)" />
+                        </Form.Item>
+
+                        <Form.Item name="weight" label="Weight">
+                          <Input placeholder="Enter weight (e.g., 70 kg)" />
+                        </Form.Item>
+
+                        <Form.Item name="blood_pressure" label="Blood Pressure">
+                          <Input placeholder="Enter blood pressure (e.g., 120/80)" />
+                        </Form.Item>
+
+                        <Form.Item name="blood_sugar" label="Blood Sugar">
+                          <Input placeholder="Enter blood sugar (e.g., 90 mg/dL)" />
+                        </Form.Item>
+
                         <Form.Item
                           name="care_taker_notes"
                           label="Care Taker Notes"

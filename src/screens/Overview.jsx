@@ -711,28 +711,28 @@ export default function Overview() {
   const CaretakerAppointmentCard = ({ appointment }) => (
     <div className="appointment-card">
       <img
-        src={appointment.patient.photo_view_url}
-        alt={appointment.patient.patient_name}
+        src={appointment.patient?.photo_view_url}
+        alt={appointment.patient?.patient_name}
         className="patient-photo"
         style={{ width: 80, height: 80, borderRadius: "50%" }}
       />
-      <h3>{appointment.patient.patient_name}</h3>
+      <h3>{appointment?.patient?.patient_name}</h3>
       <p>
-        <strong>Department:</strong> {appointment.dep.dep_name}
+        <strong>Department:</strong> {appointment?.dep?.dep_name}
       </p>
       <p>
-        <strong>Appointment Type:</strong> {appointment.appointment_type}
+        <strong>Appointment Type:</strong> {appointment?.appointment_type}
       </p>
       <p>
-        <strong>Care Taker Notes:</strong> {appointment.care_taker_notes}
+        <strong>Care Taker Notes:</strong> {appointment?.care_taker_notes}
       </p>
       <p>
         <strong>Preferred Dates:</strong>{" "}
-        {appointment.preferred_dates.join(", ")}
+        {appointment?.preferred_dates.join(", ")}
       </p>
       <p>
         <strong>Preferred Times:</strong>{" "}
-        {appointment.preferred_times.join(", ")}
+        {appointment?.preferred_times.join(", ")}
       </p>
       {/* Add more fields as needed */}
     </div>

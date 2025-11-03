@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import bloodPressure from "../assets/icons/blood-pressure.svg";
@@ -16,18 +16,21 @@ import { useNavigate } from "react-router-dom";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
 import { Empty } from "antd";
+import { base_url } from "../constants/constants";
+import axios from "axios";
 
 export default function MyPatients() {
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+  const [patient, setPatient] = useState(null);
+
+  const token = localStorage.getItem("token");
 
   const location = useLocation();
   const { appointmentData } = location.state || {};
   const caretaker = appointmentData?.caretaker || {};
-
-  console.log("Received Patient Data:", appointmentData);
 
   const getVitalColor = (label, value) => {
     if (!value || value === "N/A") return "#BDBDBD";
@@ -70,15 +73,37 @@ export default function MyPatients() {
     }
   };
 
+  const careTakerData = JSON.parse(localStorage.getItem("careTakerData"));
+  useEffect(() => {
+    const fetchCareTakerPatients = async () => {
+      try {
+        const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+        const headers = { Authorization: `Token ${token}` };
+        const res = await axios.get(endpoint, { headers });
+        const data = res.data;
+        const patients = Array.isArray(data)
+          ? data.find((appt) => appt?.caretaker?.id === careTakerData?.id)
+          : [];
+
+        setPatient(patients);
+      } catch (error) {
+        console.log("Error fetching care taker patients:", error);
+      }
+    };
+    fetchCareTakerPatients();
+  }, [careTakerData, token]);
+
+  console.log("patient data", patient);
+
   const vitalsData = {
-    blood_pressure: appointmentData.blood_pressure,
-    heart_rate: appointmentData.heart_rate,
-    blood_sugar: appointmentData.blood_sugar,
-    oxygen: appointmentData.oxygen,
-    temperature: appointmentData.temperature,
-    respiratory_rate: appointmentData.respiratory_rate,
-    weight: appointmentData.weight,
-    status: appointmentData.appointment_status,
+    blood_pressure: patient?.blood_pressure,
+    heart_rate: patient?.heart_rate,
+    blood_sugar: patient?.blood_sugar,
+    oxygen: patient?.oxygen,
+    temperature: patient?.temperature,
+    respiratory_rate: patient?.respiratory_rate,
+    weight: patient?.weight,
+    status: patient?.appointment_status,
   };
 
   // Create the vitals array with color
@@ -86,31 +111,35 @@ export default function MyPatients() {
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: vitalsData.blood_pressure || "N/A",
+      value: patient?.blood_pressure || "N/A",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: vitalsData.heart_rate || "N/A",
+      value: patient?.heart_rate || "N/A",
     },
     {
       icon: sugar,
       label: "Blood Sugar",
-      value: vitalsData.blood_sugar || "N/A",
+      value: patient?.blood_sugar || "N/A",
     },
-    { icon: oxygen, label: "Oxygen", value: vitalsData.oxygen || "N/A" },
+    { icon: oxygen, label: "Oxygen", value: patient?.oxygen || "N/A" },
     {
       icon: temperature,
       label: "Temperature",
-      value: vitalsData.temperature || "N/A",
+      value: patient?.temperature || "N/A",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: vitalsData.respiratory_rate || "N/A",
+      value: patient?.respiratory_rate || "N/A",
     },
-    { icon: weight, label: "Weight", value: vitalsData.weight || "N/A" },
-    { icon: statusIcon, label: "Status", value: vitalsData.status || "N/A" },
+    { icon: weight, label: "Weight", value: patient?.weight || "N/A" },
+    {
+      icon: statusIcon,
+      label: "Status",
+      value: patient?.appointment_status || "N/A",
+    },
   ].map((v) => ({ ...v, color: getVitalColor(v.label, v.value) }));
 
   const dotStyle = (color) => ({
@@ -122,28 +151,32 @@ export default function MyPatients() {
   });
 
   const careTeam = {
-    name: caretaker?.caretaker_id || caretaker?.user || "N/A",
+    name:
+      patient?.caretaker?.caretaker_id ||
+      patient?.caretaker?.user?.first_name +
+        patient?.caretaker?.user?.last_name ||
+      "N/A",
     role: "Caretaker",
-    contact: caretaker?.phone || "N/A",
-    nextVisit: appointmentData?.appointment_date || "N/A",
+    contact: patient?.caretaker?.user?.phone || "N/A",
+    nextVisit: patient?.appointment_date || "N/A",
     frequency: "Weekly",
-    specialization: caretaker?.skillset || "General Care",
+    specialization: patient?.caretaker?.skillset || "General Care",
     experience: caretaker?.caretaker_exprience || "N/A",
-    languages: caretaker?.languages || "N/A",
+    languages: patient?.caretaker?.languages || "N/A",
   };
 
   const appointments = appointmentData
     ? [
         {
-          id: appointmentData.id,
-          doctor: appointmentData.doc?.user
-            ? `${appointmentData.doc.user.first_name} ${appointmentData.doc.user.last_name}`
+          id: patient?.id,
+          doctor: patient?.doc?.user?.id
+            ? `${patient?.doc?.user?.first_name} ${patient?.doc?.user?.last_name}`
             : "N/A",
-          date: appointmentData.appointment_date
-            ? new Date(appointmentData.appointment_date)
+          date: patient?.appointment_date
+            ? new Date(patient?.appointment_date)
             : null,
-          time: appointmentData.appointment_time || "N/A",
-          type: appointmentData.appointment_type || "N/A",
+          time: patient?.appointment_time || "N/A",
+          type: patient?.appointment_type || "N/A",
         },
       ]
     : [];
