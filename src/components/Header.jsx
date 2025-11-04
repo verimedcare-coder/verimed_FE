@@ -491,7 +491,7 @@ export default function HeaderComponent() {
           {/* 🟩 Enroll Loved One */}
           <Primarybtn
             name="Enroll Patient" //add dropdown => enroll yourself; enroll your loved one
-            onClick={() => setIsModalVisible(true)}
+            onClick={() => setIsSecondModalVisible(true)}
           />
 
           {/* <Input placeholder="Search"
@@ -559,7 +559,7 @@ export default function HeaderComponent() {
         </Space>
       </Header>
 
-      <Modal
+      {/* <Modal
         open={isModalVisible}
         title="Enroll Loved One"
         onCancel={() => setIsModalVisible(false)}
@@ -567,7 +567,7 @@ export default function HeaderComponent() {
         centered
       >
         <UserForm onFinish={handleEnrollSubmit} />
-      </Modal>
+      </Modal> */}
 
       {/* patient update */}
       <Modal
