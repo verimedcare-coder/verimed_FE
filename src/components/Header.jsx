@@ -349,15 +349,27 @@ export default function HeaderComponent() {
           : "";
 
       const updateData = {
+        patientName: editedData.patientName || "",
+        age: editedData.age || "",
+        patientEmail: editedData.patientEmail || "",
+        patientPhone: editedData.patientPhone || "",
+        bp: editedData.bp || "",
+        heartRate: editedData.heartRate || "",
+        sugar: editedData.sugar || "",
+        oxygen: editedData.oxygen || "",
+        temperature: editedData.temperature || "",
+        respiratoryRate: editedData.respiratoryRate || "",
+        height: editedData.height || "",
+        weight: editedData.weight || "",
         sponsorid: storedSponsorId || "",
-        caretakerid: editedData.caretakerid || "",
+        // caretakerid: editedData.caretakerid || "",
         patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
         blood_group: editedData.blood_group || "",
         patient_home_address: editedData.patient_home_address || "",
         primary_language: editedData.primary_language || "",
         religion: editedData.religion || "",
-        escalate_to_physician: editedData.escalate_to_physician || "",
+        // escalate_to_physician: editedData.escalate_to_physician || "",
         emer_con_name: editedData.emer_con_name || "",
         emer_con_relation: editedData.emer_con_relation || "",
         emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
@@ -589,6 +601,164 @@ export default function HeaderComponent() {
           <h3 style={sectionTitle}>1. Personal Information</h3>
           <div style={twoColGrid}>
             <div>
+              <label style={labelStyle}>Patient Name</label>
+              <Input
+                placeholder="Enter Patient Name"
+                value={editedData.patientName}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    patientName: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Age</label>
+              <Input
+                placeholder="Enter Age"
+                value={editedData.age}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    age: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Patient Email Address</label>
+              <Input
+                placeholder="Enter Email Address"
+                type="email"
+                value={editedData.patientEmail}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    patientEmail: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Patient Phone Number</label>
+              <Input
+                placeholder="Enter Patient Phone Number"
+                type="tel"
+                value={editedData.patientPhone}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    patientPhone: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Blood Pressure</label>
+              <Input
+                placeholder="Enter Blood Pressure"
+                value={editedData.bp}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    bp: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Heart Rate</label>
+              <Input
+                placeholder="Enter Heart Rate"
+                value={editedData.heartRate}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    heartRate: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Blood Sugar</label>
+              <Input
+                placeholder="Enter Blood Sugar"
+                value={editedData.sugar}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    sugar: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Oxygen</label>
+              <Input
+                placeholder="Enter Oxygen"
+                value={editedData.oxygen}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    oxygen: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Temperature</label>
+              <Input
+                placeholder="Enter Temperature"
+                value={editedData.temperature}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    temperature: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Respiratory Rate</label>
+              <Input
+                placeholder="Enter Respiratory Rate"
+                value={editedData.respiratoryRate}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    respiratoryRate: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Height</label>
+              <Input
+                placeholder="Enter Height"
+                value={editedData.height}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    height: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Weight</label>
+              <Input
+                placeholder="Enter Weight"
+                value={editedData.weight}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    weight: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
               <label style={labelStyle}>Date of Birth</label>
               <DatePicker
                 style={{ width: "100%" }}
@@ -680,7 +850,7 @@ export default function HeaderComponent() {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label style={labelStyle}>Escalate to Physician?</label>
               <Radio.Group
                 value={editedData.escalate_to_physician}
@@ -694,9 +864,9 @@ export default function HeaderComponent() {
                 <Radio value="yes">Yes</Radio>
                 <Radio value="no">No</Radio>
               </Radio.Group>
-            </div>
+            </div> */}
 
-            <div>
+            {/* <div>
               <label style={labelStyle}>Caretaker</label>
               <Select
                 placeholder="Select caretaker"
@@ -711,7 +881,7 @@ export default function HeaderComponent() {
                   </Select.Option>
                 ))}
               </Select>
-            </div>
+            </div> */}
           </div>
 
           {/* ---------- SECTION 2: EMERGENCY CONTACT ---------- */}
