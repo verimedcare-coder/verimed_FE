@@ -502,7 +502,7 @@ export default function HeaderComponent() {
 
           {/* 🟩 Enroll Loved One */}
           <Primarybtn
-            name="Enroll Patient" //add dropdown => enroll yourself; enroll your loved one
+            name="Enroll Patient"
             onClick={() => setIsSecondModalVisible(true)}
           />
 

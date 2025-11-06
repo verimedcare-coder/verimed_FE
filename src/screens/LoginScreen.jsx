@@ -291,7 +291,7 @@ export default function LoginScreen() {
               onFinish={onFinish}
             >
               <Form.Item
-                label="User Name"
+                label="Username"
                 name="username"
                 rules={[{ required: true, message: "Please enter username" }]}
               >
