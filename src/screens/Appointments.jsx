@@ -575,10 +575,10 @@ export default function Appointments() {
       appointment_time: values.appointment_time,
       appointment_type: selectedAppointment.appointment_type,
       treatment_performed: selectedAppointment.issue,
-      height: `${values.height} cm`,
-      weight: `${values.weight} kg`,
-      blood_pressure: `${values.blood_pressure} mmHg`,
-      blood_sugar: `${values.blood_sugar} mg/dL`,
+      // height: `${values.height} cm`,
+      // weight: `${values.weight} kg`,
+      // blood_pressure: `${values.blood_pressure} mmHg`,
+      // blood_sugar: `${values.blood_sugar} mg/dL`,
       care_taker_notes: values.care_taker_notes || "",
     };
     try {
@@ -855,23 +855,6 @@ export default function Appointments() {
                                 </Option>
                               ))}
                           </Select>
-                        </Form.Item>
-
-                        {/* Vitals / Test inputs inserted here */}
-                        <Form.Item name="height" label="Height">
-                          <Input placeholder="Enter height (e.g., 170 cm)" />
-                        </Form.Item>
-
-                        <Form.Item name="weight" label="Weight">
-                          <Input placeholder="Enter weight (e.g., 70 kg)" />
-                        </Form.Item>
-
-                        <Form.Item name="blood_pressure" label="Blood Pressure">
-                          <Input placeholder="Enter blood pressure (e.g., 120/80)" />
-                        </Form.Item>
-
-                        <Form.Item name="blood_sugar" label="Blood Sugar">
-                          <Input placeholder="Enter blood sugar (e.g., 90 mg/dL)" />
                         </Form.Item>
 
                         <Form.Item

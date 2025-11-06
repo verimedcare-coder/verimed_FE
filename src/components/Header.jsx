@@ -133,6 +133,19 @@ export default function HeaderComponent() {
     localStorage.getItem("careTakerPatients")
   );
 
+  const items = [
+    { key: "1", label: "Enroll Yourself" },
+    { key: "2", label: "Enroll Your Loved One" },
+  ];
+
+  const handleMenuClick = (e) => {
+    if (e.key === "1") {
+      setIsSecondModalVisible(true);
+    } else if (e.key === "2") {
+      setIsSecondModalVisible(true);
+    }
+  };
+
   const languageMenu = (
     <Menu
       onClick={(e) => handleLanguageChange(e.key)}
@@ -203,19 +216,39 @@ export default function HeaderComponent() {
     }
   };
 
+  // const handlePatientChange = (value) => {
+  //   setSelectedPatient(value);
+  //   localStorage.setItem("selectedPatientId", value);
+  //   showPatientDetails(value);
+  //   const selectedPatientObj = patients.find((p) => p.id === value);
+  //   if (selectedPatientObj) {
+  //     localStorage.setItem(
+  //       "selectedPatientData",
+  //       JSON.stringify(selectedPatientObj)
+  //     );
+  //   } else {
+  //     localStorage.removeItem("selectedPatientData");
+  //   }
+  // };
+
   const handlePatientChange = (value) => {
     setSelectedPatient(value);
     localStorage.setItem("selectedPatientId", value);
-    showPatientDetails(value);
-    const selectedPatientObj = patients.find((p) => p.id === value);
+
+    const selectedPatientObj =
+      patients.find((p) => p.id === value) ||
+      (careTakerPatients || []).find((p) => p.id === value);
+
     if (selectedPatientObj) {
       localStorage.setItem(
         "selectedPatientData",
         JSON.stringify(selectedPatientObj)
       );
-    } else {
-      localStorage.removeItem("selectedPatientData");
+
+      showPatientDetails(value);
     }
+
+    setEditedData(selectedPatientObj || {});
   };
 
   useEffect(() => {
@@ -229,11 +262,24 @@ export default function HeaderComponent() {
           sponsorid: localStorage.getItem("sponsorProfileId"),
         };
         const res = await axios.post(endpoint, payload, { headers });
-        setPatients(res.data || []);
+        const fetchedPatients = res.data || [];
+        setPatients(fetchedPatients);
+
+        if (fetchedPatients.length > 0) {
+          const firstPatientId = fetchedPatients[0].id;
+          setSelectedPatient(firstPatientId);
+          localStorage.setItem("selectedPatientId", firstPatientId);
+          localStorage.setItem(
+            "selectedPatientData",
+            JSON.stringify(fetchedPatients[0])
+          );
+          showPatientDetails(firstPatientId);
+        }
       } catch (error) {
         console.log("Error fetching sponsor patients:", error);
       }
     };
+
     fetchSponsorPatients();
   }, []);
 
@@ -303,7 +349,7 @@ export default function HeaderComponent() {
       }
 
       localStorage.setItem("enrolledUsername", matchedUser.username);
-      console.log("✅ Username:", matchedUser.username);
+      console.log("Username:", matchedUser.username);
 
       const profileRes = await axios.get(`${base_url}/patientprofile_list/`, {
         headers: { Authorization: `Token ${token}` },
@@ -314,7 +360,7 @@ export default function HeaderComponent() {
       );
 
       if (matchedProfile) {
-        console.log("✅ Sponsor Profile ID:", matchedProfile.id);
+        console.log(" Sponsor Profile ID:", matchedProfile.id);
         localStorage.setItem("patient_profile_updateid", matchedProfile.id);
         setNewUser({
           username: matchedUser.username,
@@ -348,28 +394,29 @@ export default function HeaderComponent() {
           ? new Date(editedData.patient_dob).toISOString().split("T")[0]
           : "";
 
-      const updateData = {
-        patientName: editedData.patientName || "",
+      const patientprofile_data = {
+        patient_name: editedData.patientName || "",
         age: editedData.age || "",
-        patientEmail: editedData.patientEmail || "",
-        patientPhone: editedData.patientPhone || "",
-        bp: editedData.bp || "",
-        heartRate: editedData.heartRate || "",
-        sugar: editedData.sugar || "",
+        email: editedData.patientEmail || "",
+        phone: editedData.patientPhone || "",
+        country_code: editedData.country_code || "",
+        blood_pressure: editedData.bp || "",
+        heart_rate: editedData.heartRate || "",
+        blood_sugar: editedData.sugar || "",
         oxygen: editedData.oxygen || "",
         temperature: editedData.temperature || "",
-        respiratoryRate: editedData.respiratoryRate || "",
+        respiratory_rate: editedData.respiratoryRate || "",
         height: editedData.height || "",
         weight: editedData.weight || "",
         sponsorid: storedSponsorId || "",
-        // caretakerid: editedData.caretakerid || "",
+        caretakerid: editedData.caretakerid || "",
         patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
         blood_group: editedData.blood_group || "",
         patient_home_address: editedData.patient_home_address || "",
         primary_language: editedData.primary_language || "",
         religion: editedData.religion || "",
-        // escalate_to_physician: editedData.escalate_to_physician || "",
+        escalate_to_physician: editedData.escalate_to_physician || "",
         emer_con_name: editedData.emer_con_name || "",
         emer_con_relation: editedData.emer_con_relation || "",
         emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
@@ -426,19 +473,40 @@ export default function HeaderComponent() {
         goals_term_membership: editedData.goals_term_membership || "",
       };
 
-      formData.append(keyName, JSON.stringify(updateData));
+      // ✅ Append main JSON
+      formData.append(keyName, JSON.stringify(patientprofile_data));
 
+      // ✅ Append uploaded files if present
       if (editedData.patient_upload_files?.length > 0) {
         editedData.patient_upload_files.forEach((file) =>
           formData.append("patient_upload_files", file)
         );
       }
 
+      // ✅ Append file metadata safely
+      if (Array.isArray(editedData.patient_files_name)) {
+        formData.append(
+          "patient_files_name",
+          editedData.patient_files_name.join(",")
+        );
+      } else if (editedData.patient_files_name) {
+        formData.append("patient_files_name", editedData.patient_files_name);
+      }
+
+      if (Array.isArray(editedData.patient_files_ids)) {
+        formData.append(
+          "patient_files_ids",
+          editedData.patient_files_ids.join(",")
+        );
+      } else if (editedData.patient_files_ids) {
+        formData.append("patient_files_ids", editedData.patient_files_ids);
+      }
+
+      // ✅ Make API call
       const endpoint = `${base_url}/patientprofile_create_update/`;
       await axios.patch(endpoint, formData, {
         headers: {
           Authorization: `Token ${token}`,
-          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -482,7 +550,7 @@ export default function HeaderComponent() {
         {/* Right Section */}
         <Space size="middle" align="center">
           {/* Patient dropdown */}
-          <Select
+          {/* <Select
             value={selectedPatient}
             onChange={handlePatientChange}
             style={{ width: 200, borderRadius: 6 }}
@@ -498,13 +566,35 @@ export default function HeaderComponent() {
                 {careTakerPatients ? p?.patient?.patient_name : p?.patient_name}
               </Option>
             ))}
+          </Select> */}
+          <Select
+            value={selectedPatient}
+            onChange={handlePatientChange}
+            style={{ width: 200, borderRadius: 6 }}
+            placeholder="Select Patient"
+          >
+            {(Array.isArray(patients) && patients.length > 0
+              ? patients
+              : Array.isArray(careTakerPatients) && careTakerPatients.length > 0
+              ? careTakerPatients
+              : []
+            ).map((p) => (
+              <Option key={p.id} value={p.id}>
+                {p.patient_name ||
+                  p?.patient?.patient_name ||
+                  `Patient ${p.id}`}
+              </Option>
+            ))}
           </Select>
 
           {/* 🟩 Enroll Loved One */}
-          <Primarybtn
-            name="Enroll Patient"
-            onClick={() => setIsSecondModalVisible(true)}
-          />
+          <Dropdown
+            menu={{ items, onClick: handleMenuClick }}
+            trigger={["click"]}
+            placement="bottomLeft"
+          >
+            <Primarybtn name="Enroll Patient" />
+          </Dropdown>
 
           {/* <Input placeholder="Search"
            prefix={<SearchOutlined />} 
@@ -640,6 +730,18 @@ export default function HeaderComponent() {
                 }
               />
             </div>
+
+            <div>
+              <label style={labelStyle}>Country Code</label>
+              <Input
+                placeholder="+91"
+                value={editedData.country_code}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, country_code: e.target.value })
+                }
+              />
+            </div>
+
             <div>
               <label style={labelStyle}>Patient Phone Number</label>
               <Input
@@ -848,6 +950,22 @@ export default function HeaderComponent() {
                   setEditedData({ ...editedData, religion: e.target.value })
                 }
               />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Escalate to Physician?</label>
+              <Radio.Group
+                value={editedData.escalate_to_physician}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    escalate_to_physician: e.target.value,
+                  })
+                }
+              >
+                <Radio value="Yes">Yes</Radio>
+                <Radio value="No">No</Radio>
+              </Radio.Group>
             </div>
 
             {/* <div>
