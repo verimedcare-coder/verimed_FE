@@ -30,7 +30,7 @@ export default function Primarybtn({
       }}
       {...props}
     >
-      {icon && <span>{icon}</span>}
+      {icon && <span> {icon}</span>}
       {name}
     </button>
   );
