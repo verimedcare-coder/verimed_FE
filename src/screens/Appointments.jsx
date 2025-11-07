@@ -573,13 +573,27 @@ export default function Appointments() {
       caretaker: selectedAppointment?.fullData?.caretaker?.id,
       appointment_date: values.appointment_date,
       appointment_time: values.appointment_time,
-      appointment_type: selectedAppointment.appointment_type,
-      treatment_performed: selectedAppointment.issue,
-      // height: `${values.height} cm`,
-      // weight: `${values.weight} kg`,
-      // blood_pressure: `${values.blood_pressure} mmHg`,
-      // blood_sugar: `${values.blood_sugar} mg/dL`,
+      appointment_type: selectedAppointment?.appointment_type || "",
+      treatment_performed: selectedAppointment?.issue || "",
       care_taker_notes: values.care_taker_notes || "",
+      amount: selectedAppointment?.fullData?.amount || "",
+      subscription_plan: selectedAppointment?.fullData?.subscription_plan || "",
+      height: selectedAppointment?.fullData?.height || "",
+      weight: selectedAppointment?.fullData?.weight || "",
+      blood_pressure: selectedAppointment?.fullData?.blood_pressure || "",
+      blood_sugar: selectedAppointment?.fullData?.blood_sugar || "",
+      medical_history: selectedAppointment?.fullData?.medical_history || "",
+      appointment_history:
+        selectedAppointment?.fullData?.appointment_history || "",
+      time_line: selectedAppointment?.fullData?.time_line || "",
+      appointment_reason:
+        selectedAppointment?.fullData?.appointment_reason || "",
+      appointment_status:
+        selectedAppointment?.fullData?.appointment_status || "",
+      preferred_dates: selectedAppointment?.fullData?.preferred_dates || [],
+      preferred_times: selectedAppointment?.fullData?.preferred_times || [],
+      service_purchased:
+        selectedAppointment?.fullData?.service_purchased || false,
     };
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
@@ -769,6 +783,76 @@ export default function Appointments() {
                           </div>
                         </div>
                       )}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        columnGap: "20px",
+                        rowGap: "12px",
+                        fontSize: "15px",
+                        marginBottom: "24px",
+                      }}
+                    >
+                      <b>Patient Details:</b>
+                      <div>
+                        <b>Patient Name: </b>
+                        {selectedAppointment.fullData.patient?.patient_name ||
+                          "N/A"}
+                      </div>
+                      <div>
+                        <b>Patient Age: </b>
+                        {selectedAppointment.fullData.patient?.age || "N/A"}
+                      </div>
+                      <div>
+                        <b>Patient Email: </b>
+                        {selectedAppointment.fullData.patient?.email || "N/A"}
+                      </div>
+                      <div>
+                        <b>Patient Contact Number: </b>
+                        {selectedAppointment.fullData.patient?.phone || "N/A"}
+                      </div>
+                      <div>
+                        <b>Patient Emergency Contact Person: </b>
+                        {selectedAppointment.fullData.patient?.emer_con_name ||
+                          "N/A"}
+                        ,{" "}
+                        {selectedAppointment?.fullData?.patient
+                          ?.emer_con_phone || "N/A"}
+                        ,{" "}
+                        {selectedAppointment?.fullData?.patient
+                          ?.emer_con_relation || "N/A"}
+                        ,{" "}
+                        {selectedAppointment?.fullData?.patient
+                          ?.emer_con_email || "N/A"}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        columnGap: "20px",
+                        rowGap: "12px",
+                        fontSize: "15px",
+                        marginBottom: "24px",
+                      }}
+                    >
+                      <b>Sponsor Details:</b>
+                      <div>
+                        <b>Sponsor Name: </b>
+                        {selectedAppointment.fullData.sponsor?.user
+                          ?.first_name || "N/A"}
+                      </div>
+                      <div>
+                        <b>Sponsor Email: </b>
+                        {selectedAppointment.fullData.sponsor?.user?.email ||
+                          "N/A"}
+                      </div>
+                      <div>
+                        <b>Sponsor Contact Number: </b>
+                        {selectedAppointment.fullData.sponsor?.user?.phone ||
+                          "N/A"}
+                      </div>
                     </div>
                     {/* Book Appointment Form */}
                     <div style={{ marginTop: "32px" }}>

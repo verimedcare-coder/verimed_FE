@@ -16,6 +16,7 @@ import {
   Checkbox,
   Radio,
   DatePicker,
+  Spin,
 } from "antd";
 import {
   DownOutlined,
@@ -122,6 +123,33 @@ export default function HeaderComponent() {
   const [caretakerList, setCaretakerList] = useState([]);
   const openModal = () => setIsModalVisible(true);
   const navigate = useNavigate();
+
+  // Country options for dropdowns (fetched from API)
+  const [countryOptions, setCountryOptions] = useState([]);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        // Replace with your actual country API endpoint
+        const res = await axios.get(
+          "https://restcountries.com/v3.1/all?fields=name,cca2"
+        );
+        // Map API response to { label, value } format
+        const options = res.data
+          .map((country) => ({
+            label: country.name.common,
+            value: country.cca2,
+          }))
+          .filter((c) => c.value && c.label)
+          .sort((a, b) => a.label.localeCompare(b.label));
+        setCountryOptions(options);
+        console.log("Fetched countries:", options);
+      } catch (error) {
+        console.error("Failed to fetch countries", error);
+      }
+    };
+    fetchCountries();
+  }, []);
 
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
@@ -251,35 +279,35 @@ export default function HeaderComponent() {
     setEditedData(selectedPatientObj || {});
   };
 
-  useEffect(() => {
-    const fetchSponsorPatients = async () => {
-      try {
-        const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
-        const headers = {
-          Authorization: `Token ${token}`,
-        };
-        const payload = {
-          sponsorid: localStorage.getItem("sponsorProfileId"),
-        };
-        const res = await axios.post(endpoint, payload, { headers });
-        const fetchedPatients = res.data || [];
-        setPatients(fetchedPatients);
+  const fetchSponsorPatients = async () => {
+    try {
+      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
+      const headers = {
+        Authorization: `Token ${token}`,
+      };
+      const payload = {
+        sponsorid: localStorage.getItem("sponsorProfileId"),
+      };
+      const res = await axios.post(endpoint, payload, { headers });
+      const fetchedPatients = res.data || [];
+      setPatients(fetchedPatients);
 
-        if (fetchedPatients.length > 0) {
-          const firstPatientId = fetchedPatients[0].id;
-          setSelectedPatient(firstPatientId);
-          localStorage.setItem("selectedPatientId", firstPatientId);
-          localStorage.setItem(
-            "selectedPatientData",
-            JSON.stringify(fetchedPatients[0])
-          );
-          showPatientDetails(firstPatientId);
-        }
-      } catch (error) {
-        console.log("Error fetching sponsor patients:", error);
+      if (fetchedPatients.length > 0) {
+        const firstPatientId = fetchedPatients[0].id;
+        setSelectedPatient(firstPatientId);
+        localStorage.setItem("selectedPatientId", firstPatientId);
+        localStorage.setItem(
+          "selectedPatientData",
+          JSON.stringify(fetchedPatients[0])
+        );
+        showPatientDetails(firstPatientId);
       }
-    };
+    } catch (error) {
+      console.log("Error fetching sponsor patients:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchSponsorPatients();
   }, []);
 
@@ -383,6 +411,7 @@ export default function HeaderComponent() {
   };
 
   const handleUpdateClick = async () => {
+    setLoading(true);
     try {
       const formData = new FormData();
       const keyName = "patientprofile_data";
@@ -416,7 +445,6 @@ export default function HeaderComponent() {
         patient_home_address: editedData.patient_home_address || "",
         primary_language: editedData.primary_language || "",
         religion: editedData.religion || "",
-        escalate_to_physician: editedData.escalate_to_physician || "",
         emer_con_name: editedData.emer_con_name || "",
         emer_con_relation: editedData.emer_con_relation || "",
         emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
@@ -479,7 +507,7 @@ export default function HeaderComponent() {
       // ✅ Append uploaded files if present
       if (editedData.patient_upload_files?.length > 0) {
         editedData.patient_upload_files.forEach((file) =>
-          formData.append("patient_upload_files", file)
+          formData.append("patient_photo", file)
         );
       }
 
@@ -504,17 +532,20 @@ export default function HeaderComponent() {
 
       // ✅ Make API call
       const endpoint = `${base_url}/patientprofile_create_update/`;
-      await axios.patch(endpoint, formData, {
+      await axios.post(endpoint, formData, {
         headers: {
           Authorization: `Token ${token}`,
         },
       });
-
+      await fetchSponsorPatients();
+      setLoading(false);
       message.success("Patient details updated successfully!");
       setIsSecondModalVisible(false);
     } catch (error) {
       console.error("Update failed:", error);
       message.error("Unable to update patient profile.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -531,6 +562,24 @@ export default function HeaderComponent() {
           fontFamily: "Arial, sans-serif",
         }}
       >
+        {loading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(255,255,255,0.6)",
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Spin tip="Updating..." size="large" />
+          </div>
+        )}
         {/* Left Section */}
         <div
           style={{
@@ -673,7 +722,7 @@ export default function HeaderComponent() {
 
       {/* patient update */}
       <Modal
-        title="Update Patient Details"
+        title="Create Patient Details"
         open={isSecondModalVisible}
         onCancel={() => setIsSecondModalVisible(false)}
         width={900}
@@ -682,7 +731,7 @@ export default function HeaderComponent() {
             Cancel
           </Button>,
           <Button key="update" type="primary" onClick={handleUpdateClick}>
-            Update
+            Create
           </Button>,
         ]}
       >
@@ -732,12 +781,17 @@ export default function HeaderComponent() {
             </div>
 
             <div>
-              <label style={labelStyle}>Country Code</label>
-              <Input
-                placeholder="+91"
+              <label style={labelStyle}>Country</label>
+              <Select
+                showSearch
+                placeholder="Select Country"
                 value={editedData.country_code}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, country_code: e.target.value })
+                onChange={(val) =>
+                  setEditedData({ ...editedData, country_code: val })
+                }
+                options={countryOptions}
+                filterOption={(input, option) =>
+                  option.label.toLowerCase().includes(input.toLowerCase())
                 }
               />
             </div>
@@ -952,7 +1006,7 @@ export default function HeaderComponent() {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label style={labelStyle}>Escalate to Physician?</label>
               <Radio.Group
                 value={editedData.escalate_to_physician}
@@ -966,7 +1020,7 @@ export default function HeaderComponent() {
                 <Radio value="Yes">Yes</Radio>
                 <Radio value="No">No</Radio>
               </Radio.Group>
-            </div>
+            </div> */}
 
             {/* <div>
               <label style={labelStyle}>Escalate to Physician?</label>
@@ -1048,15 +1102,20 @@ export default function HeaderComponent() {
             </div>
 
             <div>
-              <label style={labelStyle}>Country Code</label>
-              <Input
-                placeholder="+XX"
+              <label style={labelStyle}>Country</label>
+              <Select
+                showSearch
+                placeholder="Select Country"
                 value={editedData.emer_con_country_code}
-                onChange={(e) =>
+                onChange={(val) =>
                   setEditedData({
                     ...editedData,
-                    emer_con_country_code: e.target.value,
+                    emer_con_country_code: val,
                   })
+                }
+                options={countryOptions}
+                filterOption={(input, option) =>
+                  option.label.toLowerCase().includes(input.toLowerCase())
                 }
               />
             </div>
@@ -1122,15 +1181,20 @@ export default function HeaderComponent() {
             </div>
 
             <div>
-              <label style={labelStyle}>Country Code</label>
-              <Input
-                placeholder="+XX"
+              <label style={labelStyle}>Country</label>
+              <Select
+                showSearch
+                placeholder="Select Country"
                 value={editedData.local_con_country_code}
-                onChange={(e) =>
+                onChange={(val) =>
                   setEditedData({
                     ...editedData,
-                    local_con_country_code: e.target.value,
+                    local_con_country_code: val,
                   })
+                }
+                options={countryOptions}
+                filterOption={(input, option) =>
+                  option.label.toLowerCase().includes(input.toLowerCase())
                 }
               />
             </div>
@@ -1298,17 +1362,24 @@ export default function HeaderComponent() {
 
             <div>
               <label style={labelStyle}>Medication Issues?</label>
-              <Checkbox
-                checked={editedData.medication_issues}
-                onChange={(e) =>
+              <Radio.Group
+                value={
+                  editedData.medication_issues === true
+                    ? "yes"
+                    : editedData.medication_issues === false
+                    ? "no"
+                    : ""
+                }
+                onChange={(e) => {
                   setEditedData({
                     ...editedData,
-                    medication_issues: e.target.checked,
-                  })
-                }
+                    medication_issues: e.target.value === "yes",
+                  });
+                }}
               >
-                Yes
-              </Checkbox>
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
             </div>
 
             <div>
@@ -1331,17 +1402,24 @@ export default function HeaderComponent() {
           <div style={twoColGrid}>
             <div>
               <label style={labelStyle}>Allergies to Drugs?</label>
-              <Checkbox
-                checked={editedData.allergies_issues}
-                onChange={(e) =>
+              <Radio.Group
+                value={
+                  editedData.allergies_issues === true
+                    ? "yes"
+                    : editedData.allergies_issues === false
+                    ? "no"
+                    : ""
+                }
+                onChange={(e) => {
                   setEditedData({
                     ...editedData,
-                    allergies_issues: e.target.checked,
-                  })
-                }
+                    allergies_issues: e.target.value === "yes",
+                  });
+                }}
               >
-                Yes
-              </Checkbox>
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
             </div>
 
             <div>
@@ -1476,17 +1554,24 @@ export default function HeaderComponent() {
 
             <div>
               <label style={labelStyle}>Any Falls?</label>
-              <Checkbox
-                checked={editedData.functional_any_falls}
-                onChange={(e) =>
+              <Radio.Group
+                value={
+                  editedData.functional_any_falls === true
+                    ? "yes"
+                    : editedData.functional_any_falls === false
+                    ? "no"
+                    : ""
+                }
+                onChange={(e) => {
                   setEditedData({
                     ...editedData,
-                    functional_any_falls: e.target.checked,
-                  })
-                }
+                    functional_any_falls: e.target.value === "yes",
+                  });
+                }}
               >
-                Yes
-              </Checkbox>
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
             </div>
 
             <div>
@@ -1505,17 +1590,24 @@ export default function HeaderComponent() {
 
             <div>
               <label style={labelStyle}>Memory Problems?</label>
-              <Checkbox
-                checked={editedData.functional_memory_pbms}
-                onChange={(e) =>
+              <Radio.Group
+                value={
+                  editedData.functional_memory_pbms === true
+                    ? "yes"
+                    : editedData.functional_memory_pbms === false
+                    ? "no"
+                    : ""
+                }
+                onChange={(e) => {
                   setEditedData({
                     ...editedData,
-                    functional_memory_pbms: e.target.checked,
-                  })
-                }
+                    functional_memory_pbms: e.target.value === "yes",
+                  });
+                }}
               >
-                Yes
-              </Checkbox>
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
             </div>
           </div>
           {/* ---------- SECTION 8: LIFESTYLE ---------- */}
@@ -1653,17 +1745,24 @@ export default function HeaderComponent() {
 
             <div>
               <label style={labelStyle}>Trusted Person?</label>
-              <Checkbox
-                checked={editedData.social_trusted_person}
-                onChange={(e) =>
+              <Radio.Group
+                value={
+                  editedData.social_trusted_person === true
+                    ? "yes"
+                    : editedData.social_trusted_person === false
+                    ? "no"
+                    : ""
+                }
+                onChange={(e) => {
                   setEditedData({
                     ...editedData,
-                    social_trusted_person: e.target.checked,
-                  })
-                }
+                    social_trusted_person: e.target.value === "yes",
+                  });
+                }}
               >
-                Yes
-              </Checkbox>
+                <Radio value="yes">Yes</Radio>
+                <Radio value="no">No</Radio>
+              </Radio.Group>
             </div>
 
             <div>
