@@ -1307,9 +1307,9 @@ export default function HeaderComponent() {
             </div>
 
             <div>
-              <label style={labelStyle}>Provided MediCare</label>
+              <label style={labelStyle}>Medical Care Provided</label>
               <Input
-                placeholder="Provided medi care"
+                placeholder="Medical Care Provided"
                 value={editedData.medical_his_provided_medi_care}
                 onChange={(e) =>
                   setEditedData({

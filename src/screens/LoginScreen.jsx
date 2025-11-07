@@ -210,7 +210,7 @@ export default function LoginScreen() {
           <Title
             level={1}
             style={{
-              color: "#fff",
+              color: "#ffffffff",
               fontSize: 42,
               fontWeight: 700,
               marginBottom: 10,
