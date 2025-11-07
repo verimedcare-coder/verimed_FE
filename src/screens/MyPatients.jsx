@@ -104,34 +104,34 @@ export default function MyPatients() {
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: appointmentData?.blood_pressure || "N/A",
+      value: appointmentData?.patient?.blood_pressure || "N/A",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: appointmentData?.heart_rate || "N/A",
+      value: appointmentData?.patient?.heart_rate || "N/A",
     },
     {
       icon: sugar,
       label: "Blood Sugar",
-      value: appointmentData?.blood_sugar || "N/A",
+      value: appointmentData?.patient?.blood_sugar || "N/A",
     },
     { icon: oxygen, label: "Oxygen", value: appointmentData?.oxygen || "N/A" },
     {
       icon: temperature,
       label: "Temperature",
-      value: appointmentData?.temperature || "N/A",
+      value: appointmentData?.patient?.temperature || "N/A",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: appointmentData?.respiratory_rate || "N/A",
+      value: appointmentData?.patient?.respiratory_rate || "N/A",
     },
     { icon: weight, label: "Weight", value: appointmentData?.weight || "N/A" },
     {
       icon: statusIcon,
       label: "Status",
-      value: appointmentData?.appointment_status || "N/A",
+      value: appointmentData?.appointment_status || "pending",
     },
   ].map((v) => ({ ...v, color: getVitalColor(v.label, v.value) }));
 

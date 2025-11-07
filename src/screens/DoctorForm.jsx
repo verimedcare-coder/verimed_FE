@@ -72,16 +72,16 @@ export default function DoctorForm(doc_data) {
         doctor: appointmentData?.doc?.id,
         patient: appointmentData?.patient?.id,
         sponsor: appointmentData?.sponsor?.id,
-        caretaker: appointmentData?.caretaker?.id,
-        patient_name: values.patient_name,
+        caretaker: appointmentData?.caretaker?.id || 4,
+        patient_name: appointmentData?.patient?.patient_name,
         blood_group: values.bloodGroup || "N/A",
-        bp: appointmentData?.blood_pressure || "N/A",
-        heart_rate: appointmentData?.heartRate || "N/A",
-        sugar: appointmentData?.blood_sugar || "N/A",
-        oxygen: appointmentData?.oxygen || "N/A",
-        temperature: appointmentData?.temperature || "N/A",
-        respiratory_rate: appointmentData?.respiratory_rate || "N/A",
-        weight: appointmentData?.weight || "N/A",
+        bp: appointmentData?.patient?.blood_pressure || "N/A",
+        heart_rate: appointmentData?.patient?.heartRate || "N/A",
+        sugar: appointmentData?.patient?.blood_sugar || "N/A",
+        oxygen: appointmentData?.patient?.oxygen || "N/A",
+        temperature: appointmentData?.patient?.temperature || "N/A",
+        respiratory_rate: appointmentData?.patient?.respiratory_rate || "N/A",
+        weight: appointmentData?.patient?.weight || "N/A",
         doctor_notes: values.doctorNotes,
       };
 
@@ -109,19 +109,16 @@ export default function DoctorForm(doc_data) {
   };
 
   const careTeam = {
-    name:
-      appointmentData?.patient?.user?.first_name +
-        " " +
-        appointmentData?.patient?.user?.last_name || "N/A",
+    name: appointmentData?.patient?.patient_name || "",
     Condition: appointmentData?.appointment_type,
     AssignedDoctor:
-      appointmentData?.doctor?.user?.first_name +
+      appointmentData?.doc?.user?.first_name +
         " " +
-        appointmentData?.doctor?.user?.last_name || "N/A",
-    CareTaker:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+        appointmentData?.doc?.user?.last_name || "N/A",
+    // CareTaker:
+    //   appointmentData?.caretaker?.user?.first_name +
+    //     " " +
+    //     appointmentData?.caretaker?.user?.last_name || "N/A",
     Conditions: appointmentData?.appointment_type,
     AssignedSince: appointmentData?.appointment_date || "N/A",
     SponsorInfo:
@@ -130,18 +127,15 @@ export default function DoctorForm(doc_data) {
         appointmentData?.sponsor?.user?.last_name || "N/A",
     SponsorNumber: appointmentData?.sponsor?.user?.phone || "N/A",
     Address: appointmentData?.patient?.patient_home_address || "N/A",
-    PrimaryCareTaker:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+    // PrimaryCareTaker:
+    //   appointmentData?.caretaker?.user?.first_name +
+    //     " " +
+    //     appointmentData?.caretaker?.user?.last_name || "N/A",
     AssignedPhysician:
-      appointmentData?.doctor?.user?.first_name +
+      appointmentData?.doc?.user?.first_name +
         " " +
-        appointmentData?.doctor?.user?.last_name || "N/A",
-    CareCoordinator:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+        appointmentData?.doc?.user?.last_name || "N/A",
+    //
   };
 
   return (
@@ -436,7 +430,7 @@ export default function DoctorForm(doc_data) {
               }}
             >
               {/* Patient Info */}
-              <div
+              {/* <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
@@ -446,7 +440,7 @@ export default function DoctorForm(doc_data) {
                 <Form.Item label="Patient Name" name="patientName">
                   <Input />
                 </Form.Item>
-              </div>
+              </div> */}
 
               {/* Vitals */}
               <div

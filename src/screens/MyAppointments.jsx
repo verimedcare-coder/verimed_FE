@@ -7,7 +7,7 @@ import patientdetails from "../assets/images/patient-profile.jpg";
 import { Button, DatePicker, Table, Spin } from "antd";
 import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { base_url } from "../constants/constants";
 import axios from "axios";
 
@@ -35,6 +35,7 @@ export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(3);
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const token = localStorage.getItem("token");
   const data = localStorage.getItem("userData");
@@ -42,6 +43,7 @@ export default function MyAppointments() {
   if (!user) {
     window.location.href = "/";
   }
+  const { appointmentData } = location.state || {};
 
   const doctorDataRaw = localStorage.getItem("doctorData");
   let doctorId = null;
@@ -95,12 +97,12 @@ export default function MyAppointments() {
       key: "type",
       width: 150,
     },
-    {
-      title: "Care Taker",
-      dataIndex: "careTaker",
-      key: "careTaker",
-      width: 150,
-    },
+    // {
+    //   title: "Care Taker",
+    //   dataIndex: "careTaker",
+    //   key: "careTaker",
+    //   width: 150,
+    // },
     {
       title: "Time",
       dataIndex: "time",
@@ -157,7 +159,7 @@ export default function MyAppointments() {
 
   // Map API data for Table
   const dataSource = doctorAppointments.map((appt, index) => {
-    const patientUser = appt?.patient?.user;
+    const patientUser = appt?.patient?.patient_name;
     const dateTime = appt.appointment_date
       ? new Date(
           `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`
@@ -173,9 +175,7 @@ export default function MyAppointments() {
             minute: "2-digit",
           })
         : "-",
-      patientName: patientUser
-        ? `${patientUser.first_name} ${patientUser.last_name}`
-        : "Unknown",
+      patientName: patientUser || "",
       type: appt.appointment_type || "-",
       careTaker:
         appt.caretaker?.user?.first_name + appt?.caretaker?.user?.last_name ||
@@ -215,7 +215,7 @@ export default function MyAppointments() {
         >
           {/* Appointment Cards */}
           <div style={{ width: "100%" }}>
-            <div
+            {/* <div
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -226,9 +226,9 @@ export default function MyAppointments() {
                 Today's Schedule
               </p>
               <Primarybtn icon={<FilterOutlined />} name="Filter" />
-            </div>
+            </div> */}
 
-            <div
+            {/* <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(372px, 1fr))",
@@ -249,7 +249,7 @@ export default function MyAppointments() {
                   <Spin size="large" />
                 </div>
               ) : (
-                doctorAppointments.slice(0, visibleCount).map((appt) => {
+                appointmentData.slice(0, visibleCount).map((appt) => {
                   const name = appt?.patient?.patient_name;
                   const disease = appt?.appointment_type;
                   const place = appt.appointment_place;
@@ -406,7 +406,7 @@ export default function MyAppointments() {
                   );
                 })
               )}
-            </div>
+            </div> */}
 
             {doctorAppointments.length > 3 && !loading && (
               <div style={{ textAlign: "center", marginTop: 16 }}>

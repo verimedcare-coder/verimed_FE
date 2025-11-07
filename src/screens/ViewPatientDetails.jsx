@@ -47,62 +47,59 @@ export default function ViewPatientDetails() {
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: appointmentData?.blood_pressure || "N/A",
+      value: appointmentData?.patient?.blood_pressure || "N/A",
       color: "#27AE60",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: appointmentData?.heartRate || "N/A",
+      value: appointmentData?.patient?.heartRate || "N/A",
       color: "#EF1E1E",
     },
     {
       icon: sugar,
       label: "Sugar",
-      value: appointmentData?.blood_sugar || "N/A",
+      value: appointmentData?.patient?.blood_sugar || "N/A",
       color: "#27AE60",
     },
     {
       icon: oxygen,
       label: "Oxygen",
-      value: appointmentData?.oxygen || "N/A",
+      value: appointmentData?.patient?.oxygen || "N/A",
       color: "#27AE60",
     },
     {
       icon: temperature,
       label: "Temperature",
-      value: appointmentData?.temperature || "N/A",
+      value: appointmentData?.patient?.temperature || "N/A",
       color: "#27AE60",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: appointmentData?.respiratory_rate || "N/A",
+      value: appointmentData?.patient?.respiratory_rate || "N/A",
       color: "#EF1E1E",
     },
     {
       icon: weight,
       label: "Weight",
-      value: appointmentData?.weight || "N/A",
+      value: appointmentData?.patient?.weight || "N/A",
       color: "#27AE60",
     },
     { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
   ];
 
   const careTeam = {
-    name:
-      appointmentData?.patient?.user?.first_name +
-        " " +
-        appointmentData?.patient?.user?.last_name || "N/A",
+    name: appointmentData?.patient?.patient_name || "",
     Condition: appointmentData?.appointment_type,
     AssignedDoctor:
-      appointmentData?.doctor?.user?.first_name +
+      appointmentData?.doc?.user?.first_name +
         " " +
-        appointmentData?.doctor?.user?.last_name || "N/A",
-    CareTaker:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+        appointmentData?.doc?.user?.last_name || "N/A",
+    // CareTaker:
+    //   appointmentData?.caretaker?.user?.first_name +
+    //     " " +
+    //     appointmentData?.caretaker?.user?.last_name || "N/A",
     Conditions: appointmentData?.appointment_type,
     AssignedSince: appointmentData?.appointment_date || "N/A",
     SponsorInfo:
@@ -116,9 +113,9 @@ export default function ViewPatientDetails() {
         " " +
         appointmentData?.caretaker?.user?.last_name || "N/A",
     AssignedPhysician:
-      appointmentData?.doctor?.user?.first_name +
+      appointmentData?.doc?.user?.first_name +
         " " +
-        appointmentData?.doctor?.user?.last_name || "N/A",
+        appointmentData?.doc?.user?.last_name || "N/A",
     CareCoordinator:
       appointmentData?.caretaker?.user?.first_name +
         " " +
