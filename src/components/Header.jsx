@@ -263,17 +263,35 @@ export default function HeaderComponent() {
     setSelectedPatient(value);
     localStorage.setItem("selectedPatientId", value);
 
-    const selectedPatientObj =
-      patients.find((p) => p.id === value) ||
-      (careTakerPatients || []).find((p) => p.id === value);
+    // Ensure type-safe comparison for patient IDs
+    let selectedPatientObj = null;
+    let selectedSource = null;
+    if (
+      Array.isArray(patients) &&
+      patients.some((p) => String(p.id) === String(value))
+    ) {
+      selectedPatientObj = patients.find((p) => String(p.id) === String(value));
+      selectedSource = "patients";
+    } else if (
+      Array.isArray(careTakerPatients) &&
+      careTakerPatients.some((p) => String(p.id) === String(value))
+    ) {
+      selectedPatientObj = careTakerPatients.find(
+        (p) => String(p.id) === String(value)
+      );
+      selectedSource = "careTakerPatients";
+    }
 
     if (selectedPatientObj) {
       localStorage.setItem(
         "selectedPatientData",
         JSON.stringify(selectedPatientObj)
       );
-
+      localStorage.setItem("selectedPatientSource", selectedSource);
       showPatientDetails(value);
+    } else {
+      localStorage.removeItem("selectedPatientData");
+      localStorage.removeItem("selectedPatientSource");
     }
 
     setEditedData(selectedPatientObj || {});
@@ -293,14 +311,33 @@ export default function HeaderComponent() {
       setPatients(fetchedPatients);
 
       if (fetchedPatients.length > 0) {
-        const firstPatientId = fetchedPatients[0].id;
-        setSelectedPatient(firstPatientId);
-        localStorage.setItem("selectedPatientId", firstPatientId);
-        localStorage.setItem(
-          "selectedPatientData",
-          JSON.stringify(fetchedPatients[0])
-        );
-        showPatientDetails(firstPatientId);
+        // Check for previous selection in localStorage
+        const storedSelectedId = localStorage.getItem("selectedPatientId");
+        let foundPatient = null;
+        if (storedSelectedId) {
+          foundPatient = fetchedPatients.find(
+            (p) => String(p.id) === String(storedSelectedId)
+          );
+        }
+        if (foundPatient) {
+          setSelectedPatient(String(foundPatient.id));
+          localStorage.setItem("selectedPatientId", String(foundPatient.id));
+          localStorage.setItem(
+            "selectedPatientData",
+            JSON.stringify(foundPatient)
+          );
+          showPatientDetails(foundPatient.id);
+        } else {
+          // No previous selection, set first patient
+          const firstPatientId = String(fetchedPatients[0].id);
+          setSelectedPatient(firstPatientId);
+          localStorage.setItem("selectedPatientId", firstPatientId);
+          localStorage.setItem(
+            "selectedPatientData",
+            JSON.stringify(fetchedPatients[0])
+          );
+          showPatientDetails(firstPatientId);
+        }
       }
     } catch (error) {
       console.log("Error fetching sponsor patients:", error);
@@ -616,34 +653,45 @@ export default function HeaderComponent() {
               </Option>
             ))}
           </Select> */}
-          <Select
-            value={selectedPatient}
-            onChange={handlePatientChange}
-            style={{ width: 200, borderRadius: 6 }}
-            placeholder="Select Patient"
-          >
-            {(Array.isArray(patients) && patients.length > 0
-              ? patients
-              : Array.isArray(careTakerPatients) && careTakerPatients.length > 0
-              ? careTakerPatients
-              : []
-            ).map((p) => (
-              <Option key={p.id} value={p.id}>
-                {p.patient_name ||
-                  p?.patient?.patient_name ||
-                  `Patient ${p.id}`}
-              </Option>
-            ))}
-          </Select>
+          {user.user_role === "sponsor" && (
+            <Select
+              value={selectedPatient}
+              onChange={handlePatientChange}
+              style={{ width: 220, borderRadius: 6 }}
+              placeholder="Select Patient"
+              optionLabelProp="label"
+            >
+              {Array.isArray(patients) && patients.length > 0
+                ? patients.map((p) => (
+                    <Option key={p.id} value={p.id} label={p.patient_name}>
+                      {p.patient_name}
+                    </Option>
+                  ))
+                : Array.isArray(careTakerPatients) &&
+                  careTakerPatients.length > 0
+                ? careTakerPatients.map((p) => (
+                    <Option
+                      key={p.id}
+                      value={p.id}
+                      label={p.patient?.patient_name}
+                    >
+                      {p.patient?.patient_name}
+                    </Option>
+                  ))
+                : null}
+            </Select>
+          )}
 
           {/* 🟩 Enroll Loved One */}
-          <Dropdown
-            menu={{ items, onClick: handleMenuClick }}
-            trigger={["click"]}
-            placement="bottomLeft"
-          >
-            <Primarybtn name="Enroll Patient" />
-          </Dropdown>
+          {user.user_role === "sponsor" && (
+            <Dropdown
+              menu={{ items, onClick: handleMenuClick }}
+              trigger={["click"]}
+              placement="bottomLeft"
+            >
+              <Primarybtn name="Enroll Patient" />
+            </Dropdown>
+          )}
 
           {/* <Input placeholder="Search"
            prefix={<SearchOutlined />} 
