@@ -416,7 +416,7 @@ export default function DoctorForm(doc_data) {
               style={{ width: "100%" }}
               initialValues={{
                 patientName: doc_data.patient_name,
-                bloodGroup: doc_data.blood_group,
+                bloodGroup: appointmentData?.patient?.blood_group,
                 bp: doc_data.bp,
                 heartRate: doc_data.heart_rate,
                 sugar: doc_data.sugar,
@@ -443,7 +443,7 @@ export default function DoctorForm(doc_data) {
               </div> */}
 
               {/* Vitals */}
-              <div
+              {/* <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
@@ -472,7 +472,7 @@ export default function DoctorForm(doc_data) {
                 <Form.Item label="Sugar" name="sugar">
                   <Input />
                 </Form.Item>
-              </div>
+              </div> */}
 
               {/* Vitals 2 */}
               <div
