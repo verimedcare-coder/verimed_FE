@@ -564,36 +564,47 @@ export default function Appointments() {
     .map((a) => a.date.toDateString());
 
   const assignAppointment = async (values) => {
+    const safe = (val) => (val === "" || val === undefined ? null : val);
+
+    // Format time with seconds if missing
+    const formatTime = (timeStr) => {
+      if (!timeStr) return null;
+      return timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+    };
+
     const bookappoinment_data = {
-      update_appoinmentid: selectedAppointment?.id,
-      sponsor: selectedAppointment?.fullData?.sponsor?.id,
-      dep: selectedAppointment?.fullData?.dep?.id,
-      doc: values?.docId,
-      patient: selectedAppointment?.fullData?.patient?.id,
-      caretaker: selectedAppointment?.fullData?.caretaker?.id,
-      appointment_date: values.appointment_date,
-      appointment_time: values.appointment_time,
-      appointment_type: selectedAppointment?.appointment_type || "",
-      treatment_performed: selectedAppointment?.issue || "",
-      care_taker_notes: values.care_taker_notes || "",
-      amount: selectedAppointment?.fullData?.amount || "",
-      subscription_plan: selectedAppointment?.fullData?.subscription_plan || "",
-      height: selectedAppointment?.fullData?.height || "",
-      weight: selectedAppointment?.fullData?.weight || "",
-      blood_pressure: selectedAppointment?.fullData?.blood_pressure || "",
-      blood_sugar: selectedAppointment?.fullData?.blood_sugar || "",
-      medical_history: selectedAppointment?.fullData?.medical_history || "",
-      appointment_history:
-        selectedAppointment?.fullData?.appointment_history || "",
-      time_line: selectedAppointment?.fullData?.time_line || "",
-      appointment_reason:
-        selectedAppointment?.fullData?.appointment_reason || "",
-      appointment_status:
-        selectedAppointment?.fullData?.appointment_status || "",
-      preferred_dates: selectedAppointment?.fullData?.preferred_dates || [],
-      preferred_times: selectedAppointment?.fullData?.preferred_times || [],
+      update_appoinmentid: selectedAppointment?.id, // e.g. 34
+      sponsor: selectedAppointment?.fullData?.sponsor?.id, // e.g. 8
+      dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
+      doc: safe(values?.docId), // from form
+      patient: selectedAppointment?.fullData?.patient?.id, // e.g. 30
+      caretaker: selectedAppointment?.fullData?.caretaker?.id || 4, // fallback if null
+      appointment_date: safe(values?.appointment_date), // user-provided date
+      appointment_time: formatTime(values?.appointment_time), // e.g. "10:00:00"
+      appointment_type: safe(selectedAppointment?.appointment_type),
+      treatment_performed: safe(selectedAppointment?.issue),
+      care_taker_notes: safe(values?.care_taker_notes),
+      amount: safe(selectedAppointment?.fullData?.amount),
+      subscription_plan: safe(selectedAppointment?.fullData?.subscription_plan),
+      height: safe(selectedAppointment?.fullData?.height),
+      weight: safe(selectedAppointment?.fullData?.weight),
+      blood_pressure: safe(selectedAppointment?.fullData?.blood_pressure),
+      blood_sugar: safe(selectedAppointment?.fullData?.blood_sugar),
+      medical_history: safe(selectedAppointment?.fullData?.medical_history),
+      appointment_history: safe(
+        selectedAppointment?.fullData?.appointment_history
+      ),
+      time_line: safe(selectedAppointment?.fullData?.time_line),
+      appointment_reason: safe(
+        selectedAppointment?.fullData?.appointment_reason
+      ),
+      appointment_status: safe(
+        selectedAppointment?.fullData?.appointment_status
+      ),
+      preferred_dates: selectedAppointment?.fullData?.preferred_dates,
+      preferred_times: selectedAppointment?.fullData?.preferred_times,
       service_purchased:
-        selectedAppointment?.fullData?.service_purchased || false,
+        selectedAppointment?.fullData?.service_purchased ?? true,
     };
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
@@ -603,6 +614,7 @@ export default function Appointments() {
         "bookappoinment_data",
         JSON.stringify(bookappoinment_data)
       );
+      formData.append("lab_reports_ids", null);
       await axios.patch(endpoint, formData, { headers });
       message.success("Appointment booked successfully!");
       handleCloseModal();
