@@ -123,6 +123,16 @@ export default function HeaderComponent() {
   const [caretakerList, setCaretakerList] = useState([]);
   const openModal = () => setIsModalVisible(true);
   const navigate = useNavigate();
+  const [medications, setMedications] = useState([
+    {
+      medication_name: "",
+      medication_dose: "",
+      medication_frequency: "",
+      medication_reason: "",
+      medication_issues: false,
+      medication_issues_explain: "",
+    },
+  ]);
 
   // Country options for dropdowns (fetched from API)
   const [countryOptions, setCountryOptions] = useState([]);
@@ -143,7 +153,6 @@ export default function HeaderComponent() {
           .filter((c) => c.value && c.label)
           .sort((a, b) => a.label.localeCompare(b.label));
         setCountryOptions(options);
-        console.log("Fetched countries:", options);
       } catch (error) {
         console.error("Failed to fetch countries", error);
       }
@@ -460,6 +469,17 @@ export default function HeaderComponent() {
           ? new Date(editedData.patient_dob).toISOString().split("T")[0]
           : "";
 
+      const medicationArray = medications.map((m) => ({
+        name: m.medication_name || "",
+        dose: m.medication_dose || "",
+        frequency: m.medication_frequency || "",
+        reason: m.medication_reason || "",
+        issues: {
+          has_issues: m.medication_issues || false,
+          explain: m.medication_issues_explain || "",
+        },
+      }));
+
       const patientprofile_data = {
         patient_name: editedData.patientName || "",
         age: editedData.age || "",
@@ -502,12 +522,6 @@ export default function HeaderComponent() {
         medical_his_major_surgeries:
           editedData.medical_his_major_surgeries || "",
         medical_his_curr_symp: editedData.medical_his_curr_symp || "",
-        medication_name: editedData.medication_name || "",
-        medication_dose: editedData.medication_dose || "",
-        medication_frequency: editedData.medication_frequency || "",
-        medication_reason: editedData.medication_reason || "",
-        medication_issues: editedData.medication_issues || false,
-        medication_issues_explain: editedData.medication_issues_explain || "",
         allergies_issues: editedData.allergies_issues || false,
         allergies_drug: editedData.allergies_drug || "",
         allergies_food: editedData.allergies_food || "",
@@ -537,6 +551,8 @@ export default function HeaderComponent() {
         goals_special_instructions: editedData.goals_special_instructions || "",
         goals_term_membership: editedData.goals_term_membership || "",
       };
+
+      formData.append("medication", JSON.stringify(medicationArray));
 
       // ✅ Append main JSON
       formData.append(keyName, JSON.stringify(patientprofile_data));
@@ -1351,99 +1367,137 @@ export default function HeaderComponent() {
 
           {/* ---------- SECTION 5: MEDICATIONS ---------- */}
           <h3 style={sectionTitle}>5. Medications</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Medication Name</label>
-              <Input
-                placeholder="Medication name"
-                value={editedData.medication_name}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medication_name: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Dose</label>
-              <Input
-                placeholder="Dose"
-                value={editedData.medication_dose}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medication_dose: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Frequency</label>
-              <Input
-                placeholder="Frequency"
-                value={editedData.medication_frequency}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medication_frequency: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Reason</label>
-              <Input
-                placeholder="Reason for medication"
-                value={editedData.medication_reason}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medication_reason: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Medication Issues?</label>
-              <Radio.Group
-                value={
-                  editedData.medication_issues === true
-                    ? "yes"
-                    : editedData.medication_issues === false
-                    ? "no"
-                    : ""
-                }
-                onChange={(e) => {
-                  setEditedData({
-                    ...editedData,
-                    medication_issues: e.target.value === "yes",
-                  });
+          <>
+            {medications.map((med, index) => (
+              <div
+                key={index}
+                style={{
+                  ...twoColGrid,
+                  marginBottom: "20px",
+                  borderBottom: "1px solid #eee",
+                  paddingBottom: "15px",
                 }}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
-            </div>
+                <div>
+                  <label style={labelStyle}>Medication Name</label>
+                  <Input
+                    placeholder="Medication name"
+                    value={med.medication_name}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_name = e.target.value;
+                      setMedications(newMeds);
+                    }}
+                  />
+                </div>
 
-            <div>
-              <label style={labelStyle}>Explain Issues</label>
-              <Input.TextArea
-                placeholder="Explain medication issues"
-                value={editedData.medication_issues_explain}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medication_issues_explain: e.target.value,
-                  })
+                <div>
+                  <label style={labelStyle}>Dose</label>
+                  <Input
+                    placeholder="Dose"
+                    value={med.medication_dose}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_dose = e.target.value;
+                      setMedications(newMeds);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Frequency</label>
+                  <Input
+                    placeholder="Frequency"
+                    value={med.medication_frequency}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_frequency = e.target.value;
+                      setMedications(newMeds);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Reason</label>
+                  <Input
+                    placeholder="Reason for medication"
+                    value={med.medication_reason}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_reason = e.target.value;
+                      setMedications(newMeds);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Medication Issues?</label>
+                  <Radio.Group
+                    value={med.medication_issues ? "yes" : "no"}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_issues =
+                        e.target.value === "yes";
+                      setMedications(newMeds);
+                    }}
+                  >
+                    <Radio value="yes">Yes</Radio>
+                    <Radio value="no">No</Radio>
+                  </Radio.Group>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Explain Issues</label>
+                  <Input.TextArea
+                    placeholder="Explain medication issues"
+                    value={med.medication_issues_explain}
+                    onChange={(e) => {
+                      const newMeds = [...medications];
+                      newMeds[index].medication_issues_explain = e.target.value;
+                      setMedications(newMeds);
+                    }}
+                  />
+                </div>
+
+                {medications.length > 1 && (
+                  <div style={{ textAlign: "right" }}>
+                    <Button
+                      danger
+                      onClick={() => {
+                        const newMeds = medications.filter(
+                          (_, i) => i !== index
+                        );
+                        setMedications(newMeds);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={{ textAlign: "right" }}>
+              <Button
+                type="dashed"
+                onClick={() =>
+                  setMedications([
+                    ...medications,
+                    {
+                      medication_name: "",
+                      medication_dose: "",
+                      medication_frequency: "",
+                      medication_reason: "",
+                      medication_issues: false,
+                      medication_issues_explain: "",
+                    },
+                  ])
                 }
-              />
+              >
+                + Add Medication
+              </Button>
             </div>
-          </div>
+          </>
 
           {/* ---------- SECTION 6: ALLERGIES ---------- */}
           <h3 style={sectionTitle}>6. Allergies</h3>

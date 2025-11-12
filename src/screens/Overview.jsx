@@ -642,8 +642,7 @@ export default function Overview() {
         const headers = {
           Authorization: `Token ${userToken}`,
         };
-        const res = await axios.get(endpoint, { headers });
-        console.log("fetchUsers =>", res.data);
+        await axios.get(endpoint, { headers });
       } catch (error) {
         console.log(error);
       }
