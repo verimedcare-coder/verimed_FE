@@ -196,14 +196,20 @@ export default function LoginScreen() {
         <img
           src={LoginBg}
           alt="Doctor and patient"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "brightness(0.3)",
+          }}
         />
+        {/* <div style={{ backgroundColor: "#00000077", zIndex: 10000 }} /> */}
         <div
           style={{
             position: "absolute",
             bottom: 40,
             left: 40,
-            color: "white",
+            padding: 20,
             maxWidth: "80%",
           }}
         >
@@ -211,7 +217,7 @@ export default function LoginScreen() {
             level={1}
             style={{
               color: "#ffffffff",
-              fontSize: 42,
+              fontSize: 44,
               fontWeight: 700,
               marginBottom: 10,
             }}
@@ -221,12 +227,14 @@ export default function LoginScreen() {
           <Text
             style={{
               color: "#f0f0f0",
-              fontSize: 16,
+              fontSize: 18,
               lineHeight: "1.5",
             }}
           >
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vulputate
-            ut laoreet velit ma.
+            Home Health and Geriatric Wellness for Cameroon’s Global Families. A
+            physician-led, nurse-powered care program for diaspora professionals
+            who demand exceptional, transparent, and reliable global standard
+            medical care for their loved ones back home.
           </Text>
         </div>
       </div>
