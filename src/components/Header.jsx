@@ -794,1164 +794,845 @@ export default function HeaderComponent() {
           <Button key="cancel" onClick={() => setIsSecondModalVisible(false)}>
             Cancel
           </Button>,
-          <Button key="update" type="primary" onClick={handleUpdateClick}>
+          <Button
+            key="update"
+            type="primary"
+            onClick={() => {
+              form
+                .validateFields()
+                .then((values) => {
+                  handleUpdateClick(values);
+                })
+                .catch((errorInfo) => {
+                  console.log("Validation Failed:", errorInfo);
+                });
+            }}
+          >
             Create
           </Button>,
         ]}
       >
-        <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}>
-          {/* ---------- SECTION 1: PERSONAL INFORMATION ---------- */}
-          <h3 style={sectionTitle}>1. Personal Information</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Patient Name</label>
-              <Input
-                placeholder="Enter Patient Name"
-                value={editedData.patientName}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    patientName: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Age</label>
-              <Input
-                placeholder="Enter Age"
-                value={editedData.age}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    age: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Patient Email Address</label>
-              <Input
-                placeholder="Enter Email Address"
-                type="email"
-                value={editedData.patientEmail}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    patientEmail: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Country</label>
-              <Select
-                showSearch
-                placeholder="Select Country"
-                value={editedData.country_code}
-                onChange={(val) =>
-                  setEditedData({ ...editedData, country_code: val })
-                }
-                options={countryOptions}
-                filterOption={(input, option) =>
-                  option.label.toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Patient Phone Number</label>
-              <Input
-                placeholder="Enter Patient Phone Number"
-                type="tel"
-                value={editedData.patientPhone}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    patientPhone: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Blood Pressure</label>
-              <Input
-                placeholder="Enter Blood Pressure"
-                value={editedData.bp}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    bp: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Heart Rate</label>
-              <Input
-                placeholder="Enter Heart Rate"
-                value={editedData.heartRate}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    heartRate: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Blood Sugar</label>
-              <Input
-                placeholder="Enter Blood Sugar"
-                value={editedData.sugar}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    sugar: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Oxygen</label>
-              <Input
-                placeholder="Enter Oxygen"
-                value={editedData.oxygen}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    oxygen: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Temperature</label>
-              <Input
-                placeholder="Enter Temperature"
-                value={editedData.temperature}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    temperature: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Respiratory Rate</label>
-              <Input
-                placeholder="Enter Respiratory Rate"
-                value={editedData.respiratoryRate}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    respiratoryRate: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Height</label>
-              <Input
-                placeholder="Enter Height"
-                value={editedData.height}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    height: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Weight</label>
-              <Input
-                placeholder="Enter Weight"
-                value={editedData.weight}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    weight: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Date of Birth</label>
-              <DatePicker
-                style={{ width: "100%" }}
-                value={
-                  editedData.patient_dob ? dayjs(editedData.patient_dob) : null
-                }
-                onChange={(date) =>
-                  setEditedData({
-                    ...editedData,
-                    patient_dob: date ? date.format("YYYY-MM-DD") : "",
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Gender</label>
-              <Select
-                placeholder="Select gender"
-                value={editedData.patient_gender}
-                onChange={(val) =>
-                  setEditedData({ ...editedData, patient_gender: val })
-                }
-                options={[
-                  { label: "Male", value: "male" },
-                  { label: "Female", value: "female" },
-                  { label: "Other", value: "other" },
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            ...editedData,
+            patient_dob: editedData.patient_dob
+              ? dayjs(editedData.patient_dob)
+              : null,
+          }}
+          onValuesChange={(changed, all) => {
+            setEditedData({
+              ...editedData,
+              ...all,
+            });
+          }}
+        >
+          <div
+            style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: 8 }}
+          >
+            {/* ---------- SECTION 1: PERSONAL INFORMATION ---------- */}
+            <h3>1. Personal Information</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="patientName"
+                label="Patient Name"
+                rules={[
+                  { required: true, message: "Patient name is required" },
                 ]}
-              />
-            </div>
+              >
+                <Input placeholder="Enter Patient Name" />
+              </Form.Item>
 
-            <div>
-              <label style={labelStyle}>Blood Group</label>
-              <Select
-                placeholder="Select blood group"
-                value={editedData.blood_group}
-                onChange={(val) =>
-                  setEditedData({ ...editedData, blood_group: val })
-                }
-                options={[
-                  { label: "A+", value: "A+" },
-                  { label: "A−", value: "A−" },
-                  { label: "B+", value: "B+" },
-                  { label: "B−", value: "B−" },
-                  { label: "AB+", value: "AB+" },
-                  { label: "AB−", value: "AB−" },
-                  { label: "O+", value: "O+" },
-                  { label: "O−", value: "O−" },
+              <Form.Item
+                name="age"
+                label="Age"
+                rules={[{ required: true, message: "Age is required" }]}
+              >
+                <Input placeholder="Enter Age" />
+              </Form.Item>
+
+              <Form.Item
+                name="patientEmail"
+                label="Patient Email Address"
+                rules={[
+                  { required: true, message: "Email is required" },
+                  { type: "email", message: "Invalid email" },
                 ]}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Home Address</label>
-              <Input
-                placeholder="Enter address"
-                value={editedData.patient_home_address}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    patient_home_address: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Primary Language</label>
-              <Input
-                placeholder="e.g. English"
-                value={editedData.primary_language}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    primary_language: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Religion</label>
-              <Input
-                placeholder="Enter religion"
-                value={editedData.religion}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, religion: e.target.value })
-                }
-              />
-            </div>
-
-            {/* <div>
-              <label style={labelStyle}>Escalate to Physician?</label>
-              <Radio.Group
-                value={editedData.escalate_to_physician}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    escalate_to_physician: e.target.value,
-                  })
-                }
               >
-                <Radio value="Yes">Yes</Radio>
-                <Radio value="No">No</Radio>
-              </Radio.Group>
-            </div> */}
+                <Input placeholder="Enter Email Address" type="email" />
+              </Form.Item>
 
-            {/* <div>
-              <label style={labelStyle}>Escalate to Physician?</label>
-              <Radio.Group
-                value={editedData.escalate_to_physician}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    escalate_to_physician: e.target.value,
-                  })
-                }
+              <Form.Item
+                name="country_code"
+                label="Country"
+                rules={[{ required: true, message: "Country is required" }]}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
-            </div> */}
+                <Select
+                  showSearch
+                  placeholder="Select Country"
+                  options={countryOptions}
+                  filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+              </Form.Item>
 
-            {/* <div>
-              <label style={labelStyle}>Caretaker</label>
-              <Select
-                placeholder="Select caretaker"
-                value={editedData.caretakerid}
-                onChange={(val) =>
-                  setEditedData({ ...editedData, caretakerid: val })
-                }
+              <Form.Item
+                name="patientPhone"
+                label="Patient Phone Number"
+                rules={[
+                  { required: true, message: "Phone number is required" },
+                ]}
               >
-                {caretakerList.map((ct) => (
-                  <Select.Option key={ct.id} value={ct.id}>
-                    {ct.caretaker_id}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div> */}
-          </div>
+                <Input placeholder="Enter Patient Phone Number" type="tel" />
+              </Form.Item>
 
-          {/* ---------- SECTION 2: EMERGENCY CONTACT ---------- */}
-          <h3 style={sectionTitle}>2. Emergency Contact</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Full Name</label>
-              <Input
-                placeholder="Enter name"
-                value={editedData.emer_con_name}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_name: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Relationship</label>
-              <Input
-                placeholder="e.g. Spouse, Child"
-                value={editedData.emer_con_relation}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_relation: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Country of Residence</label>
-              <Input
-                placeholder="Enter country"
-                value={editedData.emer_con_coun_of_residen}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_coun_of_residen: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Country</label>
-              <Select
-                showSearch
-                placeholder="Select Country"
-                value={editedData.emer_con_country_code}
-                onChange={(val) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_country_code: val,
-                  })
-                }
-                options={countryOptions}
-                filterOption={(input, option) =>
-                  option.label.toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Phone</label>
-              <Input
-                placeholder="Enter phone"
-                value={editedData.emer_con_phone}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_phone: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Email</label>
-              <Input
-                placeholder="Enter email"
-                value={editedData.emer_con_email}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    emer_con_email: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* ---------- SECTION 3: LOCAL CONTACT ---------- */}
-          <h3 style={sectionTitle}>3. Local Contact (if different)</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Full Name</label>
-              <Input
-                placeholder="Enter local contact name"
-                value={editedData.local_con_name}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    local_con_name: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Relationship</label>
-              <Input
-                placeholder="e.g. Friend, Neighbor"
-                value={editedData.local_con_relation}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    local_con_relation: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Country</label>
-              <Select
-                showSearch
-                placeholder="Select Country"
-                value={editedData.local_con_country_code}
-                onChange={(val) =>
-                  setEditedData({
-                    ...editedData,
-                    local_con_country_code: val,
-                  })
-                }
-                options={countryOptions}
-                filterOption={(input, option) =>
-                  option.label.toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Phone</label>
-              <Input
-                placeholder="Enter phone"
-                value={editedData.local_con_phone}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    local_con_phone: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          {/* ---------- SECTION 4: MEDICAL HISTORY ---------- */}
-          <h3 style={sectionTitle}>4. Medical History</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Diagnosis</label>
-              <Input.TextArea
-                placeholder="Enter diagnosis"
-                value={editedData.medical_his_diagnosis}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_diagnosis: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Cancer History</label>
-              <Input
-                placeholder="Enter cancer history"
-                value={editedData.medical_his_cancer}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_cancer: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Other Medical History</label>
-              <Input
-                placeholder="Other medical history"
-                value={editedData.medical_his_other}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_other: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Medical Care Provided</label>
-              <Input
-                placeholder="Medical Care Provided"
-                value={editedData.medical_his_provided_medi_care}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_provided_medi_care: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Major Surgeries</label>
-              <Input
-                placeholder="Enter major surgeries"
-                value={editedData.medical_his_major_surgeries}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_major_surgeries: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Current Symptoms</label>
-              <Input.TextArea
-                placeholder="Enter current symptoms"
-                value={editedData.medical_his_curr_symp}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    medical_his_curr_symp: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* ---------- SECTION 5: MEDICATIONS ---------- */}
-          <h3 style={sectionTitle}>5. Medications</h3>
-          <>
-            {medications.map((med, index) => (
-              <div
-                key={index}
-                style={{
-                  ...twoColGrid,
-                  marginBottom: "20px",
-                  borderBottom: "1px solid #eee",
-                  paddingBottom: "15px",
-                }}
+              <Form.Item
+                name="bp"
+                label="Blood Pressure"
+                rules={[
+                  { required: true, message: "Blood pressure is required" },
+                ]}
               >
-                <div>
-                  <label style={labelStyle}>Medication Name</label>
-                  <Input
-                    placeholder="Medication name"
-                    value={med.medication_name}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_name = e.target.value;
-                      setMedications(newMeds);
-                    }}
-                  />
-                </div>
+                <Input placeholder="Enter Blood Pressure" />
+              </Form.Item>
 
-                <div>
-                  <label style={labelStyle}>Dose</label>
-                  <Input
-                    placeholder="Dose"
-                    value={med.medication_dose}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_dose = e.target.value;
-                      setMedications(newMeds);
-                    }}
-                  />
-                </div>
+              <Form.Item
+                name="heartRate"
+                label="Heart Rate"
+                rules={[{ required: true, message: "Heart rate is required" }]}
+              >
+                <Input placeholder="Enter Heart Rate" />
+              </Form.Item>
 
-                <div>
-                  <label style={labelStyle}>Frequency</label>
-                  <Input
-                    placeholder="Frequency"
-                    value={med.medication_frequency}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_frequency = e.target.value;
-                      setMedications(newMeds);
-                    }}
-                  />
-                </div>
+              <Form.Item
+                name="sugar"
+                label="Blood Sugar"
+                rules={[{ required: true, message: "Blood sugar is required" }]}
+              >
+                <Input placeholder="Enter Blood Sugar" />
+              </Form.Item>
 
-                <div>
-                  <label style={labelStyle}>Reason</label>
-                  <Input
-                    placeholder="Reason for medication"
-                    value={med.medication_reason}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_reason = e.target.value;
-                      setMedications(newMeds);
-                    }}
-                  />
-                </div>
+              <Form.Item
+                name="oxygen"
+                label="Oxygen"
+                rules={[{ required: true, message: "Oxygen is required" }]}
+              >
+                <Input placeholder="Enter Oxygen" />
+              </Form.Item>
 
-                <div>
-                  <label style={labelStyle}>Medication Issues?</label>
-                  <Radio.Group
-                    value={med.medication_issues ? "yes" : "no"}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_issues =
-                        e.target.value === "yes";
-                      setMedications(newMeds);
-                    }}
-                  >
-                    <Radio value="yes">Yes</Radio>
-                    <Radio value="no">No</Radio>
-                  </Radio.Group>
-                </div>
+              <Form.Item
+                name="temperature"
+                label="Temperature"
+                rules={[{ required: true, message: "Temperature is required" }]}
+              >
+                <Input placeholder="Enter Temperature" />
+              </Form.Item>
 
-                <div>
-                  <label style={labelStyle}>Explain Issues</label>
-                  <Input.TextArea
-                    placeholder="Explain medication issues"
-                    value={med.medication_issues_explain}
-                    onChange={(e) => {
-                      const newMeds = [...medications];
-                      newMeds[index].medication_issues_explain = e.target.value;
-                      setMedications(newMeds);
-                    }}
-                  />
-                </div>
+              <Form.Item
+                name="respiratoryRate"
+                label="Respiratory Rate"
+                rules={[
+                  { required: true, message: "Respiratory rate is required" },
+                ]}
+              >
+                <Input placeholder="Enter Respiratory Rate" />
+              </Form.Item>
 
-                {medications.length > 1 && (
-                  <div style={{ textAlign: "right" }}>
-                    <Button
-                      danger
-                      onClick={() => {
-                        const newMeds = medications.filter(
-                          (_, i) => i !== index
-                        );
+              <Form.Item
+                name="height"
+                label="Height"
+                rules={[{ required: true, message: "Height is required" }]}
+              >
+                <Input placeholder="Enter Height" />
+              </Form.Item>
+
+              <Form.Item
+                name="weight"
+                label="Weight"
+                rules={[{ required: true, message: "Weight is required" }]}
+              >
+                <Input placeholder="Enter Weight" />
+              </Form.Item>
+
+              <Form.Item
+                name="patient_dob"
+                label="Date of Birth"
+                rules={[
+                  { required: true, message: "Date of birth is required" },
+                ]}
+              >
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+
+              <Form.Item
+                name="patient_gender"
+                label="Gender"
+                rules={[{ required: true, message: "Gender is required" }]}
+              >
+                <Select
+                  options={[
+                    { label: "Male", value: "male" },
+                    { label: "Female", value: "female" },
+                    { label: "Other", value: "other" },
+                  ]}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="blood_group"
+                label="Blood Group"
+                rules={[{ required: true, message: "Blood group is required" }]}
+              >
+                <Select
+                  options={[
+                    { label: "A+", value: "A+" },
+                    { label: "A−", value: "A−" },
+                    { label: "B+", value: "B+" },
+                    { label: "B−", value: "B−" },
+                    { label: "AB+", value: "AB+" },
+                    { label: "AB−", value: "AB−" },
+                    { label: "O+", value: "O+" },
+                    { label: "O−", value: "O−" },
+                  ]}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="patient_home_address"
+                label="Home Address"
+                rules={[
+                  { required: true, message: "Home address is required" },
+                ]}
+              >
+                <Input placeholder="Enter address" />
+              </Form.Item>
+
+              <Form.Item
+                name="primary_language"
+                label="Primary Language"
+                rules={[
+                  { required: true, message: "Primary language is required" },
+                ]}
+              >
+                <Input placeholder="e.g. English" />
+              </Form.Item>
+
+              <Form.Item
+                name="religion"
+                label="Religion"
+                rules={[{ required: true, message: "Religion is required" }]}
+              >
+                <Input placeholder="Enter religion" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 2: EMERGENCY CONTACT ---------- */}
+            <h3>2. Emergency Contact</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="emer_con_name"
+                label="Full Name"
+                rules={[{ required: true, message: "Name is required" }]}
+              >
+                <Input placeholder="Enter name" />
+              </Form.Item>
+
+              <Form.Item
+                name="emer_con_relation"
+                label="Relationship"
+                rules={[
+                  { required: true, message: "Relationship is required" },
+                ]}
+              >
+                <Input placeholder="e.g. Spouse" />
+              </Form.Item>
+
+              <Form.Item
+                name="emer_con_coun_of_residen"
+                label="Country of Residence"
+                rules={[
+                  {
+                    required: true,
+                    message: "Country of residence is required",
+                  },
+                ]}
+              >
+                <Input placeholder="Enter country" />
+              </Form.Item>
+
+              <Form.Item
+                name="emer_con_country_code"
+                label="Country"
+                rules={[{ required: true, message: "Country is required" }]}
+              >
+                <Select
+                  showSearch
+                  options={countryOptions}
+                  placeholder="Select Country"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="emer_con_phone"
+                label="Phone"
+                rules={[{ required: true, message: "Phone is required" }]}
+              >
+                <Input placeholder="Enter phone" />
+              </Form.Item>
+
+              <Form.Item
+                name="emer_con_email"
+                label="Email"
+                rules={[
+                  { required: true, message: "Email is required" },
+                  { type: "email", message: "Invalid email" },
+                ]}
+              >
+                <Input placeholder="Enter email" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 3: LOCAL CONTACT ---------- */}
+            <h3>3. Local Contact (if different)</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="local_con_name"
+                label="Full Name"
+                rules={[
+                  { required: true, message: "Local contact name required" },
+                ]}
+              >
+                <Input placeholder="Enter local contact name" />
+              </Form.Item>
+
+              <Form.Item
+                name="local_con_relation"
+                label="Relationship"
+                rules={[{ required: true, message: "Relationship required" }]}
+              >
+                <Input placeholder="e.g. Friend" />
+              </Form.Item>
+
+              <Form.Item
+                name="local_con_country_code"
+                label="Country"
+                rules={[{ required: true, message: "Country required" }]}
+              >
+                <Select
+                  showSearch
+                  placeholder="Select Country"
+                  options={countryOptions}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="local_con_phone"
+                label="Phone"
+                rules={[{ required: true, message: "Phone required" }]}
+              >
+                <Input placeholder="Enter phone" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 4: MEDICAL HISTORY ---------- */}
+            <h3>4. Medical History</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="medical_his_diagnosis"
+                label="Diagnosis"
+                rules={[{ required: true, message: "Diagnosis is required" }]}
+              >
+                <Input.TextArea placeholder="Enter diagnosis" />
+              </Form.Item>
+
+              <Form.Item
+                name="medical_his_cancer"
+                label="Cancer History"
+                rules={[{ required: true, message: "Cancer history required" }]}
+              >
+                <Input placeholder="Enter cancer history" />
+              </Form.Item>
+
+              <Form.Item
+                name="medical_his_other"
+                label="Other Medical History"
+                rules={[
+                  { required: true, message: "Other medical history required" },
+                ]}
+              >
+                <Input placeholder="Other medical history" />
+              </Form.Item>
+
+              <Form.Item
+                name="medical_his_provided_medi_care"
+                label="Medical Care Provided"
+                rules={[
+                  { required: true, message: "Medical care info required" },
+                ]}
+              >
+                <Input placeholder="Medical Care Provided" />
+              </Form.Item>
+
+              <Form.Item
+                name="medical_his_major_surgeries"
+                label="Major Surgeries"
+                rules={[
+                  { required: true, message: "Major surgeries required" },
+                ]}
+              >
+                <Input placeholder="Enter major surgeries" />
+              </Form.Item>
+
+              <Form.Item
+                name="medical_his_curr_symp"
+                label="Current Symptoms"
+                rules={[
+                  { required: true, message: "Current symptoms required" },
+                ]}
+              >
+                <Input.TextArea placeholder="Enter current symptoms" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 5: MEDICATIONS (unchanged, state-based) ---------- */}
+            <h3>5. Medications</h3>
+            <>
+              {medications.map((med, index) => (
+                <div
+                  key={index}
+                  style={{
+                    ...twoColGrid,
+                    marginBottom: "20px",
+                    borderBottom: "1px solid #eee",
+                    paddingBottom: "15px",
+                  }}
+                >
+                  {/* Your original medication inputs kept intact */}
+                  <div>
+                    <label>Medication Name</label>
+                    <Input
+                      placeholder="Medication name"
+                      value={med.medication_name}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_name = e.target.value;
+                        setMedications(newMeds);
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Dose</label>
+                    <Input
+                      placeholder="Dose"
+                      value={med.medication_dose}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_dose = e.target.value;
+                        setMedications(newMeds);
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Frequency</label>
+                    <Input
+                      placeholder="Frequency"
+                      value={med.medication_frequency}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_frequency = e.target.value;
+                        setMedications(newMeds);
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Reason</label>
+                    <Input
+                      placeholder="Reason for medication"
+                      value={med.medication_reason}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_reason = e.target.value;
+                        setMedications(newMeds);
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label>Medication Issues?</label>
+                    <Radio.Group
+                      value={med.medication_issues ? "yes" : "no"}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_issues =
+                          e.target.value === "yes";
                         setMedications(newMeds);
                       }}
                     >
-                      Remove
-                    </Button>
+                      <Radio value="yes">Yes</Radio>
+                      <Radio value="no">No</Radio>
+                    </Radio.Group>
                   </div>
-                )}
+
+                  <div>
+                    <label>Explain Issues</label>
+                    <Input.TextArea
+                      placeholder="Explain medication issues"
+                      value={med.medication_issues_explain}
+                      onChange={(e) => {
+                        const newMeds = [...medications];
+                        newMeds[index].medication_issues_explain =
+                          e.target.value;
+                        setMedications(newMeds);
+                      }}
+                    />
+                  </div>
+
+                  {medications.length > 1 && (
+                    <div style={{ textAlign: "right" }}>
+                      <Button
+                        danger
+                        onClick={() => {
+                          const newMeds = medications.filter(
+                            (_, i) => i !== index
+                          );
+                          setMedications(newMeds);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div style={{ textAlign: "right" }}>
+                <Button
+                  type="dashed"
+                  onClick={() =>
+                    setMedications([
+                      ...medications,
+                      {
+                        medication_name: "",
+                        medication_dose: "",
+                        medication_frequency: "",
+                        medication_reason: "",
+                        medication_issues: false,
+                        medication_issues_explain: "",
+                      },
+                    ])
+                  }
+                >
+                  + Add Medication
+                </Button>
               </div>
-            ))}
+            </>
 
-            <div style={{ textAlign: "right" }}>
-              <Button
-                type="dashed"
-                onClick={() =>
-                  setMedications([
-                    ...medications,
-                    {
-                      medication_name: "",
-                      medication_dose: "",
-                      medication_frequency: "",
-                      medication_reason: "",
-                      medication_issues: false,
-                      medication_issues_explain: "",
-                    },
-                  ])
-                }
+            {/* ---------- SECTION 6: ALLERGIES ---------- */}
+            <h3>6. Allergies</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="allergies_issues"
+                label="Allergies to Drugs?"
+                rules={[{ required: true, message: "Please select an option" }]}
               >
-                + Add Medication
-              </Button>
-            </div>
-          </>
+                <Radio.Group>
+                  <Radio value={true}>Yes</Radio>
+                  <Radio value={false}>No</Radio>
+                </Radio.Group>
+              </Form.Item>
 
-          {/* ---------- SECTION 6: ALLERGIES ---------- */}
-          <h3 style={sectionTitle}>6. Allergies</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Allergies to Drugs?</label>
-              <Radio.Group
-                value={
-                  editedData.allergies_issues === true
-                    ? "yes"
-                    : editedData.allergies_issues === false
-                    ? "no"
-                    : ""
-                }
-                onChange={(e) => {
-                  setEditedData({
-                    ...editedData,
-                    allergies_issues: e.target.value === "yes",
-                  });
-                }}
+              <Form.Item
+                name="allergies_drug"
+                label="Drug Allergies"
+                rules={[{ required: true, message: "Drug allergies required" }]}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
-            </div>
+                <Input placeholder="Enter drug allergies" />
+              </Form.Item>
 
-            <div>
-              <label style={labelStyle}>Drug Allergies</label>
-              <Input
-                placeholder="Enter drug allergies"
-                value={editedData.allergies_drug}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    allergies_drug: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Food Allergies</label>
-              <Input
-                placeholder="Enter food allergies"
-                value={editedData.allergies_food}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    allergies_food: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* ---------- SECTION 7: FUNCTIONAL STATUS ---------- */}
-          <h3 style={sectionTitle}>7. Functional Status</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Bathing</label>
-              <Input
-                placeholder="Can the patient bathe independently?"
-                value={editedData.functional_bathe}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_bathe: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Dressing</label>
-              <Input
-                placeholder="Can the patient dress independently?"
-                value={editedData.functional_dress}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_dress: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Eating</label>
-              <Input
-                placeholder="Can the patient eat independently?"
-                value={editedData.functional_eat}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_eat: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Walking</label>
-              <Input
-                placeholder="Can the patient walk independently?"
-                value={editedData.functional_walk}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_walk: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Use Bathroom</label>
-              <Input
-                placeholder="Can the patient use bathroom independently?"
-                value={editedData.functional_use_bathroom}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_use_bathroom: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Daily Activity</label>
-              <Input
-                placeholder="Can the patient manage daily activity?"
-                value={editedData.functional_daily_activity}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_daily_activity: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Manage Finance</label>
-              <Input
-                placeholder="Can the patient manage finances?"
-                value={editedData.functional_manage_finance}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_manage_finance: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Any Falls?</label>
-              <Radio.Group
-                value={
-                  editedData.functional_any_falls === true
-                    ? "yes"
-                    : editedData.functional_any_falls === false
-                    ? "no"
-                    : ""
-                }
-                onChange={(e) => {
-                  setEditedData({
-                    ...editedData,
-                    functional_any_falls: e.target.value === "yes",
-                  });
-                }}
+              <Form.Item
+                name="allergies_food"
+                label="Food Allergies"
+                rules={[{ required: true, message: "Food allergies required" }]}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
+                <Input placeholder="Enter food allergies" />
+              </Form.Item>
             </div>
 
-            <div>
-              <label style={labelStyle}>How Many?</label>
-              <Input
-                placeholder="Number of falls"
-                value={editedData.functional_how_many}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    functional_how_many: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Memory Problems?</label>
-              <Radio.Group
-                value={
-                  editedData.functional_memory_pbms === true
-                    ? "yes"
-                    : editedData.functional_memory_pbms === false
-                    ? "no"
-                    : ""
-                }
-                onChange={(e) => {
-                  setEditedData({
-                    ...editedData,
-                    functional_memory_pbms: e.target.value === "yes",
-                  });
-                }}
+            {/* ---------- SECTION 7: FUNCTIONAL STATUS ---------- */}
+            <h3>7. Functional Status</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="functional_bathe"
+                label="Bathing"
+                rules={[{ required: true, message: "Bathing info required" }]}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
-            </div>
-          </div>
-          {/* ---------- SECTION 8: LIFESTYLE ---------- */}
-          <h3 style={sectionTitle}>8. Lifestyle</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Daily Routine</label>
-              <Input.TextArea
-                placeholder="Describe daily routine"
-                value={editedData.lifestyle_daily_routine}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_daily_routine: e.target.value,
-                  })
-                }
-              />
-            </div>
+                <Input placeholder="Can the patient bathe independently?" />
+              </Form.Item>
 
-            <div>
-              <label style={labelStyle}>Dietary Habits</label>
-              <Input
-                placeholder="Dietary habits"
-                value={editedData.lifestyle_dietary_habits}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_dietary_habits: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Sleep Quality</label>
-              <Input
-                placeholder="Sleep quality"
-                value={editedData.lifestyle_sleep_quality}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_sleep_quality: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Physical Activity</label>
-              <Input
-                placeholder="Physical activity"
-                value={editedData.lifestyle_physical_activity}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_physical_activity: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Alcohol Use</label>
-              <Input
-                placeholder="Alcohol use"
-                value={editedData.lifestyle_alcohol_use}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_alcohol_use: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Pain Complaints</label>
-              <Input
-                placeholder="Pain complaints"
-                value={editedData.lifestyle_pain_complaints}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_pain_complaints: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Pain Location</label>
-              <Input
-                placeholder="Pain location"
-                value={editedData.lifestyle_pain_where}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    lifestyle_pain_where: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* ---------- SECTION 9: SOCIAL & EMOTIONAL ---------- */}
-          <h3 style={sectionTitle}>9. Social & Emotional</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Social / Emotional Health</label>
-              <Input.TextArea
-                placeholder="Social / Emotional Health"
-                value={editedData.social_emotion_health}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    social_emotion_health: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Spiritual Needs</label>
-              <Input.TextArea
-                placeholder="Spiritual needs"
-                value={editedData.social_spiritual_needs}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    social_spiritual_needs: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Trusted Person?</label>
-              <Radio.Group
-                value={
-                  editedData.social_trusted_person === true
-                    ? "yes"
-                    : editedData.social_trusted_person === false
-                    ? "no"
-                    : ""
-                }
-                onChange={(e) => {
-                  setEditedData({
-                    ...editedData,
-                    social_trusted_person: e.target.value === "yes",
-                  });
-                }}
+              <Form.Item
+                name="functional_dress"
+                label="Dressing"
+                rules={[{ required: true, message: "Dressing info required" }]}
               >
-                <Radio value="yes">Yes</Radio>
-                <Radio value="no">No</Radio>
-              </Radio.Group>
+                <Input placeholder="Can the patient dress independently?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_eat"
+                label="Eating"
+                rules={[{ required: true, message: "Eating info required" }]}
+              >
+                <Input placeholder="Can the patient eat independently?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_walk"
+                label="Walking"
+                rules={[{ required: true, message: "Walking info required" }]}
+              >
+                <Input placeholder="Can the patient walk independently?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_use_bathroom"
+                label="Use Bathroom"
+                rules={[{ required: true, message: "Bathroom info required" }]}
+              >
+                <Input placeholder="Can the patient use bathroom independently?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_daily_activity"
+                label="Daily Activity"
+                rules={[
+                  { required: true, message: "Daily activity info required" },
+                ]}
+              >
+                <Input placeholder="Can the patient manage daily activity?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_manage_finance"
+                label="Manage Finance"
+                rules={[{ required: true, message: "Finance info required" }]}
+              >
+                <Input placeholder="Can the patient manage finances?" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_any_falls"
+                label="Any Falls?"
+                rules={[{ required: true, message: "Please select yes or no" }]}
+              >
+                <Radio.Group>
+                  <Radio value={true}>Yes</Radio>
+                  <Radio value={false}>No</Radio>
+                </Radio.Group>
+              </Form.Item>
+
+              <Form.Item
+                name="functional_how_many"
+                label="How Many?"
+                rules={[
+                  { required: true, message: "Please enter number of falls" },
+                ]}
+              >
+                <Input placeholder="Number of falls" />
+              </Form.Item>
+
+              <Form.Item
+                name="functional_memory_pbms"
+                label="Memory Problems?"
+                rules={[{ required: true, message: "Please select yes or no" }]}
+              >
+                <Radio.Group>
+                  <Radio value={true}>Yes</Radio>
+                  <Radio value={false}>No</Radio>
+                </Radio.Group>
+              </Form.Item>
             </div>
 
-            <div>
-              <label style={labelStyle}>Trusted Person Name</label>
-              <Input
-                placeholder="Trusted person name"
-                value={editedData.social_name}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, social_name: e.target.value })
-                }
-              />
+            {/* ---------- SECTION 8: LIFESTYLE ---------- */}
+            <h3>8. Lifestyle</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="lifestyle_daily_routine"
+                label="Daily Routine"
+                rules={[{ required: true, message: "Daily routine required" }]}
+              >
+                <Input.TextArea placeholder="Describe daily routine" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_dietary_habits"
+                label="Dietary Habits"
+                rules={[{ required: true, message: "Dietary habits required" }]}
+              >
+                <Input placeholder="Dietary habits" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_sleep_quality"
+                label="Sleep Quality"
+                rules={[{ required: true, message: "Sleep quality required" }]}
+              >
+                <Input placeholder="Sleep quality" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_physical_activity"
+                label="Physical Activity"
+                rules={[
+                  { required: true, message: "Physical activity required" },
+                ]}
+              >
+                <Input placeholder="Physical activity" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_alcohol_use"
+                label="Alcohol Use"
+                rules={[{ required: true, message: "Alcohol use required" }]}
+              >
+                <Input placeholder="Alcohol use" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_pain_complaints"
+                label="Pain Complaints"
+                rules={[
+                  { required: true, message: "Pain complaints required" },
+                ]}
+              >
+                <Input placeholder="Pain complaints" />
+              </Form.Item>
+
+              <Form.Item
+                name="lifestyle_pain_where"
+                label="Pain Location"
+                rules={[{ required: true, message: "Pain location required" }]}
+              >
+                <Input placeholder="Pain location" />
+              </Form.Item>
             </div>
+
+            {/* ---------- SECTION 9: SOCIAL & EMOTIONAL ---------- */}
+            <h3>9. Social & Emotional</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="social_emotion_health"
+                label="Social / Emotional Health"
+                rules={[
+                  { required: true, message: "Social/emotional info required" },
+                ]}
+              >
+                <Input.TextArea placeholder="Social / Emotional Health" />
+              </Form.Item>
+
+              <Form.Item
+                name="social_spiritual_needs"
+                label="Spiritual Needs"
+                rules={[
+                  { required: true, message: "Spiritual needs required" },
+                ]}
+              >
+                <Input.TextArea placeholder="Spiritual needs" />
+              </Form.Item>
+
+              <Form.Item
+                name="social_trusted_person"
+                label="Trusted Person?"
+                rules={[{ required: true, message: "Please select yes or no" }]}
+              >
+                <Radio.Group>
+                  <Radio value={true}>Yes</Radio>
+                  <Radio value={false}>No</Radio>
+                </Radio.Group>
+              </Form.Item>
+
+              <Form.Item
+                name="social_name"
+                label="Trusted Person Name"
+                rules={[
+                  { required: true, message: "Trusted person name required" },
+                ]}
+              >
+                <Input placeholder="Trusted person name" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 10: GOALS ---------- */}
+            <h3>10. Goals</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                name="goals_family_hope"
+                label="Family Hopes"
+                rules={[{ required: true, message: "Family hopes required" }]}
+              >
+                <Input.TextArea placeholder="Family hopes / goals" />
+              </Form.Item>
+
+              <Form.Item
+                name="goals_special_instructions"
+                label="Special Instructions"
+                rules={[
+                  { required: true, message: "Special instructions required" },
+                ]}
+              >
+                <Input.TextArea placeholder="Special instructions" />
+              </Form.Item>
+
+              <Form.Item
+                name="goals_term_membership"
+                label="Term Membership"
+                rules={[
+                  { required: true, message: "Term membership required" },
+                ]}
+              >
+                <Input placeholder="Term membership" />
+              </Form.Item>
+            </div>
+
+            {/* ---------- SECTION 11: FILE UPLOADS ---------- */}
+            <h3 style={sectionTitle}>11. Upload Files</h3>
+            <Upload
+              multiple
+              fileList={editedData.patient_upload_files || []}
+              beforeUpload={(file) => {
+                // Add file in the correct format
+                const newFile = {
+                  uid: file.uid,
+                  name: file.name,
+                  status: "done", // to show as uploaded
+                  originFileObj: file,
+                };
+                setEditedData({
+                  ...editedData,
+                  patient_upload_files: [
+                    ...(editedData.patient_upload_files || []),
+                    newFile,
+                  ],
+                });
+                return false; // prevent auto-upload
+              }}
+              onRemove={(file) => {
+                setEditedData({
+                  ...editedData,
+                  patient_upload_files: (
+                    editedData.patient_upload_files || []
+                  ).filter((f) => f.uid !== file.uid),
+                });
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Select Files</Button>
+            </Upload>
           </div>
-
-          {/* ---------- SECTION 10: GOALS ---------- */}
-          <h3 style={sectionTitle}>10. Goals</h3>
-          <div style={twoColGrid}>
-            <div>
-              <label style={labelStyle}>Family Hopes</label>
-              <Input.TextArea
-                placeholder="Family hopes / goals"
-                value={editedData.goals_family_hope}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    goals_family_hope: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Special Instructions</label>
-              <Input.TextArea
-                placeholder="Special instructions"
-                value={editedData.goals_special_instructions}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    goals_special_instructions: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Term Membership</label>
-              <Input
-                placeholder="Term membership"
-                value={editedData.goals_term_membership}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    goals_term_membership: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* ---------- SECTION 11: FILE UPLOADS ---------- */}
-          <h3 style={sectionTitle}>11. Upload Files</h3>
-          <Upload
-            multiple
-            beforeUpload={(file) => {
-              setEditedData({
-                ...editedData,
-                patient_upload_files: [
-                  ...(editedData.patient_upload_files || []),
-                  file,
-                ],
-              });
-              return false; // prevent auto-upload
-            }}
-            fileList={editedData.patient_upload_files || []}
-            onRemove={(file) => {
-              setEditedData({
-                ...editedData,
-                patient_upload_files: (
-                  editedData.patient_upload_files || []
-                ).filter((f) => f.uid !== file.uid),
-              });
-            }}
-          >
-            <Button icon={<UploadOutlined />}>Select Files</Button>
-          </Upload>
-        </div>
+        </Form>
       </Modal>
 
       <Modal
