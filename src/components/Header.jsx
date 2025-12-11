@@ -1631,6 +1631,41 @@ export default function HeaderComponent() {
             >
               <Button icon={<UploadOutlined />}>Select Files</Button>
             </Upload>
+
+            <Form.Item
+              name="accept_terms"
+              valuePropName="checked"
+              rules={[
+                {
+                  validator: (_, value) =>
+                    value
+                      ? Promise.resolve()
+                      : Promise.reject("You must accept the terms to continue"),
+                },
+              ]}
+            >
+              <Checkbox style={{ marginTop: 20 }}>
+                I agree to the{" "}
+                <a href="https://verimed.care/consent-of-care" target="_blank">
+                  Consent of Care
+                </a>
+                ,{" "}
+                <a
+                  href="https://verimed.care/patient-family-bill-of-rights"
+                  target="_blank"
+                >
+                  Patient & Family Bill of Rights
+                </a>{" "}
+                and{" "}
+                <a
+                  href="https://verimed.care/hipaa-release-privacy"
+                  target="_blank"
+                >
+                  HIPAA Release & Privacy Statement
+                </a>
+                .
+              </Checkbox>
+            </Form.Item>
           </div>
         </Form>
       </Modal>
