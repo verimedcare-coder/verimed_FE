@@ -124,7 +124,7 @@ export default function CustomSider() {
 
   const activeItem =
     filteredMenuItems.find((item) =>
-      (location?.pathname || "").startsWith(item.path)
+      (location?.pathname || "").startsWith(item.path),
     )?.path || filteredMenuItems[0].path;
 
   const base_url1 = "https://verimedramja.pythonanywhere.com";

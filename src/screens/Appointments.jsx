@@ -157,7 +157,7 @@ export default function Appointments() {
   }, []);
 
   const caretakerId = JSON.parse(
-    localStorage.getItem("selectedPatientData")
+    localStorage.getItem("selectedPatientData"),
   )?.caretaker;
   const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
 
@@ -171,11 +171,11 @@ export default function Appointments() {
         (time) => {
           const [hour, minute] = time.split(":");
           return `${parseInt(hour, 10)}:${minute}`;
-        }
+        },
       );
 
       const bookappoinment_data = {
-        dep: values.depId,
+        dep: values.depId || values.appointmentType,
         patient: patientId,
         sponsor: sponsorId,
         caretaker: caretakerId,
@@ -198,7 +198,7 @@ export default function Appointments() {
       const formData = new FormData();
       formData.append(
         "bookappoinment_data",
-        JSON.stringify(bookappoinment_data)
+        JSON.stringify(bookappoinment_data),
       );
 
       if (values.labReport && values.labReport.length > 0) {
@@ -326,7 +326,8 @@ export default function Appointments() {
 
       return {
         id: appt.id,
-        appointment_type: appt.appointment_type || depName,
+        appointment_type: appt.appointment_type,
+        depName: depName,
         date: displayDate,
         doctor: doctorName,
         doctorName,
@@ -359,7 +360,7 @@ export default function Appointments() {
 
   const renderAppointments = (status) => {
     const filtered = mappedAppointments.filter(
-      (appt) => appt.status === status
+      (appt) => appt.status === status,
     );
     if (!filtered.length)
       return <Empty description="No Appointments" style={{ marginTop: 50 }} />;
@@ -448,7 +449,7 @@ export default function Appointments() {
                     }}
                   >
                     <BookOutlined style={{ color: "#6B7280" }} />
-                    {appt.appointment_type}
+                    {appt.depName}
                   </div>
                   <div
                     style={{
@@ -531,11 +532,11 @@ export default function Appointments() {
 
   const handlePrevMonth = () =>
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1),
     );
   const handleNextMonth = () =>
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
     );
 
   const handleCardClick = (appointment) => {
@@ -557,7 +558,7 @@ export default function Appointments() {
 
   const monthDays = getMonthDays(
     currentMonth.getFullYear(),
-    currentMonth.getMonth()
+    currentMonth.getMonth(),
   );
   const appointmentDates = mappedAppointments
     .filter((a) => a.date)
@@ -592,14 +593,14 @@ export default function Appointments() {
       blood_sugar: safe(selectedAppointment?.fullData?.blood_sugar),
       medical_history: safe(selectedAppointment?.fullData?.medical_history),
       appointment_history: safe(
-        selectedAppointment?.fullData?.appointment_history
+        selectedAppointment?.fullData?.appointment_history,
       ),
       time_line: safe(selectedAppointment?.fullData?.time_line),
       appointment_reason: safe(
-        selectedAppointment?.fullData?.appointment_reason
+        selectedAppointment?.fullData?.appointment_reason,
       ),
       appointment_status: safe(
-        selectedAppointment?.fullData?.appointment_status
+        selectedAppointment?.fullData?.appointment_status,
       ),
       preferred_dates: selectedAppointment?.fullData?.preferred_dates,
       preferred_times: selectedAppointment?.fullData?.preferred_times,
@@ -612,7 +613,7 @@ export default function Appointments() {
       const formData = new FormData();
       formData.append(
         "bookappoinment_data",
-        JSON.stringify(bookappoinment_data)
+        JSON.stringify(bookappoinment_data),
       );
       formData.append("lab_reports_ids", null);
       await axios.patch(endpoint, formData, { headers });
@@ -735,7 +736,7 @@ export default function Appointments() {
                         <b>Date:</b>{" "}
                         {selectedAppointment.date
                           ? new Date(
-                              selectedAppointment.date
+                              selectedAppointment.date,
                             ).toLocaleDateString()
                           : "N/A"}
                       </div>
@@ -762,8 +763,8 @@ export default function Appointments() {
                             selectedAppointment.status === "upcoming"
                               ? "blue"
                               : selectedAppointment.status === "past"
-                              ? "gray"
-                              : "red"
+                                ? "gray"
+                                : "red"
                           }
                         >
                           {selectedAppointment.status.toUpperCase()}
@@ -923,7 +924,7 @@ export default function Appointments() {
                                 }
                               >
                                 {new Date(
-                                  selectedAppointment.date
+                                  selectedAppointment.date,
                                 ).toLocaleDateString()}
                               </Option>
                             ) : null}
@@ -1090,11 +1091,11 @@ export default function Appointments() {
                   {Array.from({ length: monthDays[0].getDay() }).map(
                     (_, idx) => (
                       <div key={`empty-${idx}`} />
-                    )
+                    ),
                   )}
                   {monthDays.map((day) => {
                     const isAppointment = appointmentDates.includes(
-                      day.toDateString()
+                      day.toDateString(),
                     );
                     return (
                       <div
@@ -1124,7 +1125,7 @@ export default function Appointments() {
                     (a.status === "upcoming" ||
                       (a.date &&
                         a.date.getMonth() === currentMonth.getMonth() &&
-                        a.date.getFullYear() === currentMonth.getFullYear()))
+                        a.date.getFullYear() === currentMonth.getFullYear())),
                 )
                 .map((appt, index) => {
                   const isSelected =
@@ -1269,27 +1270,19 @@ export default function Appointments() {
                 Request Service
               </span>
             }
+            rules={[{ required: true, message: "Please select a service" }]}
           >
-            <Select
-              placeholder="Select Department"
-              onChange={(value, option) => {
-                form.setFieldsValue({ depId: option.depId });
-              }}
-            >
-              {services?.map((service) => (
-                <Option
-                  key={service.id}
-                  value={service.name}
-                  depId={service.id}
-                >
-                  {service.name}
+            <Select placeholder="Select Department">
+              {deptList?.map((dept) => (
+                <Option key={dept.id} value={dept.id}>
+                  {dept.dep_name}
                 </Option>
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="depId" hidden>
+          {/* <Form.Item name="depId" hidden>
             <Input type="hidden" />
-          </Form.Item>
+          </Form.Item> */}
 
           <Form.Item
             label={
@@ -1341,8 +1334,8 @@ export default function Appointments() {
                   hour < 12
                     ? `${hour}:00 AM`
                     : hour === 12
-                    ? "12:00 PM"
-                    : `${hour - 12}:00 PM`;
+                      ? "12:00 PM"
+                      : `${hour - 12}:00 PM`;
                 return (
                   <Option key={value} value={value}>
                     {display}
