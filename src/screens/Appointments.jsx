@@ -66,49 +66,6 @@ export default function Appointments() {
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
 
-  const services = [
-    {
-      id: 1,
-      name: "Welcome to Verimed",
-    },
-    {
-      id: 2,
-      name: "Comprehensive Physician Intake (In-Person)",
-    },
-    {
-      id: 3,
-      name: "In-Home Follow-up Physician Visit",
-    },
-    {
-      id: 4,
-      name: "Virtual Physician Visit",
-    },
-    {
-      id: 5,
-      name: "Nurse Wellness Check",
-    },
-    {
-      id: 6,
-      name: "Rehydration & IV Fluid Therapy",
-    },
-    {
-      id: 7,
-      name: "Infusion Therapy (Prescribed Medication)",
-    },
-    {
-      id: 8,
-      name: "Care Management & Navigation",
-    },
-    {
-      id: 9,
-      name: "Wellness Coaching",
-    },
-    {
-      id: 10,
-      name: "Diabetes Coaching &amp; Chronic Illness Management",
-    },
-  ];
-
   const patientId = Number(localStorage.getItem("selectedPatientId"));
 
   const handleDateSelect = (date) => {
