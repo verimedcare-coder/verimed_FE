@@ -582,6 +582,8 @@ export default function Appointments() {
     }
   };
 
+  console.log("selectedAppointment", selectedAppointment);
+
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
       <div style={{ width: "240px", flexShrink: 0 }}>
@@ -703,9 +705,9 @@ export default function Appointments() {
                           ? selectedAppointment.time.join(", ")
                           : selectedAppointment.time || "N/A"}
                       </div>
-                      <div>
+                      {/* <div>
                         <b>Doctor:</b> {selectedAppointment.doctorName || "N/A"}
-                      </div>
+                      </div> */}
                       <div>
                         <b>Patient:</b> {selectedAppointment.name || "N/A"}
                       </div>
