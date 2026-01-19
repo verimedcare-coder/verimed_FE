@@ -38,7 +38,7 @@ export default function Overview() {
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const [caretakerAppoinments, setCaretakerAppoinments] = useState([]);
   const [medicalReports, setMedicalReports] = useState([]);
-  const [doctorId, setDoctorId] = useState(null);
+
   const token = localStorage.getItem("token");
 
   const fetchAppointments = async () => {
@@ -91,10 +91,6 @@ export default function Overview() {
       fetchPatientDetails();
     }
 
-    if (user?.user_role === "doctor") {
-      fetchDoctorAppointments();
-    }
-
     if (user?.user_role === "care_taker") {
       fetchcaretakerAppointments();
     }
@@ -117,41 +113,46 @@ export default function Overview() {
     fetchLoggedInDoctor();
   }, [user, token]);
 
+  // useEffect(() => {
+  //   const doctorDataRaw = localStorage.getItem("doctorData");
+  //   if (doctorDataRaw && doctorDataRaw !== "undefined") {
+  //     try {
+  //       const doctorData = JSON.parse(doctorDataRaw);
+  //       setDoctorId(doctorData?.id || null);
+  //     } catch (error) {
+  //       console.error("Error parsing doctorData:", error);
+  //       setDoctorId(null);
+  //     }
+  //   }
+  // }, []);
+
+  const doctorDataRaw = localStorage.getItem("doctorData");
+  let doctorId = 0;
+  if (doctorDataRaw && doctorDataRaw !== "undefined") {
+    const doctorData = JSON.parse(doctorDataRaw);
+    doctorId = doctorData?.id || null;
+  }
+
   useEffect(() => {
-    const doctorDataRaw = localStorage.getItem("doctorData");
-    if (doctorDataRaw && doctorDataRaw !== "undefined") {
+    const fetchDoctorAppointments = async () => {
       try {
-        const doctorData = JSON.parse(doctorDataRaw);
-        setDoctorId(doctorData?.id || null);
+        const endpoint = `${base_url}/vb_doctorappoinment_list/`;
+        const headers = { Authorization: `Token ${token}` };
+
+        const payload = { doctorprofileid: doctorId };
+        const res = await axios.post(endpoint, payload, { headers });
+        if (Array.isArray(res.data)) {
+          setDoctorAppointments(res.data);
+        } else {
+          console.warn("Unexpected doctor appointments response:", res.data);
+        }
       } catch (error) {
-        console.error("Error parsing doctorData:", error);
-        setDoctorId(null);
+        console.error("Error fetching doctor appointments:", error);
       }
-    }
-  }, []);
+    };
 
-  const fetchDoctorAppointments = async () => {
-    try {
-      const endpoint = `${base_url}/vb_doctorappoinment_list/`;
-      const headers = { Authorization: `Token ${token}` };
-
-      const payload = { doctorprofileid: doctorId };
-      const res = await axios.post(endpoint, payload, { headers });
-      if (Array.isArray(res.data)) {
-        setDoctorAppointments(res.data);
-      } else {
-        console.warn("Unexpected doctor appointments response:", res.data);
-      }
-    } catch (error) {
-      console.error("Error fetching doctor appointments:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (doctorId) {
-      fetchDoctorAppointments();
-    }
-  }, [doctorId]);
+    fetchDoctorAppointments();
+  }, [doctorId, token]);
 
   const fetchcaretakerAppointments = async () => {
     try {
@@ -1497,10 +1498,8 @@ export default function Overview() {
                 {doctorAppointments.slice(0, visibleCount).map((appt) => {
                   const isApiItem = !!appt.appointment_date || !!appt.patient;
                   const name = appt?.patient?.patient_name;
-                  const disease = appt?.appointment_type;
-                  const place = isApiItem
-                    ? appt.appointment_type || "Home Visit"
-                    : appt.place;
+                  const disease = appt?.dep?.dep_name;
+                  const place = appt?.patient?.patient_home_address;
 
                   let displayDate = appt?.appointment_date || "";
                   let displayTime = appt?.appointment_time || "";
@@ -1567,7 +1566,7 @@ export default function Overview() {
                               justifyContent: "center",
                               backgroundColor: "#004E891F",
                               height: 22,
-                              width: 82,
+                              width: "auto",
                               borderRadius: 20,
                             }}
                           >

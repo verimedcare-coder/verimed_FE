@@ -162,7 +162,7 @@ export default function MyAppointments() {
     const patientUser = appt?.patient?.patient_name;
     const dateTime = appt.appointment_date
       ? new Date(
-          `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`
+          `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`,
         )
       : null;
     return {
@@ -176,7 +176,7 @@ export default function MyAppointments() {
           })
         : "-",
       patientName: patientUser || "",
-      type: appt.appointment_type || "-",
+      type: appt?.dep?.dep_name || "-",
       careTaker:
         appt.caretaker?.user?.first_name + appt?.caretaker?.user?.last_name ||
         "-",
