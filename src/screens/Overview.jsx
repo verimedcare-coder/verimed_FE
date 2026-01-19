@@ -38,7 +38,7 @@ export default function Overview() {
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const [caretakerAppoinments, setCaretakerAppoinments] = useState([]);
   const [medicalReports, setMedicalReports] = useState([]);
-
+  const [doctorId, setDoctorId] = useState(null);
   const token = localStorage.getItem("token");
 
   const fetchAppointments = async () => {
@@ -78,7 +78,7 @@ export default function Overview() {
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
       const selectedPatient = patients.find(
-        (p) => p.id === Number(localStorage.getItem("selectedPatientId"))
+        (p) => p.id === Number(localStorage.getItem("selectedPatientId")),
       );
       setPatientData(selectedPatient);
     } catch (error) {
@@ -117,12 +117,18 @@ export default function Overview() {
     fetchLoggedInDoctor();
   }, [user, token]);
 
-  const doctorDataRaw = localStorage.getItem("doctorData");
-  let doctorId = null;
-  if (doctorDataRaw && doctorDataRaw !== "undefined") {
-    const doctorData = JSON.parse(doctorDataRaw);
-    doctorId = doctorData?.id || null;
-  }
+  useEffect(() => {
+    const doctorDataRaw = localStorage.getItem("doctorData");
+    if (doctorDataRaw && doctorDataRaw !== "undefined") {
+      try {
+        const doctorData = JSON.parse(doctorDataRaw);
+        setDoctorId(doctorData?.id || null);
+      } catch (error) {
+        console.error("Error parsing doctorData:", error);
+        setDoctorId(null);
+      }
+    }
+  }, []);
 
   const fetchDoctorAppointments = async () => {
     try {
@@ -140,6 +146,12 @@ export default function Overview() {
       console.error("Error fetching doctor appointments:", error);
     }
   };
+
+  useEffect(() => {
+    if (doctorId) {
+      fetchDoctorAppointments();
+    }
+  }, [doctorId]);
 
   const fetchcaretakerAppointments = async () => {
     try {
@@ -244,7 +256,7 @@ export default function Overview() {
           value: patientData.respiratory_rate || "N/A",
           color: getVitalColor(
             "Respiratory Rate",
-            patientData.respiratory_rate
+            patientData.respiratory_rate,
           ),
         },
         {
@@ -477,7 +489,7 @@ export default function Overview() {
     transformedData.push(
       { month: item.month, type: "Completed", value: item.Completed },
       { month: item.month, type: "Ongoing", value: item.Ongoing },
-      { month: item.month, type: "Pending", value: item.Pending }
+      { month: item.month, type: "Pending", value: item.Pending },
     );
   });
 
@@ -509,7 +521,7 @@ export default function Overview() {
           {
             hour: "2-digit",
             minute: "2-digit",
-          }
+          },
         )}`
       : "",
     status: item.appointment_status || "Pending",
@@ -597,13 +609,13 @@ export default function Overview() {
 
   const handlePrevMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() - 1)
+      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() - 1),
     );
   };
 
   const handleNextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() + 1)
+      new Date(currentMonth?.getFullYear(), currentMonth?.getMonth() + 1),
     );
   };
 
@@ -628,7 +640,7 @@ export default function Overview() {
 
   const monthDays = getMonthDays(
     currentMonth?.getFullYear(),
-    currentMonth?.getMonth()
+    currentMonth?.getMonth(),
   );
 
   const appointmentDates = appointmentList.map((a) => a.date?.toDateString());
@@ -778,11 +790,11 @@ export default function Overview() {
         const endpoint = `${base_url}/caretakerprofile_list/`;
         const res = await axios.get(endpoint);
         const loggedInCaretaker = res.data.find(
-          (ct) => ct.user.id === userData?.id
+          (ct) => ct.user.id === userData?.id,
         );
         localStorage.setItem(
           "careTakerData",
-          JSON.stringify(loggedInCaretaker)
+          JSON.stringify(loggedInCaretaker),
         );
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
@@ -1496,7 +1508,7 @@ export default function Overview() {
                     const dt = new Date(
                       `${appt.appointment_date}T${
                         appt.appointment_time || "00:00:00"
-                      }`
+                      }`,
                     );
                     displayDate = dt.toLocaleString("en-US", {
                       month: "short",
@@ -2205,7 +2217,7 @@ export default function Overview() {
                       ))}
                       {monthDays.map((day) => {
                         const isAppointment = appointmentDates.includes(
-                          day?.toDateString()
+                          day?.toDateString(),
                         );
                         return (
                           <div
@@ -2249,7 +2261,7 @@ export default function Overview() {
                       .filter(
                         (a) =>
                           a.date?.getMonth() === currentMonth?.getMonth() &&
-                          a.date?.getFullYear() === currentMonth?.getFullYear()
+                          a.date?.getFullYear() === currentMonth?.getFullYear(),
                       )
                       .map((appt, index) => {
                         const isSelected =
@@ -2973,7 +2985,7 @@ export default function Overview() {
                     ))}
                     {monthDays.map((day) => {
                       const isAppointment = appointmentDates.includes(
-                        day?.toDateString()
+                        day?.toDateString(),
                       );
                       return (
                         <div
@@ -3012,7 +3024,7 @@ export default function Overview() {
                     .filter(
                       (a) =>
                         a.date?.getMonth() === currentMonth?.getMonth() &&
-                        a.date?.getFullYear() === currentMonth?.getFullYear()
+                        a.date?.getFullYear() === currentMonth?.getFullYear(),
                     )
                     .map((appt, index) => {
                       const isSelected =
@@ -3303,7 +3315,7 @@ export default function Overview() {
                       ))}
                       {monthDays.map((day) => {
                         const isAppointment = appointmentDates.includes(
-                          day?.toDateString()
+                          day?.toDateString(),
                         );
                         return (
                           <div
@@ -3347,7 +3359,7 @@ export default function Overview() {
                       .filter(
                         (a) =>
                           a.date?.getMonth() === currentMonth?.getMonth() &&
-                          a.date?.getFullYear() === currentMonth?.getFullYear()
+                          a.date?.getFullYear() === currentMonth?.getFullYear(),
                       )
                       .map((appt, index) => {
                         const isSelected =
