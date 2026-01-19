@@ -270,9 +270,9 @@ export default function Appointments() {
       }
 
       // Doctor name
-      let doctorName = "Doctor";
-      if (appt.doc && appt.doc.doctor_id) {
-        doctorName = `Dr. ${appt.doc.doctor_id}`;
+      let doctorName = "Yet to assign";
+      if (appt.doc && appt.doc.user?.first_name) {
+        doctorName = `${appt.doc.user?.first_name} ${appt.doc.user?.last_name || ""}`;
       }
 
       // Patient name
@@ -316,9 +316,15 @@ export default function Appointments() {
   };
 
   const renderAppointments = (status) => {
-    const filtered = mappedAppointments.filter(
-      (appt) => appt.status === status,
-    );
+    let filtered = mappedAppointments.filter((appt) => appt.status === status);
+
+    // If user is sponsor, only show appointments for their sponsor profile
+    if (userData?.user_role === "sponsor" && sponsorId) {
+      filtered = filtered.filter(
+        (appt) => appt.fullData?.sponsor?.id === sponsorId,
+      );
+    }
+
     if (!filtered.length)
       return <Empty description="No Appointments" style={{ marginTop: 50 }} />;
     return (
@@ -581,8 +587,6 @@ export default function Appointments() {
       message.error("Failed to book appointment.");
     }
   };
-
-  console.log("selectedAppointment", selectedAppointment);
 
   return (
     <div style={{ display: "flex", backgroundColor: "#F7F9FB" }}>
@@ -1084,7 +1088,9 @@ export default function Appointments() {
                     (a.status === "upcoming" ||
                       (a.date &&
                         a.date.getMonth() === currentMonth.getMonth() &&
-                        a.date.getFullYear() === currentMonth.getFullYear())),
+                        a.date.getFullYear() === currentMonth.getFullYear())) &&
+                    (userData?.user_role !== "sponsor" ||
+                      a.fullData?.sponsor?.id === sponsorId),
                 )
                 .map((appt, index) => {
                   const isSelected =
