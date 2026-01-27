@@ -1,4 +1,12 @@
-import { Layout, Menu, Avatar, Button, Typography } from "antd";
+import {
+  Layout,
+  Menu,
+  Avatar,
+  Button,
+  Typography,
+  Modal,
+  notification,
+} from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   UserOutlined,
@@ -9,9 +17,14 @@ import {
   HomeOutlined,
   SettingOutlined,
   HeartOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 import Profile from "../assets/images/profileBg.jpg";
+import { useState } from "react";
+import { Form, Input, Upload } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import axios from "axios";
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -117,7 +130,11 @@ export default function CustomSider() {
   const navigate = useNavigate();
   const location = useLocation();
   const data = localStorage.getItem("userData");
-  const user = data ? JSON.parse(data) : null;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const sponsorData = JSON.parse(localStorage.getItem("sponsorData"));
+  const user = sponsorData?.user;
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
 
   const filteredMenuItems =
     menuConfig[user?.user_role] || menuConfig["patient"];
@@ -127,7 +144,72 @@ export default function CustomSider() {
       (location?.pathname || "").startsWith(item.path),
     )?.path || filteredMenuItems[0].path;
 
+  const handleEditClick = () => {
+    if (!user) return;
+
+    // populate form fields
+    form.setFieldsValue({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      phone: user.phone?.split("-")[1] || "",
+    });
+
+    // show existing profile image
+    if (user.photo_view_url) {
+      setFileList([
+        {
+          uid: "-1",
+          name: "profile.png",
+          status: "done",
+          url: user.photo_view_url,
+        },
+      ]);
+    } else {
+      setFileList([]);
+    }
+
+    setIsModalOpen(true);
+  };
+
   const base_url1 = "https://verimedramja.pythonanywhere.com";
+  const handleUpdate = async (values) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const user_update_data = {
+        updateid: user.id,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email,
+        countrycode: "IN",
+        phone: values.phone,
+      };
+
+      const formData = new FormData();
+      formData.append("user_update_data", JSON.stringify(user_update_data));
+
+      // send new photo ONLY if user uploaded one
+      if (fileList[0]?.originFileObj) {
+        formData.append("photo", fileList[0].originFileObj);
+      }
+
+      await axios.patch(`${base_url1}/user_update/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Token ${token}`,
+        },
+      });
+
+      notification.success({ message: "Profile updated successfully" });
+      setIsModalOpen(false);
+    } catch (err) {
+      notification.error({
+        message: "Update failed",
+        description: err.response?.data?.detail || "Something went wrong",
+      });
+    }
+  };
 
   const getPhotoUrl = (url) => {
     // Guard against null/undefined url
@@ -170,12 +252,42 @@ export default function CustomSider() {
         </div>
 
         {/* Profile Section */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
+        {/* <div style={{ textAlign: "center", marginBottom: 24 }}>
           <Avatar src={getPhotoUrl(user?.photo_view_url)} size={67} />
           <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>
               {user?.first_name} {user?.last_name}
             </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {user?.email}
+            </Text>
+          </div>
+        </div> */}
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          {/* Edit Icon */}
+
+          <Avatar src={getPhotoUrl(user?.photo_view_url)} size={67} />
+
+          <div style={{ marginTop: 10, position: "relative" }}>
+            <Text strong style={{ fontSize: 16, display: "block" }}>
+              {user?.first_name} {user?.last_name}
+            </Text>
+            <EditOutlined
+              onClick={handleEditClick}
+              style={{
+                position: "absolute",
+                top: 5,
+                right: 50,
+                fontSize: 18,
+                cursor: "pointer",
+                color: "#2E2E2E",
+              }}
+            />
             <Text type="secondary" style={{ fontSize: 12 }}>
               {user?.email}
             </Text>
@@ -228,6 +340,47 @@ export default function CustomSider() {
           Settings
         </Button>
       </div>
+      <Modal
+        title="Edit Profile"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+      >
+        <Form form={form} layout="vertical" onFinish={handleUpdate}>
+          <Form.Item name="first_name" label="First Name" required>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="last_name" label="Last Name" required>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="email" label="Email" required>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="phone" label="Phone" required>
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Profile Photo">
+            <Upload
+              listType="picture-circle"
+              fileList={fileList}
+              beforeUpload={() => false}
+              maxCount={1}
+              onChange={({ fileList }) => setFileList(fileList)}
+              onRemove={() => setFileList([])}
+            >
+              {fileList.length === 0 && <UploadOutlined />}
+            </Upload>
+          </Form.Item>
+
+          <Button type="primary" htmlType="submit" block>
+            Update Profile
+          </Button>
+        </Form>
+      </Modal>
     </Sider>
   );
 }
