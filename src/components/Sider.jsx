@@ -172,7 +172,7 @@ export default function CustomSider() {
     setIsModalOpen(true);
   };
 
-  const base_url1 = "https://verimedramja.pythonanywhere.com";
+  const base_url = "https://verimedramja.pythonanywhere.com";
   const handleUpdate = async (values) => {
     try {
       const token = localStorage.getItem("token");
@@ -194,7 +194,7 @@ export default function CustomSider() {
         formData.append("photo", fileList[0].originFileObj);
       }
 
-      await axios.patch(`${base_url1}/user_update/`, formData, {
+      await axios.patch(`${base_url}/user_update/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Token ${token}`,
@@ -218,7 +218,7 @@ export default function CustomSider() {
 
     url = url.replace(/^\/media\/+/i, "/");
 
-    const base = base_url1.replace(/\/+$/, "");
+    const base = base_url.replace(/\/+$/, "");
     const cleanedUrl = url.replace(/^\/+/, "");
 
     const finalUrl = `${base}/${cleanedUrl}`;
