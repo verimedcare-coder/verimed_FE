@@ -81,25 +81,25 @@ export default function UserManagement() {
       };
       const userRes = await axios.get(userListEndpoint, { headers });
       const allusers = userRes.data;
-
       const sponsorListEndpoint = `${base_url}/sponsorprofile_list/`;
       const res = await axios.get(sponsorListEndpoint);
       const sponsors = res.data;
 
-      const sponsorUserIds = sponsors.map((doc) => doc.user);
+      const sponsorUserIds = sponsors.map((sponsor) => sponsor.user?.id);
 
       const filteredAllusers = allusers.filter((user) =>
-        sponsorUserIds.includes(user.id)
+        sponsorUserIds.includes(user.id),
       );
 
       const combinedSponsors = filteredAllusers.map((user) => {
-        const sponsorProfile = sponsors.find((doc) => doc.user === user.id);
+        const sponsorProfile = sponsors.find(
+          (sponsor) => sponsor?.user?.id === user.id,
+        );
         return {
           ...user,
           sponsorProfile,
         };
       });
-
       setSponsorList(combinedSponsors);
       setLoading(false);
     } catch (error) {
@@ -123,14 +123,16 @@ export default function UserManagement() {
       const res = await axios.get(caretakerListEndpoint);
       const caretakers = res.data;
 
-      const caretakersUserIds = caretakers.map((doc) => doc.user);
+      const caretakersUserIds = caretakers.map((care) => care.user?.id);
 
       const filteredAllusers = allusers.filter((user) =>
-        caretakersUserIds.includes(user.id)
+        caretakersUserIds.includes(user.id),
       );
 
       const combinedCaretakers = filteredAllusers.map((user) => {
-        const caretakerProfile = caretakers.find((doc) => doc.user === user.id);
+        const caretakerProfile = caretakers.find(
+          (care) => care.user?.id === user.id,
+        );
         return {
           ...user,
           caretakerProfile,
@@ -162,7 +164,7 @@ export default function UserManagement() {
       const patientUserIds = patients.map((p) => p.user.id);
 
       const filteredUsers = allUsers.filter((u) =>
-        patientUserIds.includes(u.id)
+        patientUserIds.includes(u.id),
       );
 
       const combinedPatients = filteredUsers.map((user) => {
@@ -198,7 +200,7 @@ export default function UserManagement() {
       const doctorUserIds = doctors.map((doc) => doc.user.id);
 
       const filteredAllusers = allusers.filter((user) =>
-        doctorUserIds.includes(user.id)
+        doctorUserIds.includes(user.id),
       );
 
       const combinedDoctors = filteredAllusers.map((user) => {
@@ -428,12 +430,12 @@ export default function UserManagement() {
             Array.isArray(editedData.patient_files_ids)
               ? JSON.stringify(editedData.patient_files_ids)
               : editedData.patient_files_ids
-              ? JSON.stringify([editedData.patient_files_ids])
-              : "[]"
+                ? JSON.stringify([editedData.patient_files_ids])
+                : "[]",
           );
           formData.append(
             "patient_files_name",
-            editedData.patient_files_name || ""
+            editedData.patient_files_name || "",
           );
           break;
 
@@ -478,7 +480,7 @@ export default function UserManagement() {
         message: `${activeTab.slice(0, -1).toUpperCase()} PROFILE UPDATED`,
         description: `The ${activeTab.slice(
           0,
-          -1
+          -1,
         )} profile was updated successfully.`,
         placement: "topRight",
       });
@@ -694,6 +696,7 @@ export default function UserManagement() {
   };
 
   const columns = [
+    { title: "User Name", dataIndex: "username", key: "username" },
     {
       title: "Name",
       dataIndex: "name",
@@ -743,16 +746,19 @@ export default function UserManagement() {
     },
   ];
 
+  console.log("🚀 caretaker List:", caretakerList);
+
   const getFilteredData = () => {
     const dataMap = {
       sponsors: sponsorList.map((s) => ({
         ...s,
-        key: s.id,
-        avatar: s.photo,
-        name: s.first_name + " " + s.last_name,
-        email: s.email,
-        phone: s.phone,
-        country: s.country,
+        key: s?.id,
+        username: s?.username,
+        avatar: s?.photo_view_url,
+        name: s?.first_name + " " + s?.last_name,
+        email: s?.email,
+        phone: s?.phone,
+        country: s?.country_code,
         patientsLinked: s.sponsorProfile?.patients_count || 0,
         membership: s.sponsorProfile?.membership_plan || "N/A",
         status: s.is_active ? "Active" : "Inactive",
@@ -802,7 +808,7 @@ export default function UserManagement() {
     };
     const data = dataMap[activeTab] || [];
     return data.filter(
-      (d) => d.name && d.name.toLowerCase().includes(searchText.toLowerCase())
+      (d) => d.name && d.name.toLowerCase().includes(searchText.toLowerCase()),
     );
   };
 
