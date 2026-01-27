@@ -132,7 +132,8 @@ export default function CustomSider() {
   const data = localStorage.getItem("userData");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const sponsorData = JSON.parse(localStorage.getItem("sponsorData"));
-  const user = sponsorData?.user;
+  // const user = sponsorData?.user;
+  const user = data ? JSON.parse(data) : null;
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
 

@@ -142,7 +142,7 @@ export default function HeaderComponent() {
       try {
         // Replace with your actual country API endpoint
         const res = await axios.get(
-          "https://restcountries.com/v3.1/all?fields=name,cca2"
+          "https://restcountries.com/v3.1/all?fields=name,cca2",
         );
         // Map API response to { label, value } format
         const options = res.data
@@ -167,7 +167,7 @@ export default function HeaderComponent() {
   const handleLanguageChange = (lang) => setLanguage(lang);
 
   const careTakerPatients = JSON.parse(
-    localStorage.getItem("careTakerPatients")
+    localStorage.getItem("careTakerPatients"),
   );
 
   const items = [
@@ -214,14 +214,14 @@ export default function HeaderComponent() {
   const showPatientDetails = (patientId) => {
     try {
       const storedAppointments = JSON.parse(
-        localStorage.getItem("sponsorAppointments") || "[]"
+        localStorage.getItem("sponsorAppointments") || "[]",
       );
       const sponsorPatientData = JSON.parse(
-        localStorage.getItem("sponsorPatientData") || "[]"
+        localStorage.getItem("sponsorPatientData") || "[]",
       );
 
       const patientAppointments = storedAppointments.filter(
-        (item) => item?.patient?.user?.id === patientId
+        (item) => item?.patient?.user?.id === patientId,
       );
 
       let patientDetails = null;
@@ -230,7 +230,7 @@ export default function HeaderComponent() {
         patientDetails = patientAppointments[0]?.patient?.user;
         localStorage.setItem(
           "selectedPatientAppointments",
-          JSON.stringify(patientAppointments)
+          JSON.stringify(patientAppointments),
         );
       } else {
         localStorage.removeItem("selectedPatientAppointments");
@@ -243,7 +243,7 @@ export default function HeaderComponent() {
       if (patientDetails) {
         localStorage.setItem(
           "selectedPatientDetails",
-          JSON.stringify(patientDetails)
+          JSON.stringify(patientDetails),
         );
       } else {
         localStorage.removeItem("selectedPatientDetails");
@@ -286,7 +286,7 @@ export default function HeaderComponent() {
       careTakerPatients.some((p) => String(p.id) === String(value))
     ) {
       selectedPatientObj = careTakerPatients.find(
-        (p) => String(p.id) === String(value)
+        (p) => String(p.id) === String(value),
       );
       selectedSource = "careTakerPatients";
     }
@@ -294,7 +294,7 @@ export default function HeaderComponent() {
     if (selectedPatientObj) {
       localStorage.setItem(
         "selectedPatientData",
-        JSON.stringify(selectedPatientObj)
+        JSON.stringify(selectedPatientObj),
       );
       localStorage.setItem("selectedPatientSource", selectedSource);
       showPatientDetails(value);
@@ -325,7 +325,7 @@ export default function HeaderComponent() {
         let foundPatient = null;
         if (storedSelectedId) {
           foundPatient = fetchedPatients.find(
-            (p) => String(p.id) === String(storedSelectedId)
+            (p) => String(p.id) === String(storedSelectedId),
           );
         }
         if (foundPatient) {
@@ -333,7 +333,7 @@ export default function HeaderComponent() {
           localStorage.setItem("selectedPatientId", String(foundPatient.id));
           localStorage.setItem(
             "selectedPatientData",
-            JSON.stringify(foundPatient)
+            JSON.stringify(foundPatient),
           );
           showPatientDetails(foundPatient.id);
         } else {
@@ -343,7 +343,7 @@ export default function HeaderComponent() {
           localStorage.setItem("selectedPatientId", firstPatientId);
           localStorage.setItem(
             "selectedPatientData",
-            JSON.stringify(fetchedPatients[0])
+            JSON.stringify(fetchedPatients[0]),
           );
           showPatientDetails(firstPatientId);
         }
@@ -414,7 +414,7 @@ export default function HeaderComponent() {
         (u) =>
           u.first_name.toLowerCase() === values.first_name.toLowerCase() &&
           u.last_name.toLowerCase() === values.last_name.toLowerCase() &&
-          u.user_role === "sponsor"
+          u.user_role === "sponsor",
       );
 
       if (!matchedUser) {
@@ -430,7 +430,7 @@ export default function HeaderComponent() {
       });
 
       const matchedProfile = profileRes.data.find(
-        (p) => p.user?.username === matchedUser.username
+        (p) => p.user?.username === matchedUser.username,
       );
 
       if (matchedProfile) {
@@ -560,7 +560,7 @@ export default function HeaderComponent() {
       // ✅ Append uploaded files if present
       if (editedData.patient_upload_files?.length > 0) {
         editedData.patient_upload_files.forEach((file) =>
-          formData.append("patient_photo", file)
+          formData.append("patient_photo", file),
         );
       }
 
@@ -568,7 +568,7 @@ export default function HeaderComponent() {
       if (Array.isArray(editedData.patient_files_name)) {
         formData.append(
           "patient_files_name",
-          editedData.patient_files_name.join(",")
+          editedData.patient_files_name.join(","),
         );
       } else if (editedData.patient_files_name) {
         formData.append("patient_files_name", editedData.patient_files_name);
@@ -577,7 +577,7 @@ export default function HeaderComponent() {
       if (Array.isArray(editedData.patient_files_ids)) {
         formData.append(
           "patient_files_ids",
-          editedData.patient_files_ids.join(",")
+          editedData.patient_files_ids.join(","),
         );
       } else if (editedData.patient_files_ids) {
         formData.append("patient_files_ids", editedData.patient_files_ids);
@@ -684,17 +684,17 @@ export default function HeaderComponent() {
                     </Option>
                   ))
                 : Array.isArray(careTakerPatients) &&
-                  careTakerPatients.length > 0
-                ? careTakerPatients.map((p) => (
-                    <Option
-                      key={p.id}
-                      value={p.id}
-                      label={p.patient?.patient_name}
-                    >
-                      {p.patient?.patient_name}
-                    </Option>
-                  ))
-                : null}
+                    careTakerPatients.length > 0
+                  ? careTakerPatients.map((p) => (
+                      <Option
+                        key={p.id}
+                        value={p.id}
+                        label={p.patient?.patient_name}
+                      >
+                        {p.patient?.patient_name}
+                      </Option>
+                    ))
+                  : null}
             </Select>
           )}
 
@@ -834,40 +834,23 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 1: PERSONAL INFORMATION ---------- */}
             <h3>1. Personal Information</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="patientName"
-                label="Patient Name"
-                rules={[
-                  { required: true, message: "Patient name is required" },
-                ]}
-              >
+              <Form.Item name="patientName" label="Patient Name">
                 <Input placeholder="Enter Patient Name" />
               </Form.Item>
 
-              <Form.Item
-                name="age"
-                label="Age"
-                rules={[{ required: true, message: "Age is required" }]}
-              >
+              <Form.Item name="age" label="Age">
                 <Input placeholder="Enter Age" />
               </Form.Item>
 
               <Form.Item
                 name="patientEmail"
                 label="Patient Email Address"
-                rules={[
-                  { required: true, message: "Email is required" },
-                  { type: "email", message: "Invalid email" },
-                ]}
+                rules={[{ type: "email", message: "Invalid email" }]}
               >
                 <Input placeholder="Enter Email Address" type="email" />
               </Form.Item>
 
-              <Form.Item
-                name="country_code"
-                label="Country"
-                rules={[{ required: true, message: "Country is required" }]}
-              >
+              <Form.Item name="country_code" label="Country">
                 <Select
                   showSearch
                   placeholder="Select Country"
@@ -878,99 +861,47 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="patientPhone"
-                label="Patient Phone Number"
-                rules={[
-                  { required: true, message: "Phone number is required" },
-                ]}
-              >
+              <Form.Item name="patientPhone" label="Patient Phone Number">
                 <Input placeholder="Enter Patient Phone Number" type="tel" />
               </Form.Item>
 
-              <Form.Item
-                name="bp"
-                label="Blood Pressure"
-                rules={[
-                  { required: true, message: "Blood pressure is required" },
-                ]}
-              >
+              <Form.Item name="bp" label="Blood Pressure">
                 <Input placeholder="Enter Blood Pressure" />
               </Form.Item>
 
-              <Form.Item
-                name="heartRate"
-                label="Heart Rate"
-                rules={[{ required: true, message: "Heart rate is required" }]}
-              >
+              <Form.Item name="heartRate" label="Heart Rate">
                 <Input placeholder="Enter Heart Rate" />
               </Form.Item>
 
-              <Form.Item
-                name="sugar"
-                label="Blood Sugar"
-                rules={[{ required: true, message: "Blood sugar is required" }]}
-              >
+              <Form.Item name="sugar" label="Blood Sugar">
                 <Input placeholder="Enter Blood Sugar" />
               </Form.Item>
 
-              <Form.Item
-                name="oxygen"
-                label="Oxygen"
-                rules={[{ required: true, message: "Oxygen is required" }]}
-              >
+              <Form.Item name="oxygen" label="Oxygen">
                 <Input placeholder="Enter Oxygen" />
               </Form.Item>
 
-              <Form.Item
-                name="temperature"
-                label="Temperature"
-                rules={[{ required: true, message: "Temperature is required" }]}
-              >
+              <Form.Item name="temperature" label="Temperature">
                 <Input placeholder="Enter Temperature" />
               </Form.Item>
 
-              <Form.Item
-                name="respiratoryRate"
-                label="Respiratory Rate"
-                rules={[
-                  { required: true, message: "Respiratory rate is required" },
-                ]}
-              >
+              <Form.Item name="respiratoryRate" label="Respiratory Rate">
                 <Input placeholder="Enter Respiratory Rate" />
               </Form.Item>
 
-              <Form.Item
-                name="height"
-                label="Height"
-                rules={[{ required: true, message: "Height is required" }]}
-              >
+              <Form.Item name="height" label="Height">
                 <Input placeholder="Enter Height" />
               </Form.Item>
 
-              <Form.Item
-                name="weight"
-                label="Weight"
-                rules={[{ required: true, message: "Weight is required" }]}
-              >
+              <Form.Item name="weight" label="Weight">
                 <Input placeholder="Enter Weight" />
               </Form.Item>
 
-              <Form.Item
-                name="patient_dob"
-                label="Date of Birth"
-                rules={[
-                  { required: true, message: "Date of birth is required" },
-                ]}
-              >
+              <Form.Item name="patient_dob" label="Date of Birth">
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
 
-              <Form.Item
-                name="patient_gender"
-                label="Gender"
-                rules={[{ required: true, message: "Gender is required" }]}
-              >
+              <Form.Item name="patient_gender" label="Gender">
                 <Select
                   options={[
                     { label: "Male", value: "male" },
@@ -980,11 +911,7 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="blood_group"
-                label="Blood Group"
-                rules={[{ required: true, message: "Blood group is required" }]}
-              >
+              <Form.Item name="blood_group" label="Blood Group">
                 <Select
                   options={[
                     { label: "A+", value: "A+" },
@@ -999,31 +926,15 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="patient_home_address"
-                label="Home Address"
-                rules={[
-                  { required: true, message: "Home address is required" },
-                ]}
-              >
+              <Form.Item name="patient_home_address" label="Home Address">
                 <Input placeholder="Enter address" />
               </Form.Item>
 
-              <Form.Item
-                name="primary_language"
-                label="Primary Language"
-                rules={[
-                  { required: true, message: "Primary language is required" },
-                ]}
-              >
+              <Form.Item name="primary_language" label="Primary Language">
                 <Input placeholder="e.g. English" />
               </Form.Item>
 
-              <Form.Item
-                name="religion"
-                label="Religion"
-                rules={[{ required: true, message: "Religion is required" }]}
-              >
+              <Form.Item name="religion" label="Religion">
                 <Input placeholder="Enter religion" />
               </Form.Item>
             </div>
@@ -1031,42 +942,22 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 2: EMERGENCY CONTACT ---------- */}
             <h3>2. Emergency Contact</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="emer_con_name"
-                label="Full Name"
-                rules={[{ required: true, message: "Name is required" }]}
-              >
+              <Form.Item name="emer_con_name" label="Full Name">
                 <Input placeholder="Enter name" />
               </Form.Item>
 
-              <Form.Item
-                name="emer_con_relation"
-                label="Relationship"
-                rules={[
-                  { required: true, message: "Relationship is required" },
-                ]}
-              >
+              <Form.Item name="emer_con_relation" label="Relationship">
                 <Input placeholder="e.g. Spouse" />
               </Form.Item>
 
               <Form.Item
                 name="emer_con_coun_of_residen"
                 label="Country of Residence"
-                rules={[
-                  {
-                    required: true,
-                    message: "Country of residence is required",
-                  },
-                ]}
               >
                 <Input placeholder="Enter country" />
               </Form.Item>
 
-              <Form.Item
-                name="emer_con_country_code"
-                label="Country"
-                rules={[{ required: true, message: "Country is required" }]}
-              >
+              <Form.Item name="emer_con_country_code" label="Country">
                 <Select
                   showSearch
                   options={countryOptions}
@@ -1074,21 +965,14 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="emer_con_phone"
-                label="Phone"
-                rules={[{ required: true, message: "Phone is required" }]}
-              >
+              <Form.Item name="emer_con_phone" label="Phone">
                 <Input placeholder="Enter phone" />
               </Form.Item>
 
               <Form.Item
                 name="emer_con_email"
                 label="Email"
-                rules={[
-                  { required: true, message: "Email is required" },
-                  { type: "email", message: "Invalid email" },
-                ]}
+                rules={[{ type: "email", message: "Invalid email" }]}
               >
                 <Input placeholder="Enter email" />
               </Form.Item>
@@ -1097,29 +981,15 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 3: LOCAL CONTACT ---------- */}
             <h3>3. Local Contact (if different)</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="local_con_name"
-                label="Full Name"
-                rules={[
-                  { required: true, message: "Local contact name required" },
-                ]}
-              >
+              <Form.Item name="local_con_name" label="Full Name">
                 <Input placeholder="Enter local contact name" />
               </Form.Item>
 
-              <Form.Item
-                name="local_con_relation"
-                label="Relationship"
-                rules={[{ required: true, message: "Relationship required" }]}
-              >
+              <Form.Item name="local_con_relation" label="Relationship">
                 <Input placeholder="e.g. Friend" />
               </Form.Item>
 
-              <Form.Item
-                name="local_con_country_code"
-                label="Country"
-                rules={[{ required: true, message: "Country required" }]}
-              >
+              <Form.Item name="local_con_country_code" label="Country">
                 <Select
                   showSearch
                   placeholder="Select Country"
@@ -1127,11 +997,7 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="local_con_phone"
-                label="Phone"
-                rules={[{ required: true, message: "Phone required" }]}
-              >
+              <Form.Item name="local_con_phone" label="Phone">
                 <Input placeholder="Enter phone" />
               </Form.Item>
             </div>
@@ -1139,38 +1005,21 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 4: MEDICAL HISTORY ---------- */}
             <h3>4. Medical History</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="medical_his_diagnosis"
-                label="Diagnosis"
-                rules={[{ required: true, message: "Diagnosis is required" }]}
-              >
+              <Form.Item name="medical_his_diagnosis" label="Diagnosis">
                 <Input.TextArea placeholder="Enter diagnosis" />
               </Form.Item>
 
-              <Form.Item
-                name="medical_his_cancer"
-                label="Cancer History"
-                rules={[{ required: true, message: "Cancer history required" }]}
-              >
+              <Form.Item name="medical_his_cancer" label="Cancer History">
                 <Input placeholder="Enter cancer history" />
               </Form.Item>
 
-              <Form.Item
-                name="medical_his_other"
-                label="Other Medical History"
-                rules={[
-                  { required: true, message: "Other medical history required" },
-                ]}
-              >
+              <Form.Item name="medical_his_other" label="Other Medical History">
                 <Input placeholder="Other medical history" />
               </Form.Item>
 
               <Form.Item
                 name="medical_his_provided_medi_care"
                 label="Medical Care Provided"
-                rules={[
-                  { required: true, message: "Medical care info required" },
-                ]}
               >
                 <Input placeholder="Medical Care Provided" />
               </Form.Item>
@@ -1178,20 +1027,11 @@ export default function HeaderComponent() {
               <Form.Item
                 name="medical_his_major_surgeries"
                 label="Major Surgeries"
-                rules={[
-                  { required: true, message: "Major surgeries required" },
-                ]}
               >
                 <Input placeholder="Enter major surgeries" />
               </Form.Item>
 
-              <Form.Item
-                name="medical_his_curr_symp"
-                label="Current Symptoms"
-                rules={[
-                  { required: true, message: "Current symptoms required" },
-                ]}
-              >
+              <Form.Item name="medical_his_curr_symp" label="Current Symptoms">
                 <Input.TextArea placeholder="Enter current symptoms" />
               </Form.Item>
             </div>
@@ -1298,7 +1138,7 @@ export default function HeaderComponent() {
                         danger
                         onClick={() => {
                           const newMeds = medications.filter(
-                            (_, i) => i !== index
+                            (_, i) => i !== index,
                           );
                           setMedications(newMeds);
                         }}
@@ -1335,30 +1175,18 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 6: ALLERGIES ---------- */}
             <h3>6. Allergies</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="allergies_issues"
-                label="Allergies to Drugs?"
-                rules={[{ required: true, message: "Please select an option" }]}
-              >
+              <Form.Item name="allergies_issues" label="Allergies to Drugs?">
                 <Radio.Group>
                   <Radio value={true}>Yes</Radio>
                   <Radio value={false}>No</Radio>
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
-                name="allergies_drug"
-                label="Drug Allergies"
-                rules={[{ required: true, message: "Drug allergies required" }]}
-              >
+              <Form.Item name="allergies_drug" label="Drug Allergies">
                 <Input placeholder="Enter drug allergies" />
               </Form.Item>
 
-              <Form.Item
-                name="allergies_food"
-                label="Food Allergies"
-                rules={[{ required: true, message: "Food allergies required" }]}
-              >
+              <Form.Item name="allergies_food" label="Food Allergies">
                 <Input placeholder="Enter food allergies" />
               </Form.Item>
             </div>
@@ -1366,52 +1194,29 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 7: FUNCTIONAL STATUS ---------- */}
             <h3>7. Functional Status</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="functional_bathe"
-                label="Bathing"
-                rules={[{ required: true, message: "Bathing info required" }]}
-              >
+              <Form.Item name="functional_bathe" label="Bathing">
                 <Input placeholder="Can the patient bathe independently?" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_dress"
-                label="Dressing"
-                rules={[{ required: true, message: "Dressing info required" }]}
-              >
+              <Form.Item name="functional_dress" label="Dressing">
                 <Input placeholder="Can the patient dress independently?" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_eat"
-                label="Eating"
-                rules={[{ required: true, message: "Eating info required" }]}
-              >
+              <Form.Item name="functional_eat" label="Eating">
                 <Input placeholder="Can the patient eat independently?" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_walk"
-                label="Walking"
-                rules={[{ required: true, message: "Walking info required" }]}
-              >
+              <Form.Item name="functional_walk" label="Walking">
                 <Input placeholder="Can the patient walk independently?" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_use_bathroom"
-                label="Use Bathroom"
-                rules={[{ required: true, message: "Bathroom info required" }]}
-              >
+              <Form.Item name="functional_use_bathroom" label="Use Bathroom">
                 <Input placeholder="Can the patient use bathroom independently?" />
               </Form.Item>
 
               <Form.Item
                 name="functional_daily_activity"
                 label="Daily Activity"
-                rules={[
-                  { required: true, message: "Daily activity info required" },
-                ]}
               >
                 <Input placeholder="Can the patient manage daily activity?" />
               </Form.Item>
@@ -1419,37 +1224,22 @@ export default function HeaderComponent() {
               <Form.Item
                 name="functional_manage_finance"
                 label="Manage Finance"
-                rules={[{ required: true, message: "Finance info required" }]}
               >
                 <Input placeholder="Can the patient manage finances?" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_any_falls"
-                label="Any Falls?"
-                rules={[{ required: true, message: "Please select yes or no" }]}
-              >
+              <Form.Item name="functional_any_falls" label="Any Falls?">
                 <Radio.Group>
                   <Radio value={true}>Yes</Radio>
                   <Radio value={false}>No</Radio>
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
-                name="functional_how_many"
-                label="How Many?"
-                rules={[
-                  { required: true, message: "Please enter number of falls" },
-                ]}
-              >
+              <Form.Item name="functional_how_many" label="How Many?">
                 <Input placeholder="Number of falls" />
               </Form.Item>
 
-              <Form.Item
-                name="functional_memory_pbms"
-                label="Memory Problems?"
-                rules={[{ required: true, message: "Please select yes or no" }]}
-              >
+              <Form.Item name="functional_memory_pbms" label="Memory Problems?">
                 <Radio.Group>
                   <Radio value={true}>Yes</Radio>
                   <Radio value={false}>No</Radio>
@@ -1460,63 +1250,37 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 8: LIFESTYLE ---------- */}
             <h3>8. Lifestyle</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="lifestyle_daily_routine"
-                label="Daily Routine"
-                rules={[{ required: true, message: "Daily routine required" }]}
-              >
+              <Form.Item name="lifestyle_daily_routine" label="Daily Routine">
                 <Input.TextArea placeholder="Describe daily routine" />
               </Form.Item>
 
-              <Form.Item
-                name="lifestyle_dietary_habits"
-                label="Dietary Habits"
-                rules={[{ required: true, message: "Dietary habits required" }]}
-              >
+              <Form.Item name="lifestyle_dietary_habits" label="Dietary Habits">
                 <Input placeholder="Dietary habits" />
               </Form.Item>
 
-              <Form.Item
-                name="lifestyle_sleep_quality"
-                label="Sleep Quality"
-                rules={[{ required: true, message: "Sleep quality required" }]}
-              >
+              <Form.Item name="lifestyle_sleep_quality" label="Sleep Quality">
                 <Input placeholder="Sleep quality" />
               </Form.Item>
 
               <Form.Item
                 name="lifestyle_physical_activity"
                 label="Physical Activity"
-                rules={[
-                  { required: true, message: "Physical activity required" },
-                ]}
               >
                 <Input placeholder="Physical activity" />
               </Form.Item>
 
-              <Form.Item
-                name="lifestyle_alcohol_use"
-                label="Alcohol Use"
-                rules={[{ required: true, message: "Alcohol use required" }]}
-              >
+              <Form.Item name="lifestyle_alcohol_use" label="Alcohol Use">
                 <Input placeholder="Alcohol use" />
               </Form.Item>
 
               <Form.Item
                 name="lifestyle_pain_complaints"
                 label="Pain Complaints"
-                rules={[
-                  { required: true, message: "Pain complaints required" },
-                ]}
               >
                 <Input placeholder="Pain complaints" />
               </Form.Item>
 
-              <Form.Item
-                name="lifestyle_pain_where"
-                label="Pain Location"
-                rules={[{ required: true, message: "Pain location required" }]}
-              >
+              <Form.Item name="lifestyle_pain_where" label="Pain Location">
                 <Input placeholder="Pain location" />
               </Form.Item>
             </div>
@@ -1527,41 +1291,22 @@ export default function HeaderComponent() {
               <Form.Item
                 name="social_emotion_health"
                 label="Social / Emotional Health"
-                rules={[
-                  { required: true, message: "Social/emotional info required" },
-                ]}
               >
                 <Input.TextArea placeholder="Social / Emotional Health" />
               </Form.Item>
 
-              <Form.Item
-                name="social_spiritual_needs"
-                label="Spiritual Needs"
-                rules={[
-                  { required: true, message: "Spiritual needs required" },
-                ]}
-              >
+              <Form.Item name="social_spiritual_needs" label="Spiritual Needs">
                 <Input.TextArea placeholder="Spiritual needs" />
               </Form.Item>
 
-              <Form.Item
-                name="social_trusted_person"
-                label="Trusted Person?"
-                rules={[{ required: true, message: "Please select yes or no" }]}
-              >
+              <Form.Item name="social_trusted_person" label="Trusted Person?">
                 <Radio.Group>
                   <Radio value={true}>Yes</Radio>
                   <Radio value={false}>No</Radio>
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
-                name="social_name"
-                label="Trusted Person Name"
-                rules={[
-                  { required: true, message: "Trusted person name required" },
-                ]}
-              >
+              <Form.Item name="social_name" label="Trusted Person Name">
                 <Input placeholder="Trusted person name" />
               </Form.Item>
             </div>
@@ -1569,33 +1314,20 @@ export default function HeaderComponent() {
             {/* ---------- SECTION 10: GOALS ---------- */}
             <h3>10. Goals</h3>
             <div style={twoColGrid}>
-              <Form.Item
-                name="goals_family_hope"
-                label="Family Hopes"
-                rules={[{ required: true, message: "Family hopes required" }]}
-              >
+              <Form.Item name="goals_family_hope" label="Family Hopes">
                 <Input.TextArea placeholder="Family hopes / goals" />
               </Form.Item>
 
               <Form.Item
                 name="goals_special_instructions"
                 label="Special Instructions"
-                rules={[
-                  { required: true, message: "Special instructions required" },
-                ]}
               >
                 <Input.TextArea placeholder="Special instructions" />
               </Form.Item>
 
-              <Form.Item
-                name="goals_term_membership"
-                label="Term Membership"
-                rules={[
-                  { required: true, message: "Term membership required" },
-                ]}
-              >
+              {/* <Form.Item name="goals_term_membership" label="Term Membership">
                 <Input placeholder="Term membership" />
-              </Form.Item>
+              </Form.Item> */}
             </div>
 
             {/* ---------- SECTION 11: FILE UPLOADS ---------- */}
