@@ -1110,7 +1110,7 @@ export default function UserManagement() {
           </div> */}
 
           {/* Patients Linked (Static Example) */}
-          <div>
+          {/* <div>
             <p style={{ fontWeight: 600, fontSize: 16 }}>Patients Linked</p>
             {linkedPatients.map((patient) => (
               <div
@@ -1126,7 +1126,6 @@ export default function UserManagement() {
                   border: "1px solid #eaeaea",
                 }}
               >
-                {/* Profile Image */}
                 <div
                   style={{
                     display: "flex",
@@ -1141,26 +1140,23 @@ export default function UserManagement() {
                   />
                 </div>
 
-                {/* Name */}
                 <div style={linkedInfoStyle}>
                   <p style={linkedLabelStyle}>Name</p>
                   <p style={infoTextStyle}>{patient.name}</p>
                 </div>
 
-                {/* Assigned Doctor */}
                 <div style={linkedInfoStyle}>
                   <p style={linkedLabelStyle}>Assigned Doctor</p>
                   <p style={infoTextStyle}>{patient.doctor}</p>
                 </div>
 
-                {/* Care Taker */}
                 <div style={linkedInfoStyle}>
                   <p style={linkedLabelStyle}>Care Taker</p>
                   <p style={infoTextStyle}>{patient.caretaker}</p>
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
       );
 

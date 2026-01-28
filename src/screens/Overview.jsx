@@ -17,11 +17,14 @@ import { Button, Empty, Table } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarOutlined,
+  DeleteOutlined,
   DownOutlined,
+  EditOutlined,
   FilterOutlined,
   PlusOutlined,
   UpOutlined,
 } from "@ant-design/icons";
+import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
 import { base_url } from "../constants/constants";
 import axios from "axios";
@@ -38,8 +41,32 @@ export default function Overview() {
   const [doctorAppointments, setDoctorAppointments] = useState([]);
   const [caretakerAppoinments, setCaretakerAppoinments] = useState([]);
   const [medicalReports, setMedicalReports] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   const token = localStorage.getItem("token");
+
+  const deleteAppointment = async (id) => {
+    try {
+      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+
+      await axios.delete(endpoint, {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+        data: {
+          appoinmentdeleteid: id,
+        },
+      });
+
+      message.success("Appointment deleted successfully");
+
+      fetchAppointments();
+    } catch (error) {
+      console.error(error);
+      message.error("Failed to delete appointment");
+    }
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -505,6 +532,7 @@ export default function Overview() {
   };
 
   const appointmentListData = appointmentList.map((item, idx) => ({
+    id: item.id,
     key: item.id,
     date: item.appointment_date
       ? new Date(item.appointment_date).toLocaleDateString("en-US", {
@@ -513,9 +541,10 @@ export default function Overview() {
           year: "numeric",
         })
       : "",
+    sponsor: item.sponsor.user.username,
     patient: item.patient?.patient_id || "Unknown",
-    type: item.appointment_type || "",
-    caretaker: item.caretaker?.caretaker_id || "",
+    type: item.appointment_type || "-",
+    caretaker: item.caretaker?.caretaker_id || "Unknown",
     time: item.appointment_time
       ? `${new Date(`1970-01-01T${item.appointment_time}`).toLocaleTimeString(
           [],
@@ -524,7 +553,7 @@ export default function Overview() {
             minute: "2-digit",
           },
         )}`
-      : "",
+      : "-",
     status: item.appointment_status || "Pending",
   }));
 
@@ -546,6 +575,12 @@ export default function Overview() {
       title: "Patient Name",
       dataIndex: "patient",
       key: "patient",
+      width: 140,
+    },
+    {
+      title: "Sponsor Name",
+      dataIndex: "sponsor",
+      key: "sponsor",
       width: 140,
     },
     {
@@ -587,13 +622,42 @@ export default function Overview() {
       key: "action",
       width: 120,
       render: (_, record) => (
-        <Button
-          type="link"
-          style={{ color: "#B78520", fontWeight: 500, padding: 0 }}
-          onClick={() => alert(`Viewing details for ${record.patient}`)}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
-          View Details
-        </Button>
+          {/* Edit */}
+          <Button
+            type="link"
+            style={{ color: "#B78520", fontWeight: 500, padding: 0 }}
+            onClick={() => {
+              setSelectedAppointment(record);
+              setIsModalOpen(true);
+            }}
+          >
+            <EditOutlined />
+          </Button>
+
+          {/* Delete with confirmation */}
+          <Popconfirm
+            title="Delete Appointment"
+            description="Are you sure you want to delete this appointment?"
+            okText="Yes"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => deleteAppointment(record.id)}
+          >
+            <Button
+              type="link"
+              style={{ color: "#EF1E1E", fontWeight: 500, padding: 0 }}
+            >
+              <DeleteOutlined />
+            </Button>
+          </Popconfirm>
+        </div>
       ),
     },
   ];
@@ -1149,7 +1213,7 @@ export default function Overview() {
           )}
 
           {/* Charts section */}
-          {user?.user_role === "admin" && (
+          {/* {user?.user_role === "admin" && (
             <div
               style={{
                 display: "flex",
@@ -1159,7 +1223,6 @@ export default function Overview() {
                 gap: 20,
               }}
             >
-              {/* Left: Pie Chart */}
               <div
                 style={{
                   width: "50%",
@@ -1206,7 +1269,6 @@ export default function Overview() {
                 />
               </div>
 
-              {/* Right: Bar Chart */}
               <div
                 style={{
                   width: "50%",
@@ -1248,7 +1310,6 @@ export default function Overview() {
                   </span>
                 </div>
 
-                {/* Top summary boxes */}
                 <div
                   style={{
                     display: "flex",
@@ -1294,7 +1355,7 @@ export default function Overview() {
                 <Column {...stackedBarConfig} style={{ height: 260 }} />
               </div>
             </div>
-          )}
+          )} */}
           {/* Appointment List */}
           {user?.user_role === "admin" && (
             <div
