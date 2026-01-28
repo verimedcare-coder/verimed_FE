@@ -55,7 +55,7 @@ export default function Overview() {
           Authorization: `Token ${token}`,
         },
         data: {
-          appoinmentdeleteid: id,
+          appoinmentdeleteids: [id],
         },
       });
 
@@ -1426,9 +1426,9 @@ export default function Overview() {
                 columns={appointmentListColumns}
                 dataSource={appointmentListData}
                 pagination={{ pageSize: 10 }}
-                scroll={{ x: true }}
+                // scroll={{ x: true }}
                 bordered
-                style={{ width: "100%" }}
+                // style={{ width: "100%" }}
               />
             </div>
           )}
