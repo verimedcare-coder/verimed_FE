@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Checkbox, Card, Typography, message } from "antd";
+import {
+  Form,
+  Input,
+  Button,
+  Checkbox,
+  Card,
+  Typography,
+  message,
+  notification,
+} from "antd";
 import {
   EyeInvisibleOutlined,
   EyeTwoTone,
@@ -10,6 +19,7 @@ import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 import { base_url } from "../constants/constants";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -20,9 +30,22 @@ export default function LoginScreen() {
     return data ? JSON.parse(data) : null;
   });
 
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      notification.info({
+        message: location.state.message,
+        placement: "topRight",
+        duration: 3,
+      });
+
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   const token = localStorage.getItem("token");
 
-  // ✅ Fetch Sponsor Profile
   const fetchSponsorProfile = async (userId, token) => {
     if (!userId || !token) return;
     try {
@@ -31,7 +54,7 @@ export default function LoginScreen() {
       const sponsorList = Array.isArray(res.data) ? res.data : [];
 
       const matchedSponsor = sponsorList.find(
-        (sponsor) => sponsor.user.id === userId
+        (sponsor) => sponsor.user.id === userId,
       );
 
       if (matchedSponsor) {
@@ -83,7 +106,7 @@ export default function LoginScreen() {
     try {
       const sponsorProfileId = localStorage.getItem("sponsorProfileId");
       const sponsorPatientIds = JSON.parse(
-        localStorage.getItem("sponsorPatientIds") || "[]"
+        localStorage.getItem("sponsorPatientIds") || "[]",
       );
 
       if (!sponsorProfileId || sponsorPatientIds.length === 0) {
@@ -104,14 +127,14 @@ export default function LoginScreen() {
       const filteredAppointments = data.filter(
         (item) =>
           item?.patient?.sponsor === Number(sponsorProfileId) &&
-          sponsorPatientIds.includes(item?.patient?.id)
+          sponsorPatientIds.includes(item?.patient?.id),
       );
 
       console.log("Filtered Appointments:", filteredAppointments);
 
       localStorage.setItem(
         "sponsorAppointments",
-        JSON.stringify(filteredAppointments)
+        JSON.stringify(filteredAppointments),
       );
 
       if (filteredAppointments.length > 0) {

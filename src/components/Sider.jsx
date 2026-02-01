@@ -148,7 +148,6 @@ export default function CustomSider() {
   const handleEditClick = () => {
     if (!user) return;
 
-    // populate form fields
     form.setFieldsValue({
       first_name: user.first_name,
       last_name: user.last_name,
@@ -156,7 +155,6 @@ export default function CustomSider() {
       phone: user.phone?.split("-")[1] || "",
     });
 
-    // show existing profile image
     if (user.photo_view_url) {
       setFileList([
         {
@@ -173,7 +171,7 @@ export default function CustomSider() {
     setIsModalOpen(true);
   };
 
-  const base_url = "https://verimedramja.pythonanywhere.com";
+  const base_url = "https://verimedramja.pythonanywhere.com/verimed/";
   const handleUpdate = async (values) => {
     try {
       const token = localStorage.getItem("token");
@@ -190,24 +188,32 @@ export default function CustomSider() {
       const formData = new FormData();
       formData.append("user_update_data", JSON.stringify(user_update_data));
 
-      // send new photo ONLY if user uploaded one
       if (fileList[0]?.originFileObj) {
         formData.append("photo", fileList[0].originFileObj);
       }
 
       await axios.patch(`${base_url}/user_update/`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
           Authorization: `Token ${token}`,
         },
       });
 
       notification.success({ message: "Profile updated successfully" });
-      setIsModalOpen(false);
+      notification.info({
+        message: "Session expired",
+        description: "Please log in again to continue",
+      });
+      // setIsModalOpen(false);
+      localStorage.removeItem("token");
+      navigate("/", {
+        state: {
+          message: "Session expired. Please log in again.",
+        },
+      });
     } catch (err) {
       notification.error({
         message: "Update failed",
-        description: err.response?.data?.detail || "Something went wrong",
+        description: err.response?.data || "Something went wrong",
       });
     }
   };
@@ -274,24 +280,22 @@ export default function CustomSider() {
 
           <Avatar src={getPhotoUrl(user?.photo_view_url)} size={67} />
 
-          <div style={{ marginTop: 10, position: "relative" }}>
+          <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>
               {user?.first_name} {user?.last_name}
             </Text>
-            <EditOutlined
-              onClick={handleEditClick}
-              style={{
-                position: "absolute",
-                top: 5,
-                right: 50,
-                fontSize: 18,
-                cursor: "pointer",
-                color: "#2E2E2E",
-              }}
-            />
+
             <Text type="secondary" style={{ fontSize: 12 }}>
               {user?.email}
             </Text>
+
+            <Button
+              style={{ marginTop: 10, height: 25 }}
+              onClick={handleEditClick}
+            >
+              Edit Profile
+              <EditOutlined />{" "}
+            </Button>
           </div>
         </div>
 
