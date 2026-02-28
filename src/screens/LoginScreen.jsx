@@ -17,7 +17,7 @@ import {
 } from "@ant-design/icons";
 import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
-import { base_url } from "../constants/constants";
+import { base_url, isAdminUser } from "../constants/constants";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
 
@@ -170,6 +170,11 @@ export default function LoginScreen() {
         message.error("User not found. Please check credentials.");
         setLoading(false);
         return;
+      }
+
+      // special case: treat id 100 as admin regardless of returned role
+      if (isAdminUser(userData) && userData.user_role !== "admin") {
+        userData.user_role = "admin";
       }
 
       localStorage.setItem("userData", JSON.stringify(userData));

@@ -257,7 +257,7 @@ export default function UserManagement() {
         last_name: values.last_name,
         role: roleMap[activeTab],
         email: values.email,
-        countrycode: "IN",
+        countrycode: values.countrycode || "IN",
         phone: values.phone,
         password: values.password,
       };
@@ -293,8 +293,6 @@ export default function UserManagement() {
   const handleUpdateClick = async () => {
     if (!editedData) return;
 
-    console.log(`🧾 Submitting edited data for ${activeTab}:`, editedData);
-
     try {
       let endpoint = "";
       let formData = new FormData();
@@ -303,14 +301,14 @@ export default function UserManagement() {
 
       switch (activeTab) {
         case "sponsors":
-          endpoint = `${base_url}/sponsorprofile_update/`;
-          keyName = "sponsorprofile_update_data";
+          endpoint = `${base_url}/user_update/`;
+          keyName = "user_update_data";
           updateData = {
-            spon_profile_updateid: selectedSponsor?.sponsorProfile?.id,
-            sponsor_address: editedData.sponsor_address || "",
-            sponsor_gender: editedData.sponsor_gender || "",
-            work_employment: editedData.work_employment || "",
-            how_found_us: editedData.how_found_us || "",
+            updateid: selectedSponsor?.id,
+            first_name: editedData.first_name || "",
+            last_name: editedData.last_name || "",
+            phone: editedData.phone.split("-")[1] || "",
+            countrycode: editedData.country_code,
           };
           break;
 
@@ -503,6 +501,88 @@ export default function UserManagement() {
     }
   };
 
+  const handleDeactivateClick = async () => {
+    try {
+      let userId = null;
+
+      // Get user ID based on active tab
+      switch (activeTab) {
+        case "sponsors":
+          userId = selectedSponsor?.id;
+          break;
+        case "doctors":
+          userId = selectedDoctor?.id;
+          break;
+        case "caretakers":
+          userId = selectedCaretaker?.id;
+          break;
+        case "patients":
+          userId = selectedPatient?.id;
+          break;
+        default:
+          console.warn("⚠️ Unknown user type:", activeTab);
+          return;
+      }
+
+      if (!userId) {
+        notification.error({
+          message: "ERROR",
+          description: "Unable to identify user ID.",
+          placement: "topRight",
+        });
+        return;
+      }
+
+      const endpoint = `${base_url}/user_update/`;
+      const deactivateData = {
+        updateid: userId,
+        is_active: false,
+      };
+
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Token ${token}`);
+
+      const formdata = new FormData();
+      formdata.append("user_update_data", JSON.stringify(deactivateData));
+
+      const requestOptions = {
+        method: "PATCH",
+        headers: myHeaders,
+        body: formdata,
+        redirect: "follow",
+      };
+
+      console.log("🚀 Deactivating user:", deactivateData);
+
+      const response = await fetch(endpoint, requestOptions);
+      const result = await response.text();
+
+      console.log("✅ Deactivate Success:", result);
+
+      notification.success({
+        message: "ACCOUNT DEACTIVATED",
+        description: `The ${activeTab.slice(0, -1)} account has been deactivated successfully.`,
+        placement: "topRight",
+      });
+
+      // Refresh the data
+      if (activeTab === "sponsors") fetchSponsors();
+      if (activeTab === "doctors") fetchDoctors();
+      if (activeTab === "caretakers") fetchCareTakers();
+
+      setDrawerVisible(false);
+    } catch (error) {
+      console.error("❌ Deactivate failed:", error);
+      notification.error({
+        message: "DEACTIVATION FAILED",
+        description:
+          error.message ||
+          `Unable to deactivate ${activeTab.slice(0, -1)} account.`,
+        placement: "topRight",
+      });
+    }
+  };
+
   const vitals = [
     {
       icon: bloodPressure,
@@ -539,6 +619,8 @@ export default function UserManagement() {
           sponsor_gender: record.sponsorProfile?.sponsor_gender || "",
           work_employment: record.sponsorProfile?.work_employment || "",
           how_found_us: record.sponsorProfile?.how_found_us || "",
+          phone: record.phone || "",
+          country_code: record.country_code || record.countrycode || "IN",
         });
         break;
 
@@ -728,10 +810,12 @@ export default function UserManagement() {
     { title: "Membership", dataIndex: "membership", key: "membership" },
     {
       title: "Status",
-      dataIndex: "status",
-      key: "status",
+      dataIndex: "is_active_state",
+      key: "is_active_state",
       render: (status) => (
-        <Tag color={status === "Active" ? "green" : "red"}>{status}</Tag>
+        <Tag color={status === true ? "green" : "red"}>
+          {status === true ? "Active" : "Inactive"}
+        </Tag>
       ),
     },
     {
@@ -745,8 +829,6 @@ export default function UserManagement() {
       ),
     },
   ];
-
-  console.log("🚀 caretaker List:", caretakerList);
 
   const getFilteredData = () => {
     const dataMap = {
@@ -858,6 +940,23 @@ export default function UserManagement() {
           <Input placeholder="Enter email" />
         </Form.Item>
 
+        <Form.Item
+          name="countrycode"
+          label="Country Code"
+          rules={[{ required: true, message: "Please select country code" }]}
+        >
+          <Select>
+            <Select.Option value="IN">+91 (India)</Select.Option>
+            <Select.Option value="US">+1 (USA)</Select.Option>
+            <Select.Option value="GB">+44 (UK)</Select.Option>
+            <Select.Option value="CA">+1 (Canada)</Select.Option>
+            <Select.Option value="CM">+237 (Cameroon)</Select.Option>
+            <Select.Option value="AU">+61 (Australia)</Select.Option>
+            <Select.Option value="AE">+971 (UAE)</Select.Option>
+            <Select.Option value="SG">+65 (Singapore)</Select.Option>
+            <Select.Option value="MY">+60 (Malaysia)</Select.Option>
+          </Select>
+        </Form.Item>
         <Form.Item
           name="phone"
           label="Phone Number"
@@ -1032,6 +1131,26 @@ export default function UserManagement() {
                 <Input value="SP-1021" />
               </div>
               <div>
+                <label style={labelStyle}>Country Code</label>
+                <Select
+                  value={editedData.country_code || "IN"}
+                  onChange={(val) =>
+                    setEditedData({ ...editedData, country_code: val })
+                  }
+                  style={{ width: "100%" }}
+                >
+                  <Select.Option value="IN">+91 (India)</Select.Option>
+                  <Select.Option value="US">+1 (USA)</Select.Option>
+                  <Select.Option value="GB">+44 (UK)</Select.Option>
+                  <Select.Option value="CA">+1 (Canada)</Select.Option>
+                  <Select.Option value="CM">+237 (Cameroon)</Select.Option>
+                  <Select.Option value="AU">+61 (Australia)</Select.Option>
+                  <Select.Option value="AE">+971 (UAE)</Select.Option>
+                  <Select.Option value="SG">+65 (Singapore)</Select.Option>
+                  <Select.Option value="MY">+60 (Malaysia)</Select.Option>
+                </Select>
+              </div>
+              <div>
                 <label style={labelStyle}>Phone Number</label>
                 <Input
                   value={editedData.phone}
@@ -1178,6 +1297,25 @@ export default function UserManagement() {
               setEditedData({ ...editedData, speciality: e.target.value })
             }
           />
+
+          <p style={labelStyle}>Country Code</p>
+          <Select
+            value={editedData.doc_country_code || "IN"}
+            onChange={(val) =>
+              setEditedData({ ...editedData, doc_country_code: val })
+            }
+            style={{ width: "100%" }}
+          >
+            <Select.Option value="IN">+91 (India)</Select.Option>
+            <Select.Option value="US">+1 (USA)</Select.Option>
+            <Select.Option value="GB">+44 (UK)</Select.Option>
+            <Select.Option value="CA">+1 (Canada)</Select.Option>
+            <Select.Option value="CM">+237 (Cameroon)</Select.Option>
+            <Select.Option value="AU">+61 (Australia)</Select.Option>
+            <Select.Option value="AE">+971 (UAE)</Select.Option>
+            <Select.Option value="SG">+65 (Singapore)</Select.Option>
+            <Select.Option value="MY">+60 (Malaysia)</Select.Option>
+          </Select>
 
           <p style={labelStyle}>Phone</p>
           <Input
@@ -2235,7 +2373,7 @@ export default function UserManagement() {
                   gap: 20,
                 }}
               >
-                <Button danger size="large">
+                <Button danger size="large" onClick={handleDeactivateClick}>
                   Deactivate Account
                 </Button>
 

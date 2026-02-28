@@ -6,6 +6,7 @@ import {
   Typography,
   Modal,
   notification,
+  Select,
 } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -25,6 +26,7 @@ import { useState } from "react";
 import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
+import { isAdminUser } from "../constants/constants";
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -134,11 +136,13 @@ export default function CustomSider() {
   const sponsorData = JSON.parse(localStorage.getItem("sponsorData"));
   // const user = sponsorData?.user;
   const user = data ? JSON.parse(data) : null;
+  // check with shared helper
+  const isAdmin = isAdminUser(user);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
 
   const filteredMenuItems =
-    menuConfig[user?.user_role] || menuConfig["patient"];
+    menuConfig[isAdmin ? "admin" : user?.user_role] || menuConfig["patient"];
 
   const activeItem =
     filteredMenuItems.find((item) =>
@@ -152,7 +156,9 @@ export default function CustomSider() {
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
+      // split stored phone (eg "IN-9876543210")
       phone: user.phone?.split("-")[1] || "",
+      countrycode: user.countrycode || user.phone?.split("-")[0] || "IN",
     });
 
     if (user.photo_view_url) {
@@ -181,7 +187,7 @@ export default function CustomSider() {
         first_name: values.first_name,
         last_name: values.last_name,
         email: values.email,
-        countrycode: "IN",
+        countrycode: values.countrycode || "IN",
         phone: values.phone,
       };
 
@@ -364,6 +370,15 @@ export default function CustomSider() {
             <Input />
           </Form.Item>
 
+          <Form.Item name="countrycode" label="Country Code" required>
+            <Select>
+              <Select.Option value="IN">+91 India</Select.Option>
+              <Select.Option value="US">+1 USA</Select.Option>
+              <Select.Option value="GB">+44 UK</Select.Option>
+              <Select.Option value="CA">+1 Canada</Select.Option>
+              <Select.Option value="CM">+237 Cameroon</Select.Option>
+            </Select>
+          </Form.Item>
           <Form.Item name="phone" label="Phone" required>
             <Input />
           </Form.Item>

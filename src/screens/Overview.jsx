@@ -26,7 +26,7 @@ import {
 } from "@ant-design/icons";
 import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
-import { base_url } from "../constants/constants";
+import { base_url, isAdminUser } from "../constants/constants";
 import axios from "axios";
 
 export default function Overview() {
@@ -88,6 +88,9 @@ export default function Overview() {
     const data = localStorage.getItem("userData");
     return data ? JSON.parse(data) : null;
   });
+
+  // flag used throughout the component
+  const isAdmin = isAdminUser(user);
 
   useEffect(() => {
     if (!user) {
@@ -1054,7 +1057,7 @@ export default function Overview() {
           )}
 
           {/* Doctor overview stats */}
-          {(user?.user_role === "doctor" || user?.user_role === "admin") && (
+          {(user?.user_role === "doctor" || isAdmin) && (
             <div
               style={{
                 display: "flex",
@@ -1357,7 +1360,7 @@ export default function Overview() {
             </div>
           )} */}
           {/* Appointment List */}
-          {user?.user_role === "admin" && (
+          {isAdmin && (
             <div
               style={{
                 background: "#fff",

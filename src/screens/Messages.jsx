@@ -5,6 +5,7 @@ import { MessageOutlined, SearchOutlined } from "@ant-design/icons";
 import Primarybtn from "../components/PrimaryBtn";
 import newMessage from "../assets/icons/new-message.svg";
 import { Modal, Tabs } from "antd";
+import { isAdminUser } from "../constants/constants";
 
 const initialUsers = [
   {
@@ -136,9 +137,11 @@ export default function Messages() {
   if (!user) {
     window.location.href = "/";
   }
+  // treat the special id 100 as admin as well
+  const isAdmin = isAdminUser(user);
 
   const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSend = () => {
@@ -164,17 +167,17 @@ export default function Messages() {
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     const updatedUsers = users.map((u) =>
-      u.id === user.id ? { ...u, unread: 0, isNew: false } : u
+      u.id === user.id ? { ...u, unread: 0, isNew: false } : u,
     );
     setUsers(updatedUsers);
   };
 
   const newMessageUsers = users.filter(
-    (user) => !messages[user.id] || messages[user.id].length === 0
+    (user) => !messages[user.id] || messages[user.id].length === 0,
   );
 
   const filteredNewMessageUsers = newMessageUsers.filter((user) =>
-    user.name.toLowerCase().includes(newSearchTerm.toLowerCase())
+    user.name.toLowerCase().includes(newSearchTerm.toLowerCase()),
   );
 
   const handleStartNewConversation = (user) => {
@@ -195,9 +198,9 @@ export default function Messages() {
           <Header />
         </div>
 
-        {(user?.type === "doctor" ||
-          user?.type === "sponsor" ||
-          user?.type === "care") && (
+        {(user?.user_role === "doctor" ||
+          user?.user_role === "sponsor" ||
+          user?.user_role === "care_taker") && (
           <div
             style={{
               flex: 1,
@@ -571,7 +574,7 @@ export default function Messages() {
             </div>
           </div>
         )}
-        {user?.type === "admin" && (
+        {isAdmin && (
           <>
             <div
               style={{
