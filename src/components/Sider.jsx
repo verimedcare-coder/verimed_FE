@@ -86,6 +86,11 @@ const menuConfig = {
   care_taker: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     {
+      label: "User Management",
+      icon: <UserOutlined />,
+      path: "/user_management",
+    },
+    {
       label: "Appointments",
       icon: <CalendarOutlined />,
       path: "/appointments",

@@ -609,6 +609,10 @@ export default function UserManagement() {
     { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
   ];
 
+  const currentUserData = localStorage.getItem("userData");
+  const currentUser = currentUserData ? JSON.parse(currentUserData) : null;
+  const currentUserRole = currentUser?.user_role || currentUser?.role || "";
+
   const handleEditClick = (record) => {
     switch (activeTab) {
       case "sponsors":
@@ -2041,10 +2045,18 @@ export default function UserManagement() {
 
   const tabItems = [
     { key: "sponsors", label: "Sponsors" },
-    { key: "doctors", label: "Doctors" },
+    ...(currentUserRole === "care_taker"
+      ? []
+      : [{ key: "doctors", label: "Doctors" }]),
     { key: "caretakers", label: "Caretakers" },
     // { key: "patients", label: "Patients" },
   ];
+
+  useEffect(() => {
+    if (currentUserRole === "care_taker" && activeTab === "doctors") {
+      setActiveTab("sponsors");
+    }
+  }, [currentUserRole, activeTab]);
 
   const adminStats = [
     {
