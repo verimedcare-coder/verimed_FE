@@ -260,6 +260,7 @@ export default function UserManagement() {
         countrycode: values.countrycode || "IN",
         phone: values.phone,
         password: values.password,
+        is_active_state: true,
       };
 
       const formData = new FormData();
@@ -309,6 +310,7 @@ export default function UserManagement() {
             last_name: editedData.last_name || "",
             phone: editedData.phone.split("-")[1] || "",
             countrycode: editedData.country_code,
+            is_active_state: true,
           };
           break;
 
@@ -536,7 +538,7 @@ export default function UserManagement() {
       const endpoint = `${base_url}/user_update/`;
       const deactivateData = {
         updateid: userId,
-        is_active: false,
+        is_active_state: false,
       };
 
       const myHeaders = new Headers();

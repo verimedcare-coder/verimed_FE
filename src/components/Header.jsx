@@ -390,6 +390,7 @@ export default function HeaderComponent() {
         countrycode: "IN",
         phone: values.phone,
         password: values.password,
+        is_active_state: true,
       };
 
       const formData = new FormData();

@@ -194,6 +194,7 @@ export default function CustomSider() {
         email: values.email,
         countrycode: values.countrycode || "IN",
         phone: values.phone,
+        is_active_state: true,
       };
 
       const formData = new FormData();
