@@ -308,7 +308,7 @@ export default function UserManagement() {
             updateid: selectedSponsor?.id,
             first_name: editedData.first_name || "",
             last_name: editedData.last_name || "",
-            phone: editedData.phone.split("-")[1] || "",
+            phone: editedData.phone || "",
             countrycode: editedData.country_code,
             is_active_state: true,
           };
@@ -625,7 +625,7 @@ export default function UserManagement() {
           sponsor_gender: record.sponsorProfile?.sponsor_gender || "",
           work_employment: record.sponsorProfile?.work_employment || "",
           how_found_us: record.sponsorProfile?.how_found_us || "",
-          phone: record.phone || "",
+          phone: record.phone || record.sponsorProfile?.phone || "",
           country_code: record.country_code || record.countrycode || "IN",
         });
         break;
@@ -1072,70 +1072,32 @@ export default function UserManagement() {
               }}
             >
               <div>
-                <label style={labelStyle}>Address</label>
+                <label style={labelStyle}>First Name</label>
                 <Input
-                  value={editedData.sponsor_address}
+                  value={editedData.first_name}
                   onChange={(e) =>
                     setEditedData({
                       ...editedData,
-                      sponsor_address: e.target.value,
+                      first_name: e.target.value,
                     })
                   }
                 />
               </div>
+
               <div>
-                <label style={labelStyle}>Gender</label>
-                <Select
-                  value={editedData.sponsor_gender}
-                  onChange={(val) =>
-                    setEditedData({ ...editedData, sponsor_gender: val })
-                  }
-                  style={{ width: "100%" }}
-                >
-                  <Select.Option value="Male">Male</Select.Option>
-                  <Select.Option value="Female">Female</Select.Option>
-                  <Select.Option value="Other">Other</Select.Option>
-                </Select>
-              </div>
-              <div>
-                <label style={labelStyle}>Work Employment</label>
+                <label style={labelStyle}>Last Name</label>
 
                 <Input
-                  value={editedData.work_employment}
+                  value={editedData.last_name}
                   onChange={(e) =>
                     setEditedData({
                       ...editedData,
-                      work_employment: e.target.value,
+                      last_name: e.target.value,
                     })
                   }
                 />
               </div>
-              <div>
-                <label style={labelStyle}>How found us</label>
 
-                <Input
-                  value={editedData.how_found_us}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      how_found_us: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Name</label>
-                <Input
-                  value={editedData.name}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Sponsor ID</label>
-                <Input value="SP-1021" />
-              </div>
               <div>
                 <label style={labelStyle}>Country Code</label>
                 <Select
@@ -1162,15 +1124,6 @@ export default function UserManagement() {
                   value={editedData.phone}
                   onChange={(e) =>
                     setEditedData({ ...editedData, phone: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Email Address</label>
-                <Input
-                  value={editedData.email}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, email: e.target.value })
                   }
                 />
               </div>
