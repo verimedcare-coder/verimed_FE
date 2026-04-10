@@ -134,7 +134,9 @@ export default function Overview() {
           Authorization: `Token ${token}`,
         };
         const res = await axios.get(endpoint, { headers });
-        const loggedInDoctor = res.data.find((doc) => doc.user.id === user?.id);
+        const loggedInDoctor = res.data.find(
+          (doc) => doc?.user?.id === user?.id,
+        );
         localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
       } catch (error) {
         console.log("Error fetching logged in doctor:", error);
@@ -544,7 +546,7 @@ export default function Overview() {
           year: "numeric",
         })
       : "",
-    sponsor: item.sponsor.user.username,
+    sponsor: item?.sponsor?.user?.username,
     patient: item.patient?.patient_id || "Unknown",
     type: item.appointment_type || "-",
     caretaker: item.caretaker?.caretaker_id || "Unknown",
@@ -858,7 +860,7 @@ export default function Overview() {
         const endpoint = `${base_url}/caretakerprofile_list/`;
         const res = await axios.get(endpoint);
         const loggedInCaretaker = res.data.find(
-          (ct) => ct.user.id === userData?.id,
+          (ct) => ct?.user?.id === userData?.id,
         );
         localStorage.setItem(
           "careTakerData",
