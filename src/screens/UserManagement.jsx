@@ -2345,7 +2345,7 @@ export default function UserManagement() {
                 </Button>
 
                 <PrimaryBtn
-                  name={`Edit ${
+                  name={`Save ${
                     activeTab.slice(0, -1).charAt(0).toUpperCase() +
                     activeTab.slice(1, -1)
                   }`}
