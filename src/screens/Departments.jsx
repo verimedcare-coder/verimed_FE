@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -13,7 +13,13 @@ import {
   Avatar,
   Form,
   DatePicker,
+  message,
+  Upload,
+  Spin,
 } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import axios from "axios";
+import { base_url } from "../constants/constants";
 import {
   CalendarOutlined,
   FilterOutlined,
@@ -156,46 +162,175 @@ export default function Departments() {
   const [selectedDept, setSelectedDept] = useState(null);
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
+  const [logoFile, setLogoFile] = useState(null);
+
+  // Get token from localStorage
+  const token = localStorage.getItem("token");
+
+  // Fetch departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${base_url}/verimed_department_create_update/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        },
+      );
+      setDepartmentList(response.data);
+    } catch (error) {
+      message.error("Failed to fetch departments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateDepartment = async (values) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      const deptData = {
+        dep_name: values.dep_name,
+        hospital_name: values.hospital_name,
+        hospital_address: values.hospital_address,
+        hospital_phone: values.hospital_phone,
+        dep_email: values.dep_email,
+        dep_exprience: values.dep_exprience,
+        dep_category: values.dep_category,
+      };
+      formData.append("verimed_department", JSON.stringify(deptData));
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+
+      await axios.post(
+        `${base_url}/verimed_department_create_update/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      message.success("Department created successfully!");
+      setAddDrawerOpen(false);
+      form.resetFields();
+      setLogoFile(null);
+      fetchDepartments();
+    } catch (error) {
+      message.error("Failed to create department");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateDepartment = async (values) => {
+    if (!selectedDept) return;
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      const deptData = {
+        depupdateid: selectedDept.id,
+        dep_name: values.dep_name,
+        hospital_name: values.hospital_name,
+        hospital_address: values.hospital_address,
+        hospital_phone: values.hospital_phone,
+        dep_email: values.dep_email,
+        dep_ID: values.dep_ID,
+        dep_exprience: values.dep_exprience,
+        dep_category: values.dep_category,
+      };
+      formData.append("verimed_department", JSON.stringify(deptData));
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+
+      await axios.patch(
+        `${base_url}/verimed_department_create_update/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      message.success("Department updated successfully!");
+      setViewDrawerOpen(false);
+      form.resetFields();
+      setLogoFile(null);
+      fetchDepartments();
+    } catch (error) {
+      message.error("Failed to update department");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogoChange = (info) => {
+    if (info.file.status === "done") {
+      message.success(`${info.file.name} file uploaded successfully`);
+    } else if (info.file.status === "error") {
+      message.error(`${info.file.name} file upload failed`);
+    }
+    // Store the file for form submission
+    if (info.file.originFileObj) {
+      setLogoFile(info.file.originFileObj);
+    }
+  };
 
   // Columns moved **inside** component so state functions work
   const columns = [
     {
       title: "Department ID",
-      dataIndex: "departmentId",
-      key: "departmentId",
-      width: 120,
+      dataIndex: "dep_ID",
+      key: "dep_ID",
+      width: 150,
     },
     {
       title: "Department Name",
-      dataIndex: "departmentName",
-      key: "departmentName",
+      dataIndex: "dep_name",
+      key: "dep_name",
+      width: 200,
+    },
+    {
+      title: "Hospital Name",
+      dataIndex: "hospital_name",
+      key: "hospital_name",
       width: 180,
     },
     {
-      title: "Head Doctor",
-      dataIndex: "headDoctor",
-      key: "headDoctor",
-      width: 160,
+      title: "Email",
+      dataIndex: "dep_email",
+      key: "dep_email",
+      width: 180,
     },
-    { title: "Type", dataIndex: "type", key: "type", width: 120 },
     {
-      title: "Total Doctors",
-      dataIndex: "totalDoctors",
-      key: "totalDoctors",
+      title: "Phone",
+      dataIndex: "hospital_phone",
+      key: "hospital_phone",
       width: 130,
     },
     {
-      title: "Patients Assigned",
-      dataIndex: "patientsAssigned",
-      key: "patientsAssigned",
-      width: 150,
+      title: "Category",
+      dataIndex: "dep_category",
+      key: "dep_category",
+      width: 120,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
       width: 120,
-      render: (text) => getStatusTag(text),
+      render: (text) => getStatusTag(text || "Active"),
     },
     {
       title: "Action",
@@ -420,11 +555,13 @@ export default function Departments() {
 
             <Table
               columns={columns}
-              dataSource={departmentData}
+              dataSource={departmentList}
+              rowKey="id"
               pagination={{ pageSize: 10 }}
               scroll={{ x: true }}
               bordered
               style={{ width: "100%" }}
+              loading={loading}
             />
           </div>
         </div>
@@ -432,19 +569,17 @@ export default function Departments() {
 
       {/* ---------- Add Department Drawer ---------- */}
       <Drawer
-        title="Add / Edit Department"
+        title="Add Department"
         width={720}
-        onClose={() => setAddDrawerOpen(false)}
+        onClose={() => {
+          setAddDrawerOpen(false);
+          form.resetFields();
+          setLogoFile(null);
+        }}
         open={addDrawerOpen}
         destroyOnClose
       >
-        <Form
-          layout="vertical"
-          onFinish={(values) => {
-            console.log("Department Created:", values);
-            setAddDrawerOpen(false);
-          }}
-        >
+        <Form form={form} layout="vertical" onFinish={handleCreateDepartment}>
           {/* Two-Column Grid Layout */}
           <div
             style={{
@@ -454,85 +589,64 @@ export default function Departments() {
               marginTop: 16,
             }}
           >
-            <Form.Item name="departmentName" label="Department Name">
-              <Input />
-            </Form.Item>
-
-            <Form.Item label="Department ID">
-              <Input value="DEP-1022" />
-            </Form.Item>
-
-            <Form.Item name="departmentType" label="Department Type">
-              <Select>
-                <Option value="Clinical">Clinical</Option>
-                <Option value="Non-Clinical">Non-Clinical</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item name="departmentLocation" label="Department Location">
-              <Input />
-            </Form.Item>
-
-            <Form.Item name="contactEmail" label="Contact Email">
-              <Input />
-            </Form.Item>
-
-            <Form.Item name="contactPhone" label="Contact Phone">
-              <Input />
-            </Form.Item>
-
-            <Form.Item name="location" label="Location">
-              <Input />
-            </Form.Item>
-
-            <Form.Item name="status" label="Status">
-              <Select>
-                <Option value="Active">Active</Option>
-                <Option value="Inactive">Inactive</Option>
-              </Select>
-            </Form.Item>
-
-            {/* Full-width Description */}
             <Form.Item
-              name="description"
-              label="Description"
+              name="dep_name"
+              label="Department Name"
+              rules={[{ required: true }]}
+            >
+              <Input placeholder="Enter department name" />
+            </Form.Item>
+
+            <Form.Item
+              name="hospital_name"
+              label="Hospital Name"
+              rules={[{ required: true }]}
+            >
+              <Input placeholder="Enter hospital name" />
+            </Form.Item>
+
+            <Form.Item name="hospital_address" label="Hospital Address">
+              <Input placeholder="Enter hospital address" />
+            </Form.Item>
+
+            <Form.Item name="hospital_phone" label="Hospital Phone">
+              <Input placeholder="Enter hospital phone" />
+            </Form.Item>
+
+            <Form.Item name="dep_email" label="Department Email">
+              <Input placeholder="Enter department email" />
+            </Form.Item>
+
+            <Form.Item name="dep_category" label="Department Category">
+              <Select placeholder="Select category">
+                <Option value="General">General</Option>
+                <Option value="Specialty">Specialty</Option>
+                <Option value="Emergency">Emergency</Option>
+                <Option value="Diagnostic">Diagnostic</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="dep_exprience"
+              label="Department Experience"
               style={{ gridColumn: "1 / span 2" }}
             >
-              <TextArea rows={2} />
-            </Form.Item>
-          </div>
-
-          {/* Head Doctor Section */}
-          <h3 style={{ marginTop: 24 }}>Assign Head Doctor</h3>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 16,
-              marginTop: 8,
-            }}
-          >
-            <Form.Item name="doctor" label="Select Doctor">
-              <Select>
-                <Option value="dr_smith">Dr. Smith</Option>
-                <Option value="dr_jones">Dr. Jones</Option>
-              </Select>
+              <Input placeholder="Enter department experience" />
             </Form.Item>
 
-            <Form.Item name="designation" label="Designation">
-              <Input />
-            </Form.Item>
-
-            <Form.Item name="joiningDate" label="Joining Date">
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-
-            <Form.Item name="roleType" label="Role Type">
-              <Select>
-                <Option value="Full-Time">Full-Time</Option>
-                <Option value="Part-Time">Part-Time</Option>
-                <Option value="Visiting">Visiting</Option>
-              </Select>
+            {/* Logo Upload */}
+            <Form.Item
+              label="Department Logo"
+              style={{ gridColumn: "1 / span 2" }}
+            >
+              <Upload
+                listType="picture"
+                maxCount={1}
+                beforeUpload={() => false}
+                onChange={handleLogoChange}
+              >
+                <Button icon={<UploadOutlined />}>Click to Upload Logo</Button>
+              </Upload>
             </Form.Item>
           </div>
 
@@ -569,67 +683,49 @@ export default function Departments() {
         </Form>
       </Drawer>
 
-      {/* ---------- View Department Drawer ---------- */}
+      {/* ---------- View/Edit Department Drawer ---------- */}
       <Drawer
         title="Department Details"
-        width={480}
-        onClose={() => setViewDrawerOpen(false)}
+        width={600}
+        onClose={() => {
+          setViewDrawerOpen(false);
+          form.resetFields();
+          setLogoFile(null);
+        }}
         open={viewDrawerOpen}
         destroyOnClose
       >
         {selectedDept && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {/* Profile and Basic Info */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Department Avatar + Upload */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: 10,
-                }}
-              >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleUpdateDepartment}
+            initialValues={selectedDept}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Department Logo */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <p style={labelStyle}>Department Logo</p>
-
-                <div style={{ position: "relative", width: 72, height: 72 }}>
+                <Upload
+                  listType="picture"
+                  maxCount={1}
+                  beforeUpload={() => false}
+                  onChange={handleLogoChange}
+                  showUploadList={false}
+                >
                   <Avatar
                     size={72}
-                    src={`https://ui-avatars.com/api/?name=${selectedDept.departmentName}`}
-                    style={{ borderRadius: "50%", objectFit: "cover" }}
-                  />
-
-                  {/* Upload Icon Overlay */}
-                  <label
-                    htmlFor="dept-image-upload"
+                    src={
+                      selectedDept.logo ||
+                      `https://ui-avatars.com/api/?name=${selectedDept.dep_name}`
+                    }
                     style={{
-                      position: "absolute",
-                      bottom: -10,
-                      right: "50%",
-                      transform: "translateX(50%)",
-                      background: "#fff",
                       borderRadius: "50%",
-                      padding: 4,
+                      objectFit: "cover",
                       cursor: "pointer",
-                      boxShadow: "0 0 4px rgba(0,0,0,0.2)",
                     }}
-                  >
-                    <img
-                      src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-                      alt="Upload"
-                      width={16}
-                      height={16}
-                    />
-                  </label>
-
-                  <input
-                    id="dept-image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={() => {}}
-                    style={{ display: "none" }}
                   />
-                </div>
+                </Upload>
               </div>
 
               {/* Basic Fields */}
@@ -640,116 +736,91 @@ export default function Departments() {
                   gap: 16,
                 }}
               >
-                <div>
-                  <label style={labelStyle}>Department ID</label>
-                  <Input value={selectedDept.departmentId} disabled />
-                </div>
-                <div>
-                  <label style={labelStyle}>Department Name</label>
-                  <Input
-                    value={selectedDept.departmentName}
-                    onChange={() => {}}
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Head Doctor</label>
-                  <Input value={selectedDept.headDoctor} onChange={() => {}} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Type</label>
-                  <Select
-                    value={selectedDept.type}
-                    onChange={() => {}}
-                    style={{ width: "100%" }}
-                  >
-                    <Option value="Clinical">Clinical</Option>
-                    <Option value="Non-Clinical">Non-Clinical</Option>
+                <Form.Item name="dep_ID" label="Department ID">
+                  <Input disabled />
+                </Form.Item>
+                <Form.Item name="dep_name" label="Department Name">
+                  <Input />
+                </Form.Item>
+                <Form.Item name="hospital_name" label="Hospital Name">
+                  <Input />
+                </Form.Item>
+                <Form.Item name="hospital_phone" label="Hospital Phone">
+                  <Input />
+                </Form.Item>
+                <Form.Item
+                  name="dep_email"
+                  label="Department Email"
+                  style={{ gridColumn: "1 / span 2" }}
+                >
+                  <Input />
+                </Form.Item>
+                <Form.Item
+                  name="hospital_address"
+                  label="Hospital Address"
+                  style={{ gridColumn: "1 / span 2" }}
+                >
+                  <Input />
+                </Form.Item>
+                <Form.Item name="dep_category" label="Department Category">
+                  <Select>
+                    <Option value="General">General</Option>
+                    <Option value="Specialty">Specialty</Option>
+                    <Option value="Emergency">Emergency</Option>
+                    <Option value="Diagnostic">Diagnostic</Option>
                   </Select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Total Doctors</label>
-                  <Input
-                    type="number"
-                    value={selectedDept.totalDoctors}
-                    onChange={() => {}}
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Patients Assigned</label>
-                  <Input
-                    type="number"
-                    value={selectedDept.patientsAssigned}
-                    onChange={() => {}}
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Status</label>
-                  <Select
-                    value={selectedDept.status}
-                    onChange={() => {}}
-                    style={{ width: "100%" }}
-                  >
-                    <Option value="Active">Active</Option>
-                    <Option value="Inactive">Inactive</Option>
-                  </Select>
-                </div>
+                </Form.Item>
+                <Form.Item name="dep_exprience" label="Department Experience">
+                  <Input />
+                </Form.Item>
               </div>
+
+              {/* Logo Upload */}
+              <Form.Item label="Update Logo">
+                <Upload
+                  listType="picture"
+                  maxCount={1}
+                  beforeUpload={() => false}
+                  onChange={handleLogoChange}
+                >
+                  <Button icon={<UploadOutlined />}>
+                    Click to Upload New Logo
+                  </Button>
+                </Upload>
+              </Form.Item>
             </div>
 
-            {/* Assigned Doctors Section */}
-            <div>
-              <p style={{ fontWeight: 600, fontSize: 16 }}>Assigned Doctors</p>
-
-              {assignedDoctors.map((doc) => (
-                <div
-                  key={doc.id}
+            {/* Action Buttons */}
+            <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
+              >
+                <Button
+                  onClick={() => setViewDrawerOpen(false)}
                   style={{
-                    background: "#F9F9F9",
-                    padding: 16,
-                    borderRadius: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                    border: "1px solid #eaeaea",
+                    height: 40,
+                    border: "1px solid #ccc",
+                    backgroundColor: "#ffffff",
                   }}
                 >
-                  {/* Avatar */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Avatar
-                      size={48}
-                      src={doc.avatar}
-                      style={{ borderRadius: 8, width: 60, height: 62 }}
-                    />
-                  </div>
-
-                  {/* Name */}
-                  <div style={linkedInfoStyle}>
-                    <p style={linkedLabelStyle}>Name</p>
-                    <p style={infoTextStyle}>{doc.name}</p>
-                  </div>
-
-                  {/* Role */}
-                  <div style={linkedInfoStyle}>
-                    <p style={linkedLabelStyle}>Role</p>
-                    <p style={infoTextStyle}>{doc.role}</p>
-                  </div>
-
-                  {/* Patients */}
-                  <div style={linkedInfoStyle}>
-                    <p style={linkedLabelStyle}>Patients</p>
-                    <p style={infoTextStyle}>{doc.patients}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  style={{
+                    height: 40,
+                    backgroundColor: "#F0C330",
+                    borderColor: "#B78520",
+                    color: "#000",
+                    fontWeight: 500,
+                  }}
+                >
+                  Update Department
+                </Button>
+              </div>
+            </Form.Item>
+          </Form>
         )}
       </Drawer>
     </div>
