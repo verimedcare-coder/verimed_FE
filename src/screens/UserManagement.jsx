@@ -15,11 +15,13 @@ import {
   Upload,
   Spin,
   notification,
+  Tooltip,
 } from "antd";
 import {
   EllipsisOutlined,
   PlusOutlined,
   UploadOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import Primarybtn from "../components/PrimaryBtn";
@@ -62,6 +64,7 @@ export default function UserManagement() {
   const [selectedCaretaker, setSelectedCaretaker] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [editedData, setEditedData] = useState({});
+  // uploadedImage: preview URL shown in avatar
   const [uploadedImage, setUploadedImage] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [docList, setDocList] = useState([]);
@@ -72,36 +75,39 @@ export default function UserManagement() {
 
   const token = localStorage.getItem("token");
 
+  // ─── Image change handler ───────────────────────────────────────────────────
+  // Stores both a preview URL (uploadedImage) and the raw File (editedData.photo)
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (event) => setUploadedImage(event.target.result);
+    reader.readAsDataURL(file);
+
+    // Raw file stored in editedData so handleUpdateClick can append it
+    setEditedData((prev) => ({ ...prev, photo: file }));
+  };
+
+  // ─── Fetch helpers ──────────────────────────────────────────────────────────
   const fetchSponsors = async () => {
     setLoading(true);
     try {
-      const userListEndpoint = `${base_url}/user_view/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const userRes = await axios.get(userListEndpoint, { headers });
+      const headers = { Authorization: `Token ${token}` };
+      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
       const allusers = userRes.data;
-      const sponsorListEndpoint = `${base_url}/sponsorprofile_list/`;
-      const res = await axios.get(sponsorListEndpoint);
+      const res = await axios.get(`${base_url}/sponsorprofile_list/`);
       const sponsors = res.data;
-
-      const sponsorUserIds = sponsors.map((sponsor) => sponsor.user?.id);
-
-      const filteredAllusers = allusers.filter((user) =>
-        sponsorUserIds.includes(user.id),
+      const sponsorUserIds = sponsors.map((s) => s.user?.id);
+      const filteredAllusers = allusers.filter((u) =>
+        sponsorUserIds.includes(u.id),
       );
-
-      const combinedSponsors = filteredAllusers.map((user) => {
-        const sponsorProfile = sponsors.find(
-          (sponsor) => sponsor?.user?.id === user.id,
-        );
-        return {
-          ...user,
-          sponsorProfile,
-        };
-      });
+      const combinedSponsors = filteredAllusers.map((user) => ({
+        ...user,
+        sponsorProfile: sponsors.find((s) => s?.user?.id === user.id),
+      }));
       setSponsorList(combinedSponsors);
-      setLoading(false);
     } catch (error) {
       console.log(error);
     } finally {
@@ -112,35 +118,20 @@ export default function UserManagement() {
   const fetchCareTakers = async () => {
     setLoading(true);
     try {
-      const userListEndpoint = `${base_url}/user_view/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const userRes = await axios.get(userListEndpoint, { headers });
+      const headers = { Authorization: `Token ${token}` };
+      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
       const allusers = userRes.data;
-
-      const caretakerListEndpoint = `${base_url}/caretakerprofile_list/`;
-      const res = await axios.get(caretakerListEndpoint);
+      const res = await axios.get(`${base_url}/caretakerprofile_list/`);
       const caretakers = res.data;
-
-      const caretakersUserIds = caretakers.map((care) => care.user?.id);
-
-      const filteredAllusers = allusers.filter((user) =>
-        caretakersUserIds.includes(user.id),
+      const caretakersUserIds = caretakers.map((c) => c.user?.id);
+      const filteredAllusers = allusers.filter((u) =>
+        caretakersUserIds.includes(u.id),
       );
-
-      const combinedCaretakers = filteredAllusers.map((user) => {
-        const caretakerProfile = caretakers.find(
-          (care) => care.user?.id === user.id,
-        );
-        return {
-          ...user,
-          caretakerProfile,
-        };
-      });
-
+      const combinedCaretakers = filteredAllusers.map((user) => ({
+        ...user,
+        caretakerProfile: caretakers.find((c) => c.user?.id === user.id),
+      }));
       setCaretakerList(combinedCaretakers);
-      setLoading(false);
     } catch (error) {
       console.log(error);
     } finally {
@@ -152,29 +143,20 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const headers = { Authorization: `Token ${token}` };
-
       const [userRes, patientRes] = await Promise.all([
         axios.get(`${base_url}/user_view/`, { headers }),
         axios.get(`${base_url}/patientprofile_list/`, { headers }),
       ]);
-
       const allUsers = userRes.data;
       const patients = patientRes.data;
-
       const patientUserIds = patients.map((p) => p.user.id);
-
       const filteredUsers = allUsers.filter((u) =>
         patientUserIds.includes(u.id),
       );
-
-      const combinedPatients = filteredUsers.map((user) => {
-        const patientProfile = patients.find((p) => p.user.id === user.id);
-        return {
-          ...user,
-          patientProfile,
-        };
-      });
-
+      const combinedPatients = filteredUsers.map((user) => ({
+        ...user,
+        patientProfile: patients.find((p) => p.user.id === user.id),
+      }));
       setPatientList(combinedPatients);
     } catch (error) {
       console.error("Error fetching patients:", error);
@@ -186,33 +168,22 @@ export default function UserManagement() {
   const fetchDoctors = async () => {
     setLoading(true);
     try {
-      const userListEndpoint = `${base_url}/user_view/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const userRes = await axios.get(userListEndpoint, { headers });
+      const headers = { Authorization: `Token ${token}` };
+      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
       const allusers = userRes.data;
-
-      const docListEndpoint = `${base_url}/doctorprofile_list/`;
-      const res = await axios.get(docListEndpoint, { headers });
-      const doctors = res.data;
-
-      const doctorUserIds = doctors.map((doc) => doc.user.id);
-
-      const filteredAllusers = allusers.filter((user) =>
-        doctorUserIds.includes(user.id),
-      );
-
-      const combinedDoctors = filteredAllusers.map((user) => {
-        const doctorProfile = doctors.find((doc) => doc.user.id === user.id);
-        return {
-          ...user,
-          doctorProfile,
-        };
+      const res = await axios.get(`${base_url}/doctorprofile_list/`, {
+        headers,
       });
-
+      const doctors = res.data;
+      const doctorUserIds = doctors.map((d) => d.user.id);
+      const filteredAllusers = allusers.filter((u) =>
+        doctorUserIds.includes(u.id),
+      );
+      const combinedDoctors = filteredAllusers.map((user) => ({
+        ...user,
+        doctorProfile: doctors.find((d) => d.user.id === user.id),
+      }));
       setDocList(combinedDoctors);
-      setLoading(false);
     } catch (error) {
       console.log(error);
     } finally {
@@ -237,12 +208,6 @@ export default function UserManagement() {
   const showDrawer = () => setOpen(true);
   const onClose = () => setOpen(false);
 
-  // const onFinish = (values) => {
-  //   console.log("Sponsor Info Submitted:", values);
-  //   form.resetFields();
-  //   setOpen(false);
-  // };
-
   const handleSubmit = async (values, activeTab) => {
     try {
       const roleMap = {
@@ -251,7 +216,6 @@ export default function UserManagement() {
         caretakers: "care_taker",
         patients: "patient",
       };
-
       const user_signup = {
         first_name: values.first_name,
         last_name: values.last_name,
@@ -262,22 +226,17 @@ export default function UserManagement() {
         password: values.password,
         is_active_state: true,
       };
-
       const formData = new FormData();
       formData.append("user_signup", JSON.stringify(user_signup));
       if (values.photo) {
         formData.append("photo", values.photo);
       }
-
-      const endpoint = `${base_url}/user_create/`;
-
-      const res = await axios.post(endpoint, formData, {
+      await axios.post(`${base_url}/user_create/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Token ${token}`,
         },
       });
-
       notification.success({
         message: `${roleMap[activeTab]} created successfully!`,
       });
@@ -291,6 +250,7 @@ export default function UserManagement() {
     }
   };
 
+  // ─── Update ─────────────────────────────────────────────────────────────────
   const handleUpdateClick = async () => {
     if (!editedData) return;
 
@@ -338,12 +298,10 @@ export default function UserManagement() {
         case "patients":
           endpoint = `${base_url}/patientprofile_update/`;
           keyName = "patientprofile_update_data";
-
           const formattedDOB =
             editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
               ? new Date(editedData.patient_dob).toISOString().split("T")[0]
               : "";
-
           updateData = {
             patient_profile_updateid: selectedPatient?.patientProfile?.id,
             sponsorid: editedData.sponsorid || "",
@@ -418,13 +376,11 @@ export default function UserManagement() {
           };
 
           formData.append(keyName, JSON.stringify(updateData));
-
           if (editedData.patient_upload_files?.length > 0) {
             editedData.patient_upload_files.forEach((file) => {
               formData.append("patient_upload_files", file);
             });
           }
-
           formData.append(
             "patient_files_ids",
             Array.isArray(editedData.patient_files_ids)
@@ -459,10 +415,15 @@ export default function UserManagement() {
           return;
       }
 
-      formData.append(keyName, JSON.stringify(updateData));
+      // Append the profile-specific payload (skip patients — already appended above)
+      if (activeTab !== "patients") {
+        formData.append(keyName, JSON.stringify(updateData));
+      }
 
-      if (editedData.photo) {
+      // ✅ Append photo if a new file was chosen
+      if (editedData.photo instanceof File) {
         formData.append("photo", editedData.photo);
+        console.log("📸 Photo being uploaded:", editedData.photo.name);
       }
 
       console.log("🚀 Sending PATCH to:", endpoint);
@@ -478,21 +439,18 @@ export default function UserManagement() {
 
       notification.success({
         message: `${activeTab.slice(0, -1).toUpperCase()} PROFILE UPDATED`,
-        description: `The ${activeTab.slice(
-          0,
-          -1,
-        )} profile was updated successfully.`,
+        description: `The ${activeTab.slice(0, -1)} profile was updated successfully.`,
         placement: "topRight",
       });
 
       if (activeTab === "sponsors") fetchSponsors();
       if (activeTab === "doctors") fetchDoctors();
-      // if (activeTab === "patients") fetchPatients();
       if (activeTab === "caretakers") fetchCareTakers();
 
       setDrawerVisible(false);
+      setUploadedImage(null); // reset preview after save
     } catch (error) {
-      console.error(" Update failed:", error);
+      console.error("Update failed:", error);
       notification.error({
         message: "UPDATE FAILED",
         description:
@@ -506,8 +464,6 @@ export default function UserManagement() {
   const handleDeactivateClick = async () => {
     try {
       let userId = null;
-
-      // Get user ID based on active tab
       switch (activeTab) {
         case "sponsors":
           userId = selectedSponsor?.id;
@@ -525,7 +481,6 @@ export default function UserManagement() {
           console.warn("⚠️ Unknown user type:", activeTab);
           return;
       }
-
       if (!userId) {
         notification.error({
           message: "ERROR",
@@ -534,44 +489,30 @@ export default function UserManagement() {
         });
         return;
       }
-
       const endpoint = `${base_url}/user_update/`;
-      const deactivateData = {
-        updateid: userId,
-        is_active_state: false,
-      };
-
+      const deactivateData = { updateid: userId, is_active_state: false };
       const myHeaders = new Headers();
       myHeaders.append("Authorization", `Token ${token}`);
-
       const formdata = new FormData();
       formdata.append("user_update_data", JSON.stringify(deactivateData));
-
       const requestOptions = {
         method: "PATCH",
         headers: myHeaders,
         body: formdata,
         redirect: "follow",
       };
-
       console.log("🚀 Deactivating user:", deactivateData);
-
       const response = await fetch(endpoint, requestOptions);
       const result = await response.text();
-
       console.log("✅ Deactivate Success:", result);
-
       notification.success({
         message: "ACCOUNT DEACTIVATED",
         description: `The ${activeTab.slice(0, -1)} account has been deactivated successfully.`,
         placement: "topRight",
       });
-
-      // Refresh the data
       if (activeTab === "sponsors") fetchSponsors();
       if (activeTab === "doctors") fetchDoctors();
       if (activeTab === "caretakers") fetchCareTakers();
-
       setDrawerVisible(false);
     } catch (error) {
       console.error("❌ Deactivate failed:", error);
@@ -616,6 +557,9 @@ export default function UserManagement() {
   const currentUserRole = currentUser?.user_role || currentUser?.role || "";
 
   const handleEditClick = (record) => {
+    // Reset preview whenever a new record is opened
+    setUploadedImage(null);
+
     switch (activeTab) {
       case "sponsors":
         setSelectedSponsor(record);
@@ -627,9 +571,9 @@ export default function UserManagement() {
           how_found_us: record.sponsorProfile?.how_found_us || "",
           phone: record.phone || record.sponsorProfile?.phone || "",
           country_code: record.country_code || record.countrycode || "IN",
+          photo: null, // will be set by handleImageChange if user picks a file
         });
         break;
-
       case "doctors":
         setSelectedDoctor(record);
         setEditedData({
@@ -648,9 +592,9 @@ export default function UserManagement() {
           doc_state: record.doctorProfile?.doc_state || "",
           doc_country: record.doctorProfile?.doc_country || "",
           doc_pincode: record.doctorProfile?.doc_pincode || "",
+          photo: null,
         });
         break;
-
       case "caretakers":
         setSelectedCaretaker(record);
         setEditedData({
@@ -662,9 +606,9 @@ export default function UserManagement() {
           yr_graduation: record.caretakerProfile?.yr_of_graduation || "",
           credentials: record.caretakerProfile?.credentials || "",
           skillset: record.caretakerProfile?.skillset || "",
+          photo: null,
         });
         break;
-
       case "patients":
         setSelectedPatient(record);
         setEditedData({
@@ -682,7 +626,6 @@ export default function UserManagement() {
           religion: record.patientProfile?.religion || "",
           escalate_to_physician:
             record.patientProfile?.escalate_to_physician || "",
-
           emer_con_name: record.patientProfile?.emer_con_name || "",
           emer_con_relation: record.patientProfile?.emer_con_relation || "",
           emer_con_coun_of_residen:
@@ -691,16 +634,13 @@ export default function UserManagement() {
             record.patientProfile?.emer_con_country_code || "",
           emer_con_phone: record.patientProfile?.emer_con_phone || "",
           emer_con_email: record.patientProfile?.emer_con_email || "",
-
           local_con_name: record.patientProfile?.local_con_name || "",
           local_con_relation: record.patientProfile?.local_con_relation || "",
           local_con_country_code:
             record.patientProfile?.local_con_country_code || "",
           local_con_phone: record.patientProfile?.local_con_phone || "",
-
           reason_enrollment: record.patientProfile?.reason_enrollment || "",
           reason_other: record.patientProfile?.reason_other || "",
-
           medical_his_diagnosis:
             record.patientProfile?.medical_his_diagnosis || "",
           medical_his_cancer: record.patientProfile?.medical_his_cancer || "",
@@ -711,7 +651,6 @@ export default function UserManagement() {
             record.patientProfile?.medical_his_major_surgeries || "",
           medical_his_curr_symp:
             record.patientProfile?.medical_his_curr_symp || "",
-
           medication_name: record.patientProfile?.medication_name || "",
           medication_dose: record.patientProfile?.medication_dose || "",
           medication_frequency:
@@ -720,11 +659,9 @@ export default function UserManagement() {
           medication_issues: record.patientProfile?.medication_issues || false,
           medication_issues_explain:
             record.patientProfile?.medication_issues_explain || "",
-
           allergies_issues: record.patientProfile?.allergies_issues || false,
           allergies_drug: record.patientProfile?.allergies_drug || "",
           allergies_food: record.patientProfile?.allergies_food || "",
-
           functional_bathe: record.patientProfile?.functional_bathe || "",
           functional_dress: record.patientProfile?.functional_dress || "",
           functional_eat: record.patientProfile?.functional_eat || "",
@@ -740,7 +677,6 @@ export default function UserManagement() {
           functional_how_many: record.patientProfile?.functional_how_many || "",
           functional_memory_pbms:
             record.patientProfile?.functional_memory_pbms || false,
-
           lifestyle_daily_routine:
             record.patientProfile?.lifestyle_daily_routine || "",
           lifestyle_dietary_habits:
@@ -755,7 +691,6 @@ export default function UserManagement() {
             record.patientProfile?.lifestyle_pain_complaints || "",
           lifestyle_pain_where:
             record.patientProfile?.lifestyle_pain_where || "",
-
           social_emotion_health:
             record.patientProfile?.social_emotion_health || "",
           social_spiritual_needs:
@@ -763,25 +698,81 @@ export default function UserManagement() {
           social_trusted_person:
             record.patientProfile?.social_trusted_person || false,
           social_name: record.patientProfile?.social_name || "",
-
           goals_family_hope: record.patientProfile?.goals_family_hope || "",
           goals_special_instructions:
             record.patientProfile?.goals_special_instructions || "",
           goals_term_membership:
             record.patientProfile?.goals_term_membership || "",
-
           patient_files_ids: record.patientProfile?.patient_files_ids || "",
           patient_files_name: record.patientProfile?.patient_files_name || "",
           patient_upload_files: [],
+          photo: null,
         });
         break;
-
       default:
         break;
     }
-
     setDrawerVisible(true);
   };
+
+  // ─── Reusable avatar uploader ───────────────────────────────────────────────
+  const AvatarUploader = ({ currentSrc, inputId }) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        marginBottom: 8,
+      }}
+    >
+      <p style={labelStyle}>Profile Photo</p>
+
+      <div style={{ position: "relative", width: 72, height: 72 }}>
+        <Avatar
+          size={72}
+          src={uploadedImage || currentSrc}
+          style={{ borderRadius: "50%", objectFit: "cover" }}
+        />
+
+        {/* Camera overlay button */}
+        <Tooltip title="Change photo">
+          <label
+            htmlFor={inputId}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              background: "linear-gradient(180deg, #F0C330, #B78520)",
+              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+            }}
+          >
+            <CameraOutlined style={{ color: "#fff", fontSize: 12 }} />
+          </label>
+        </Tooltip>
+
+        <input
+          id={inputId}
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          style={{ display: "none" }}
+        />
+      </div>
+
+      {uploadedImage && (
+        <span style={{ fontSize: 12, color: "#27AE60" }}>
+          ✓ New photo selected — save to apply
+        </span>
+      )}
+    </div>
+  );
 
   const columns = [
     { title: "User Name", dataIndex: "username", key: "username" },
@@ -909,9 +900,7 @@ export default function UserManagement() {
 
   const UserForm = ({ onFinish }) => {
     const [form] = Form.useForm();
-
     const normFile = (e) => (Array.isArray(e) ? e : e && e.file.originFileObj);
-
     return (
       <Form
         layout="vertical"
@@ -926,7 +915,6 @@ export default function UserManagement() {
         >
           <Input placeholder="Enter first name" />
         </Form.Item>
-
         <Form.Item
           name="last_name"
           label="Last Name"
@@ -934,7 +922,6 @@ export default function UserManagement() {
         >
           <Input placeholder="Enter last name" />
         </Form.Item>
-
         <Form.Item
           name="email"
           label="Email"
@@ -945,7 +932,6 @@ export default function UserManagement() {
         >
           <Input placeholder="Enter email" />
         </Form.Item>
-
         <Form.Item
           name="countrycode"
           label="Country Code"
@@ -970,7 +956,6 @@ export default function UserManagement() {
         >
           <Input placeholder="Enter phone number" />
         </Form.Item>
-
         <Form.Item
           name="password"
           label="Password"
@@ -978,7 +963,6 @@ export default function UserManagement() {
         >
           <Input.Password placeholder="Enter password" />
         </Form.Item>
-
         <Form.Item
           name="photo"
           label="Upload Photo"
@@ -989,7 +973,6 @@ export default function UserManagement() {
             <Button icon={<UploadOutlined />}>Choose File</Button>
           </Upload>
         </Form.Item>
-
         <Form.Item>
           <Button type="primary" htmlType="submit" block>
             Create User
@@ -1003,244 +986,81 @@ export default function UserManagement() {
     if (activeTab === "sponsors" && selectedSponsor)
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {/* Profile and Basic Info */}
+          {/* ── Profile photo uploader ── */}
+          <AvatarUploader
+            currentSrc={selectedSponsor.avatar}
+            inputId="sponsor-photo-upload"
+          />
+
+          {/* ── Fields ── */}
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-
-              gap: 24,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                gap: 10,
-              }}
-            >
-              <p style={labelStyle}>Profile Image</p>
-
-              <div style={{ position: "relative", width: 72, height: 72 }}>
-                {/* Avatar */}
-                <Avatar
-                  size={72}
-                  src={uploadedImage || selectedSponsor.avatar}
-                  style={{ borderRadius: "50%", objectFit: "cover" }}
-                />
-
-                {/* Upload Icon Overlay */}
-                <label
-                  htmlFor="image-upload"
-                  style={{
-                    position: "absolute",
-                    bottom: -10,
-                    right: "50%",
-                    transform: "translateX(50%)",
-                    background: "#fff",
-                    borderRadius: "50%",
-                    padding: 4,
-                    cursor: "pointer",
-                    boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-                  }}
-                >
-                  <img
-                    src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-                    alt="Upload"
-                    width={16}
-                    height={16}
-                  />
-                </label>
-
-                {/* Hidden File Input */}
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  style={{ display: "none" }}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}
-            >
-              <div>
-                <label style={labelStyle}>First Name</label>
-                <Input
-                  value={editedData.first_name}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      first_name: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div>
-                <label style={labelStyle}>Last Name</label>
-
-                <Input
-                  value={editedData.last_name}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      last_name: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div>
-                <label style={labelStyle}>Country Code</label>
-                <Select
-                  value={editedData.country_code || "IN"}
-                  onChange={(val) =>
-                    setEditedData({ ...editedData, country_code: val })
-                  }
-                  style={{ width: "100%" }}
-                >
-                  <Select.Option value="IN">+91 (India)</Select.Option>
-                  <Select.Option value="US">+1 (USA)</Select.Option>
-                  <Select.Option value="GB">+44 (UK)</Select.Option>
-                  <Select.Option value="CA">+1 (Canada)</Select.Option>
-                  <Select.Option value="CM">+237 (Cameroon)</Select.Option>
-                  <Select.Option value="AU">+61 (Australia)</Select.Option>
-                  <Select.Option value="AE">+971 (UAE)</Select.Option>
-                  <Select.Option value="SG">+65 (Singapore)</Select.Option>
-                  <Select.Option value="MY">+60 (Malaysia)</Select.Option>
-                </Select>
-              </div>
-              <div>
-                <label style={labelStyle}>Phone Number</label>
-                <Input
-                  value={editedData.phone}
-                  onChange={(e) =>
-                    setEditedData({ ...editedData, phone: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Fields */}
-          {/* <div
-            style={{
+              flex: 1,
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 16,
             }}
           >
             <div>
-              <label style={labelStyle}>Address</label>
+              <label style={labelStyle}>First Name</label>
               <Input
-                value={editedData.country}
+                value={editedData.first_name}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, country: e.target.value })
+                  setEditedData({ ...editedData, first_name: e.target.value })
                 }
               />
             </div>
             <div>
-              <label style={labelStyle}>Total Patients</label>
-              <Input value="2 (Father – Michael N., Mother – Grace N.)" />
-            </div>
-            <div>
-              <label style={labelStyle}>Gender</label>
+              <label style={labelStyle}>Last Name</label>
               <Input
-                value={editedData.gender || "Male"}
+                value={editedData.last_name}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, gender: e.target.value })
+                  setEditedData({ ...editedData, last_name: e.target.value })
                 }
               />
             </div>
             <div>
-              <label style={labelStyle}>Current Plan</label>
-              <Input
-                value={editedData.membership}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    membership: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Status</label>
+              <label style={labelStyle}>Country Code</label>
               <Select
-                value={editedData.status}
-                onChange={(value) =>
-                  setEditedData({ ...editedData, status: value })
+                value={editedData.country_code || "IN"}
+                onChange={(val) =>
+                  setEditedData({ ...editedData, country_code: val })
                 }
                 style={{ width: "100%" }}
               >
-                <Option value="Active">Active</Option>
-                <Option value="Inactive">Inactive</Option>
+                <Select.Option value="IN">+91 (India)</Select.Option>
+                <Select.Option value="US">+1 (USA)</Select.Option>
+                <Select.Option value="GB">+44 (UK)</Select.Option>
+                <Select.Option value="CA">+1 (Canada)</Select.Option>
+                <Select.Option value="CM">+237 (Cameroon)</Select.Option>
+                <Select.Option value="AU">+61 (Australia)</Select.Option>
+                <Select.Option value="AE">+971 (UAE)</Select.Option>
+                <Select.Option value="SG">+65 (Singapore)</Select.Option>
+                <Select.Option value="MY">+60 (Malaysia)</Select.Option>
               </Select>
             </div>
-          </div> */}
-
-          {/* Patients Linked (Static Example) */}
-          {/* <div>
-            <p style={{ fontWeight: 600, fontSize: 16 }}>Patients Linked</p>
-            {linkedPatients.map((patient) => (
-              <div
-                key={patient.id}
-                style={{
-                  background: "#F9F9F9",
-                  padding: 16,
-                  borderRadius: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 12,
-                  border: "1px solid #eaeaea",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <Avatar
-                    size={48}
-                    src={patient.avatar}
-                    style={{ borderRadius: 8, width: 60, height: 62 }}
-                  />
-                </div>
-
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Name</p>
-                  <p style={infoTextStyle}>{patient.name}</p>
-                </div>
-
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Assigned Doctor</p>
-                  <p style={infoTextStyle}>{patient.doctor}</p>
-                </div>
-
-                <div style={linkedInfoStyle}>
-                  <p style={linkedLabelStyle}>Care Taker</p>
-                  <p style={infoTextStyle}>{patient.caretaker}</p>
-                </div>
-              </div>
-            ))}
-          </div> */}
+            <div>
+              <label style={labelStyle}>Phone Number</label>
+              <Input
+                value={editedData.phone}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, phone: e.target.value })
+                }
+              />
+            </div>
+          </div>
         </div>
       );
 
     if (activeTab === "doctors" && selectedDoctor)
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* ── Profile photo uploader ── */}
+          <AvatarUploader
+            currentSrc={selectedDoctor.photo}
+            inputId="doctor-photo-upload"
+          />
+
           <p style={labelStyle}>Doctor Name</p>
           <Input
             value={editedData.name}
@@ -1248,7 +1068,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, name: e.target.value })
             }
           />
-
           <p style={labelStyle}>Speciality</p>
           <Input
             value={editedData.speciality}
@@ -1256,7 +1075,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, speciality: e.target.value })
             }
           />
-
           <p style={labelStyle}>Country Code</p>
           <Select
             value={editedData.doc_country_code || "IN"}
@@ -1275,7 +1093,6 @@ export default function UserManagement() {
             <Select.Option value="SG">+65 (Singapore)</Select.Option>
             <Select.Option value="MY">+60 (Malaysia)</Select.Option>
           </Select>
-
           <p style={labelStyle}>Phone</p>
           <Input
             value={editedData.doc_phone}
@@ -1283,7 +1100,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_phone: e.target.value })
             }
           />
-
           <p style={labelStyle}>Address</p>
           <Input
             value={editedData.doc_address}
@@ -1291,7 +1107,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_address: e.target.value })
             }
           />
-
           <p style={labelStyle}>Gender</p>
           <Select
             value={editedData.doc_gender}
@@ -1304,7 +1119,6 @@ export default function UserManagement() {
               { label: "Other", value: "Other" },
             ]}
           />
-
           <p style={labelStyle}>Experience (Years)</p>
           <Input
             type="number"
@@ -1313,7 +1127,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_exprience: e.target.value })
             }
           />
-
           <p style={labelStyle}>License No</p>
           <Input
             value={editedData.doc_licence_no}
@@ -1321,7 +1134,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_licence_no: e.target.value })
             }
           />
-
           <p style={labelStyle}>City</p>
           <Input
             value={editedData.doc_city}
@@ -1329,7 +1141,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_city: e.target.value })
             }
           />
-
           <p style={labelStyle}>State</p>
           <Input
             value={editedData.doc_state}
@@ -1337,7 +1148,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_state: e.target.value })
             }
           />
-
           <p style={labelStyle}>Country</p>
           <Input
             value={editedData.doc_country}
@@ -1345,7 +1155,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_country: e.target.value })
             }
           />
-
           <p style={labelStyle}>Pincode</p>
           <Input
             value={editedData.doc_pincode}
@@ -1353,7 +1162,6 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_pincode: e.target.value })
             }
           />
-
           <p style={labelStyle}>Joining Date</p>
           <Input
             type="date"
@@ -1367,633 +1175,99 @@ export default function UserManagement() {
 
     if (activeTab === "caretakers" && selectedCaretaker)
       return (
-        <div
-          style={{
-            flex: 1,
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-          }}
-        >
-          <div>
-            <p style={labelStyle}>Caretaker Name</p>
-            <Input
-              value={editedData.name}
-              onChange={(e) =>
-                setEditedData({ ...editedData, name: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <p style={labelStyle}>Caretaker Address</p>
-            <Input
-              rows={2}
-              value={editedData.address}
-              onChange={(e) =>
-                setEditedData({ ...editedData, address: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <p style={labelStyle}>Caretaker Gender</p>
-            <Select
-              value={editedData.gender}
-              style={{ width: "100%" }}
-              onChange={(value) =>
-                setEditedData({ ...editedData, gender: value })
-              }
-            >
-              <Select.Option value="Male">Male</Select.Option>
-              <Select.Option value="Female">Female</Select.Option>
-              <Select.Option value="Other">Other</Select.Option>
-            </Select>
-          </div>
-          <div>
-            <p style={labelStyle}>Experience (in years)</p>
-            <Input
-              type="number"
-              min={0}
-              value={editedData.experience}
-              onChange={(e) =>
-                setEditedData({ ...editedData, experience: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <p style={labelStyle}>Year of Graduation</p>
-            <Input
-              value={editedData.yr_graduation}
-              onChange={(e) =>
-                setEditedData({ ...editedData, yr_graduation: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <p style={labelStyle}>Credentials</p>
-            <Input.TextArea
-              rows={2}
-              value={editedData.credentials}
-              onChange={(e) =>
-                setEditedData({ ...editedData, credentials: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <p style={labelStyle}>Skillset</p>
-            <Input.TextArea
-              rows={3}
-              value={editedData.skillset}
-              onChange={(e) =>
-                setEditedData({ ...editedData, skillset: e.target.value })
-              }
-            />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* ── Profile photo uploader ── */}
+          <AvatarUploader
+            currentSrc={selectedCaretaker.photo}
+            inputId="caretaker-photo-upload"
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <p style={labelStyle}>Caretaker Name</p>
+              <Input
+                value={editedData.name}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Caretaker Address</p>
+              <Input
+                rows={2}
+                value={editedData.address}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, address: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Caretaker Gender</p>
+              <Select
+                value={editedData.gender}
+                style={{ width: "100%" }}
+                onChange={(value) =>
+                  setEditedData({ ...editedData, gender: value })
+                }
+              >
+                <Select.Option value="Male">Male</Select.Option>
+                <Select.Option value="Female">Female</Select.Option>
+                <Select.Option value="Other">Other</Select.Option>
+              </Select>
+            </div>
+            <div>
+              <p style={labelStyle}>Experience (in years)</p>
+              <Input
+                type="number"
+                min={0}
+                value={editedData.experience}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, experience: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Year of Graduation</p>
+              <Input
+                value={editedData.yr_graduation}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    yr_graduation: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Credentials</p>
+              <Input.TextArea
+                rows={2}
+                value={editedData.credentials}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, credentials: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Skillset</p>
+              <Input.TextArea
+                rows={3}
+                value={editedData.skillset}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, skillset: e.target.value })
+                }
+              />
+            </div>
           </div>
         </div>
       );
-
-    // if (activeTab === "patients" && selectedPatient)
-    //   return (
-    //     <div
-    //       style={{
-    //         display: "flex",
-    //         flexDirection: "column",
-    //         gap: 24,
-    //         maxHeight: "70vh",
-    //         overflowY: "auto",
-    //         paddingRight: 10,
-    //       }}
-    //     >
-    //       {/* ---------- PROFILE IMAGE ---------- */}
-    //       <div
-    //         style={{
-    //           display: "flex",
-    //           alignItems: "center",
-    //           justifyContent: "flex-start",
-    //           gap: 12,
-    //         }}
-    //       >
-    //         <p style={labelStyle}>Profile Image</p>
-    //         <div style={{ position: "relative", width: 72, height: 72 }}>
-    //           <Avatar
-    //             size={72}
-    //             src={uploadedImage || selectedPatient.avatar}
-    //             style={{ borderRadius: "50%", objectFit: "cover" }}
-    //           />
-    //           <label
-    //             htmlFor="patient-image-upload"
-    //             style={{
-    //               position: "absolute",
-    //               bottom: -10,
-    //               right: "50%",
-    //               transform: "translateX(50%)",
-    //               background: "#fff",
-    //               borderRadius: "50%",
-    //               padding: 4,
-    //               cursor: "pointer",
-    //               boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-    //             }}
-    //           >
-    //             <img
-    //               src="https://cdn-icons-png.flaticon.com/512/685/685655.png"
-    //               alt="Upload"
-    //               width={16}
-    //               height={16}
-    //             />
-    //           </label>
-    //           <input
-    //             id="patient-image-upload"
-    //             type="file"
-    //             accept="image/*"
-    //             onChange={handleImageChange}
-    //             style={{ display: "none" }}
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- PERSONAL INFO ---------- */}
-    //       <h3 style={sectionTitle}>Personal Information</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Date of Birth</label>
-    //           <Input
-    //             value={editedData.patient_dob}
-    //             onChange={(e) =>
-    //               setEditedData({ ...editedData, patient_dob: e.target.value })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Gender</label>
-    //           <Select
-    //             value={editedData.patient_gender}
-    //             onChange={(val) =>
-    //               setEditedData({ ...editedData, patient_gender: val })
-    //             }
-    //             style={{ width: "100%" }}
-    //           >
-    //             <Select.Option value="Male">Male</Select.Option>
-    //             <Select.Option value="Female">Female</Select.Option>
-    //             <Select.Option value="Other">Other</Select.Option>
-    //           </Select>
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Blood Group</label>
-    //           <Input
-    //             value={editedData.blood_group}
-    //             onChange={(e) =>
-    //               setEditedData({ ...editedData, blood_group: e.target.value })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Primary Language</label>
-    //           <Input
-    //             value={editedData.primary_language}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 primary_language: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Religion</label>
-    //           <Input
-    //             value={editedData.religion}
-    //             onChange={(e) =>
-    //               setEditedData({ ...editedData, religion: e.target.value })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Escalate to Physician</label>
-    //           <Select
-    //             value={editedData.escalate_to_physician}
-    //             onChange={(val) =>
-    //               setEditedData({ ...editedData, escalate_to_physician: val })
-    //             }
-    //             style={{ width: "100%" }}
-    //           >
-    //             <Select.Option value="Yes">Yes</Select.Option>
-    //             <Select.Option value="No">No</Select.Option>
-    //           </Select>
-    //         </div>
-    //       </div>
-
-    //       <div>
-    //         <label style={labelStyle}>Home Address</label>
-    //         <Input.TextArea
-    //           rows={2}
-    //           value={editedData.patient_home_address}
-    //           onChange={(e) =>
-    //             setEditedData({
-    //               ...editedData,
-    //               patient_home_address: e.target.value,
-    //             })
-    //           }
-    //         />
-    //       </div>
-
-    //       {/* ---------- EMERGENCY CONTACT ---------- */}
-    //       <h3 style={sectionTitle}>Emergency Contact</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Name</label>
-    //           <Input
-    //             value={editedData.emer_con_name}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_name: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Relation</label>
-    //           <Input
-    //             value={editedData.emer_con_relation}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_relation: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Country of Residence</label>
-    //           <Input
-    //             value={editedData.emer_con_coun_of_residen}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_coun_of_residen: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Country Code</label>
-    //           <Input
-    //             value={editedData.emer_con_country_code}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_country_code: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Phone</label>
-    //           <Input
-    //             value={editedData.emer_con_phone}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_phone: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Email</label>
-    //           <Input
-    //             value={editedData.emer_con_email}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 emer_con_email: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- LOCAL CONTACT ---------- */}
-    //       <h3 style={sectionTitle}>Local Contact</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Name</label>
-    //           <Input
-    //             value={editedData.local_con_name}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 local_con_name: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Relation</label>
-    //           <Input
-    //             value={editedData.local_con_relation}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 local_con_relation: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Country Code</label>
-    //           <Input
-    //             value={editedData.local_con_country_code}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 local_con_country_code: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Phone</label>
-    //           <Input
-    //             value={editedData.local_con_phone}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 local_con_phone: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- MEDICAL HISTORY ---------- */}
-    //       <h3 style={sectionTitle}>Medical History</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Diagnosis</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.medical_his_diagnosis}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medical_his_diagnosis: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Major Surgeries</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.medical_his_major_surgeries}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medical_his_major_surgeries: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Current Symptoms</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.medical_his_curr_symp}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medical_his_curr_symp: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- MEDICATIONS ---------- */}
-    //       <h3 style={sectionTitle}>Medications & Allergies</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Medication Name</label>
-    //           <Input
-    //             value={editedData.medication_name}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medication_name: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Dose</label>
-    //           <Input
-    //             value={editedData.medication_dose}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medication_dose: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Frequency</label>
-    //           <Input
-    //             value={editedData.medication_frequency}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medication_frequency: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Medication Reason</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.medication_reason}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 medication_reason: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div style={{ gridColumn: "1 / span 2" }}>
-    //           <label style={labelStyle}>Allergy Issues</label>
-    //           <Select
-    //             value={editedData.allergies_issues ? "Yes" : "No"}
-    //             onChange={(val) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 allergies_issues: val === "Yes",
-    //               })
-    //             }
-    //             style={{ width: "100%" }}
-    //           >
-    //             <Select.Option value="Yes">Yes</Select.Option>
-    //             <Select.Option value="No">No</Select.Option>
-    //           </Select>
-    //         </div>
-
-    //         <div>
-    //           <label style={labelStyle}>Drug Allergies</label>
-    //           <Input
-    //             value={editedData.allergies_drug}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 allergies_drug: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Food Allergies</label>
-    //           <Input
-    //             value={editedData.allergies_food}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 allergies_food: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- LIFESTYLE ---------- */}
-    //       <h3 style={sectionTitle}>Functional & Lifestyle</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Daily Routine</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.lifestyle_daily_routine}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 lifestyle_daily_routine: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Dietary Habits</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.lifestyle_dietary_habits}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 lifestyle_dietary_habits: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Physical Activity</label>
-    //           <Input
-    //             value={editedData.lifestyle_physical_activity}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 lifestyle_physical_activity: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- SOCIAL & GOALS ---------- */}
-    //       <h3 style={sectionTitle}>Social & Goals</h3>
-    //       <div style={twoColGrid}>
-    //         <div>
-    //           <label style={labelStyle}>Emotional Health</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.social_emotion_health}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 social_emotion_health: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Spiritual Needs</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.social_spiritual_needs}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 social_spiritual_needs: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //         <div>
-    //           <label style={labelStyle}>Goals or Hopes</label>
-    //           <Input.TextArea
-    //             rows={2}
-    //             value={editedData.goals_family_hope}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 goals_family_hope: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-    //       </div>
-
-    //       {/* ---------- FILE UPLOAD ---------- */}
-    //       <h3 style={sectionTitle}>Upload Documents</h3>
-    //       <div style={twoColGrid}>
-    //         <div style={{ gridColumn: "1 / span 2" }}>
-    //           <label style={labelStyle}>File Names (comma separated)</label>
-    //           <Input
-    //             value={editedData.patient_files_name}
-    //             onChange={(e) =>
-    //               setEditedData({
-    //                 ...editedData,
-    //                 patient_files_name: e.target.value,
-    //               })
-    //             }
-    //           />
-    //         </div>
-
-    //         <div style={{ gridColumn: "1 / span 2" }}>
-    //           <Upload
-    //             multiple
-    //             beforeUpload={(file) => {
-    //               setEditedData((prev) => ({
-    //                 ...prev,
-    //                 patient_upload_files: [
-    //                   ...(prev.patient_upload_files || []),
-    //                   file,
-    //                 ],
-    //               }));
-    //               return false;
-    //             }}
-    //             showUploadList
-    //           >
-    //             <Button icon={<UploadOutlined />}>Choose Files</Button>
-    //           </Upload>
-    //         </div>
-    //       </div>
-    //     </div>
-    //   );
 
     return null;
   };
@@ -2004,7 +1278,6 @@ export default function UserManagement() {
       ? []
       : [{ key: "doctors", label: "Doctors" }]),
     { key: "caretakers", label: "Caretakers" },
-    // { key: "patients", label: "Patients" },
   ];
 
   useEffect(() => {
@@ -2051,22 +1324,10 @@ export default function UserManagement() {
     },
   ];
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedImage(event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
     >
-      {/* Sidebar */}
       <div style={{ width: "240px", flexShrink: 0 }}>
         <Sider />
       </div>
@@ -2090,13 +1351,11 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ flexShrink: 0 }}>
           <Header />
         </div>
 
-        {/* Content area with just text */}
         <div
           style={{
             padding: "20px",
@@ -2108,7 +1367,7 @@ export default function UserManagement() {
             alignItems: "center",
           }}
         >
-          {/* cards */}
+          {/* Stats cards */}
           <div
             style={{
               display: "flex",
@@ -2118,12 +1377,11 @@ export default function UserManagement() {
               width: "100%",
             }}
           >
-            {adminStats.map((stat, idx) => (
+            {adminStats.map((stat) => (
               <div
                 key={stat.id}
                 style={{
                   minWidth: 160,
-                  // maxWidth: 200,
                   flex: "0 0 auto",
                   backgroundColor: "white",
                   borderRadius: 8,
@@ -2134,7 +1392,6 @@ export default function UserManagement() {
                   justifyContent: "space-between",
                 }}
               >
-                {/* ...card content... */}
                 <div
                   style={{
                     display: "flex",
@@ -2264,7 +1521,8 @@ export default function UserManagement() {
               </div>
             ))}
           </div>
-          {/* tabs */}
+
+          {/* Tabs + Table */}
           <div
             style={{
               width: "100%",
@@ -2317,17 +1575,21 @@ export default function UserManagement() {
 
               <Table
                 columns={columns}
-                dataSource={getFilteredData()} // Using the updated function
+                dataSource={getFilteredData()}
                 pagination={{ pageSize: 5 }}
                 rowKey="id"
                 bordered
               />
             </div>
 
+            {/* Edit / View drawer */}
             <Drawer
               title={drawerTitleMap[activeTab]}
               width={720}
-              onClose={() => setDrawerVisible(false)}
+              onClose={() => {
+                setDrawerVisible(false);
+                setUploadedImage(null);
+              }}
               open={drawerVisible}
               bodyStyle={{ padding: 24 }}
             >
@@ -2343,7 +1605,6 @@ export default function UserManagement() {
                 <Button danger size="large" onClick={handleDeactivateClick}>
                   Deactivate Account
                 </Button>
-
                 <PrimaryBtn
                   name={`Save ${
                     activeTab.slice(0, -1).charAt(0).toUpperCase() +
@@ -2361,6 +1622,8 @@ export default function UserManagement() {
     </div>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const tableContainer = {
   background: "#fff",
   borderRadius: "12px",
@@ -2385,13 +1648,11 @@ const linkedLabelStyle = {
   color: "#2E2E2E",
   opacity: "60%",
 };
-
 const linkedInfoStyle = {
   display: "flex",
   flexDirection: "column",
   alignItems: "flex-start",
 };
-
 const infoTextStyle = {
   margin: 0,
   fontWeight: 500,
@@ -2399,37 +1660,6 @@ const infoTextStyle = {
   color: "#2E2E2E",
   textAlign: "center",
 };
-const vitalsGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: 15,
-  minWidth: 0,
-  width: "100%",
-  background: "rgb(249, 249, 249)",
-};
-
-const vitalCard = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  border: "1px solid #1B1B1B1A",
-  borderRadius: "10px",
-  padding: "10px",
-  minHeight: "80px",
-  minWidth: 0,
-};
-
-const vitalLabel = { fontSize: 14, fontWeight: 600, marginBottom: 2 };
-const vitalValue = { fontSize: 14, color: "#2E2E2E", wordBreak: "break-word" };
-
-const sectionTitleStyle = {
-  marginTop: 16,
-  marginBottom: 8,
-  fontWeight: 600,
-  fontSize: 16,
-  color: "#1762A6",
-};
-
 const sectionTitle = {
   color: "#000",
   fontWeight: 600,
@@ -2437,7 +1667,6 @@ const sectionTitle = {
   paddingBottom: 4,
   marginTop: 12,
 };
-
 const twoColGrid = {
   display: "grid",
   gridTemplateColumns: "1fr 1fr",

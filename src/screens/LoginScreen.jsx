@@ -6,7 +6,6 @@ import {
   Checkbox,
   Card,
   Typography,
-  message,
   notification,
 } from "antd";
 import {
@@ -19,57 +18,54 @@ import LoginBg from "../assets/images/loginBg.jpg";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 import { base_url, isAdminUser } from "../constants/constants";
 import axios from "axios";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
 export default function LoginScreen() {
+  const [api, contextHolder] = notification.useNotification();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(() => {
+
+  // Single helper — always uses notification (not message) so toasts are visible
+  // even when a redirect is about to happen
+  const notify = (type, msg) => {
+    api[type]({
+      message: msg,
+      placement: "topRight",
+      duration: type === "error" ? 4 : 2,
+    });
+  };
+
+  const [user] = useState(() => {
     const data = localStorage.getItem("userData");
     return data ? JSON.parse(data) : null;
   });
 
   const location = useLocation();
 
+  // Show any message passed via navigation state (e.g. from ForgotPassword)
   useEffect(() => {
     if (location.state?.message) {
-      notification.info({
-        message: location.state.message,
-        placement: "topRight",
-        duration: 3,
-      });
-
+      notify("info", location.state.message);
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
   const token = localStorage.getItem("token");
 
+  // ─── Sponsor helpers (unchanged) ─────────────────────────────────────────
   const fetchSponsorProfile = async (userId, token) => {
     if (!userId || !token) return;
     try {
-      const endpoint = `${base_url}/sponsorprofile_list/`;
-      const res = await axios.get(endpoint);
+      const res = await axios.get(`${base_url}/sponsorprofile_list/`);
       const sponsorList = Array.isArray(res.data) ? res.data : [];
-
-      const matchedSponsor = sponsorList.find(
-        (sponsor) => sponsor.user.id === userId,
-      );
-
+      const matchedSponsor = sponsorList.find((s) => s.user.id === userId);
       if (matchedSponsor) {
-        console.log("Matched Sponsor:", matchedSponsor);
-
         localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
         localStorage.setItem("sponsorProfileId", matchedSponsor.id);
-
-        // ✅ Fetch Sponsor Patients
         await fetchSponsorPatients(matchedSponsor.id, token);
-
-        // ✅ Fetch Sponsor Appointments
         await fetchSponsorAppointments(token);
-      } else {
-        console.warn("No matching sponsor found for this user.");
       }
     } catch (error) {
       console.error("Error fetching sponsor profile:", error);
@@ -79,21 +75,19 @@ export default function LoginScreen() {
   const fetchSponsorPatients = async (sponsorProfileId, token) => {
     if (!sponsorProfileId || !token) return;
     try {
-      const endpoint = `${base_url}/sponsor_patients_view/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorprofileid: sponsorProfileId };
-
-      const res = await axios.post(endpoint, payload, { headers });
+      const res = await axios.post(
+        `${base_url}/sponsor_patients_view/`,
+        { sponsorprofileid: sponsorProfileId },
+        { headers: { Authorization: `Token ${token}` } },
+      );
       const patients = Array.isArray(res.data) ? res.data : [];
-
       if (patients.length > 0) {
-        const patientIds = patients.map((p) => p.id);
-        console.log("Sponsor Patients:", patientIds);
-
-        localStorage.setItem("sponsorPatientIds", JSON.stringify(patientIds));
+        localStorage.setItem(
+          "sponsorPatientIds",
+          JSON.stringify(patients.map((p) => p.id)),
+        );
         localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
       } else {
-        console.warn("No patients found for this sponsor.");
         localStorage.removeItem("sponsorPatientIds");
         localStorage.removeItem("sponsorPatientData");
       }
@@ -108,98 +102,94 @@ export default function LoginScreen() {
       const sponsorPatientIds = JSON.parse(
         localStorage.getItem("sponsorPatientIds") || "[]",
       );
+      if (!sponsorProfileId || sponsorPatientIds.length === 0) return;
 
-      if (!sponsorProfileId || sponsorPatientIds.length === 0) {
-        console.warn("Missing sponsor profile or patients.");
-        return;
-      }
-
-      const endpoint = `${base_url}/vb_patientappoinment_list/`;
-      const headers = { Authorization: `Token ${token}` };
-
-      // Use the first patient ID (required by API)
-      const firstPatientId = sponsorPatientIds[0];
-      const payload = { patientprofileid: firstPatientId };
-
-      const res = await axios.post(endpoint, payload, { headers });
+      const res = await axios.post(
+        `${base_url}/vb_patientappoinment_list/`,
+        { patientprofileid: sponsorPatientIds[0] },
+        { headers: { Authorization: `Token ${token}` } },
+      );
       const data = Array.isArray(res.data) ? res.data : [];
-
-      const filteredAppointments = data.filter(
+      const filtered = data.filter(
         (item) =>
           item?.patient?.sponsor === Number(sponsorProfileId) &&
           sponsorPatientIds.includes(item?.patient?.id),
       );
-
-      console.log("Filtered Appointments:", filteredAppointments);
-
-      localStorage.setItem(
-        "sponsorAppointments",
-        JSON.stringify(filteredAppointments),
-      );
-
-      if (filteredAppointments.length > 0) {
-        message.success("Sponsor appointments loaded successfully!");
-      } else {
-        message.warning("No appointments found for sponsor patients.");
-      }
+      localStorage.setItem("sponsorAppointments", JSON.stringify(filtered));
     } catch (error) {
       console.error("Error fetching sponsor appointments:", error);
     }
   };
 
+  // ─── Login ────────────────────────────────────────────────────────────────
   const onFinish = async (values) => {
     const { username, password } = values;
     setLoading(true);
 
     try {
+      // Step 1 — authenticate
       const res = await axios.post(`${base_url}/user_login/`, {
         username,
         password,
       });
-
       const token = res.data.token;
       localStorage.setItem("token", token);
 
+      // Step 2 — get user details
       const userRes = await axios.get(`${base_url}/user_view/`, {
         headers: { Authorization: `Token ${token}` },
       });
-
-      const userData = userRes.data.find((user) => user.username === username);
+      const userData = userRes.data.find((u) => u.username === username);
 
       if (!userData) {
-        message.error("User not found. Please check credentials.");
+        notify("error", "User not found. Please check your credentials.");
         setLoading(false);
         return;
       }
 
-      // special case: treat id 100 as admin regardless of returned role
+      // Special case: treat id 100 as admin
       if (isAdminUser(userData) && userData.user_role !== "admin") {
         userData.user_role = "admin";
       }
 
       localStorage.setItem("userData", JSON.stringify(userData));
-      message.success("Login successful!");
 
       if (userData.user_role === "sponsor") {
         await fetchSponsorProfile(userData.id, token);
       }
 
-      // ✅ Redirect by Role
-      switch (userData.user_role) {
-        case "admin":
-        case "sponsor":
-        case "doctor":
-        case "patient":
-        case "care_taker":
-          window.location.href = "/overview";
-          break;
-        default:
-          message.error("Invalid user role.");
+      // Step 3 — notify success, then redirect after toast is visible
+      const roleRouteMap = {
+        admin: "/overview",
+        sponsor: "/overview",
+        doctor: "/overview",
+        patient: "/overview",
+        care_taker: "/overview",
+      };
+
+      const route = roleRouteMap[userData.user_role];
+
+      if (route) {
+        notify("success", "Login successful! Redirecting…");
+        // Small delay so the success toast renders before navigation
+        setTimeout(() => {
+          navigate(route);
+        }, 800);
+      } else {
+        notify("error", "Invalid user role. Please contact support.");
+        setLoading(false);
       }
     } catch (error) {
       console.error("Login error:", error);
-      message.error("Invalid username or password. Please try again.");
-    } finally {
+
+      // Surface the exact backend error message
+      const backendMsg =
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        "Invalid username or password. Please try again.";
+
+      notify("error", backendMsg);
       setLoading(false);
     }
   };
@@ -219,6 +209,7 @@ export default function LoginScreen() {
         fontFamily: "Arial, sans-serif",
       }}
     >
+      {contextHolder}
       {/* Left Section */}
       <div style={{ display: "flex", width: "50%", position: "relative" }}>
         <img
@@ -231,7 +222,6 @@ export default function LoginScreen() {
             filter: "brightness(0.3)",
           }}
         />
-        {/* <div style={{ backgroundColor: "#00000077", zIndex: 10000 }} /> */}
         <div
           style={{
             position: "absolute",
@@ -252,14 +242,8 @@ export default function LoginScreen() {
           >
             Welcome to Verimed!
           </Title>
-          <Text
-            style={{
-              color: "#f0f0f0",
-              fontSize: 18,
-              lineHeight: "1.5",
-            }}
-          >
-            Home Health and Geriatric Wellness for Cameroon’s Global Families. A
+          <Text style={{ color: "#f0f0f0", fontSize: 18, lineHeight: "1.5" }}>
+            Home Health and Geriatric Wellness for Cameroon's Global Families. A
             physician-led, nurse-powered care program for diaspora professionals
             who demand exceptional, transparent, and reliable global standard
             medical care for their loved ones back home.
@@ -311,11 +295,7 @@ export default function LoginScreen() {
             </Title>
             <Text
               type="secondary"
-              style={{
-                fontSize: 14,
-                color: "#6C7688",
-                textAlign: "center",
-              }}
+              style={{ fontSize: 14, color: "#6C7688", textAlign: "center" }}
             >
               Please enter below details to access the dashboard
             </Text>
@@ -359,7 +339,10 @@ export default function LoginScreen() {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox>Remember me</Checkbox>
                 </Form.Item>
-                <a href="#" style={{ color: "#f5222d" }}>
+                <a
+                  onClick={() => navigate("/forgot-password")}
+                  style={{ color: "#f5222d", cursor: "pointer" }}
+                >
                   Forgot password?
                 </a>
               </div>

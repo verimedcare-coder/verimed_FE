@@ -20,6 +20,7 @@ import MembershipPlans from "./screens/MembershipPlans";
 import Support from "./screens/Support";
 import ViewPatientDetails from "./screens/ViewPatientDetails";
 import DoctorForm from "./screens/DoctorForm";
+import ForgotPasswordScreen from "./screens/Forgotpasswordscreen";
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
         <Route path="/support" element={<Support />} />
         <Route path="/view_patient_details" element={<ViewPatientDetails />} />
         <Route path="/doctor_form" element={<DoctorForm />} />
+        <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
       </Routes>
     </Router>
   );

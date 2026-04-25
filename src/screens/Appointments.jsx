@@ -27,6 +27,7 @@ import {
   Upload,
   message,
   DatePicker,
+  TimePicker,
   Spin,
   Empty,
   Select,
@@ -530,10 +531,23 @@ export default function Appointments() {
   const assignAppointment = async (values) => {
     const safe = (val) => (val === "" || val === undefined ? null : val);
 
-    // Format time with seconds if missing
-    const formatTime = (timeStr) => {
-      if (!timeStr) return null;
-      return timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+    // Format date as YYYY-MM-DD string
+    const formatDate = (dateObj) => {
+      if (!dateObj) return null;
+      const d = dateObj.toDate();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    // Format time as HH:MM:SS string (24-hour format)
+    const formatTime = (timeObj) => {
+      if (!timeObj) return null;
+      const t = timeObj.toDate();
+      const hours = String(t.getHours()).padStart(2, "0");
+      const minutes = String(t.getMinutes()).padStart(2, "0");
+      return `${hours}:${minutes}:00`;
     };
 
     const bookappoinment_data = {
@@ -542,9 +556,9 @@ export default function Appointments() {
       dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
       doc: safe(values?.docId), // from form
       patient: selectedAppointment?.fullData?.patient?.id, // e.g. 30
-      caretaker: selectedAppointment?.fullData?.caretaker?.id || 4, // fallback if null
-      appointment_date: safe(values?.appointment_date), // user-provided date
-      appointment_time: formatTime(values?.appointment_time), // e.g. "10:00:00"
+      caretaker: 13, // fallback if null
+      appointment_date: formatDate(values?.appointment_date), // user-provided date as YYYY-MM-DD
+      appointment_time: formatTime(values?.appointment_time), // e.g. "10:30:00"
       appointment_type: safe(selectedAppointment?.appointment_type),
       treatment_performed: safe(selectedAppointment?.issue),
       care_taker_notes: safe(values?.care_taker_notes),
@@ -870,35 +884,11 @@ export default function Appointments() {
                             { required: true, message: "Please select a date" },
                           ]}
                         >
-                          <Select placeholder="Select date">
-                            {Array.isArray(selectedAppointment.time) &&
-                            Array.isArray(selectedAppointment.date) ? (
-                              selectedAppointment.date.map((d) => (
-                                <Option key={d} value={d}>
-                                  {d}
-                                </Option>
-                              ))
-                            ) : selectedAppointment.date ? (
-                              <Option
-                                value={
-                                  selectedAppointment.date
-                                    .toISOString()
-                                    .split("T")[0]
-                                }
-                              >
-                                {new Date(
-                                  selectedAppointment.date,
-                                ).toLocaleDateString()}
-                              </Option>
-                            ) : null}
-                            {/* If preferred_dates available, use them */}
-                            {selectedAppointment.preferred_dates &&
-                              selectedAppointment.preferred_dates.map((d) => (
-                                <Option key={d} value={d}>
-                                  {d}
-                                </Option>
-                              ))}
-                          </Select>
+                          <DatePicker
+                            format="YYYY-MM-DD"
+                            placeholder="Select date (YYYY-MM-DD)"
+                            style={{ width: "100%" }}
+                          />
                         </Form.Item>
                         <Form.Item
                           name="appointment_time"
@@ -907,14 +897,12 @@ export default function Appointments() {
                             { required: true, message: "Please select a time" },
                           ]}
                         >
-                          <Select placeholder="Select time">
-                            {selectedAppointment.time &&
-                              selectedAppointment.time.map((t) => (
-                                <Option key={t} value={t}>
-                                  {t}
-                                </Option>
-                              ))}
-                          </Select>
+                          <TimePicker
+                            format="hh:mm A"
+                            placeholder="Select time (HH:MM AM/PM)"
+                            style={{ width: "100%" }}
+                            use12Hours
+                          />
                         </Form.Item>
 
                         <Form.Item
