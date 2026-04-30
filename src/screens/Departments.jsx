@@ -281,13 +281,11 @@ export default function Departments() {
     } else if (info.file.status === "error") {
       message.error(`${info.file.name} file upload failed`);
     }
-    // Store the file for form submission
     if (info.file.originFileObj) {
       setLogoFile(info.file.originFileObj);
     }
   };
 
-  // Columns moved **inside** component so state functions work
   const columns = [
     {
       title: "Department ID",
