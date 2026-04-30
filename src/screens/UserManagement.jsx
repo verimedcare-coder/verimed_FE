@@ -75,6 +75,15 @@ export default function UserManagement() {
 
   const token = localStorage.getItem("token");
 
+  const trimPhoneNumber = (phone) => {
+    if (phone === undefined || phone === null) return "";
+    let formatted = String(phone).trim();
+    while (/^\+\d+-/.test(formatted)) {
+      formatted = formatted.replace(/^\+\d+-/, "");
+    }
+    return formatted.replace(/\D/g, "");
+  };
+
   // ─── Image change handler ───────────────────────────────────────────────────
   // Stores both a preview URL (uploadedImage) and the raw File (editedData.photo)
   const handleImageChange = (e) => {
@@ -221,8 +230,8 @@ export default function UserManagement() {
         last_name: values.last_name,
         role: roleMap[activeTab],
         email: values.email,
-        countrycode: values.countrycode || "IN",
-        phone: values.phone,
+        countrycode: values.countrycode || "CM",
+        phone: trimPhoneNumber(values.phone),
         password: values.password,
         is_active_state: true,
       };
@@ -268,7 +277,7 @@ export default function UserManagement() {
             updateid: selectedSponsor?.id,
             first_name: editedData.first_name || "",
             last_name: editedData.last_name || "",
-            phone: editedData.phone || "",
+            phone: trimPhoneNumber(editedData.phone) || "",
             countrycode: editedData.country_code,
             is_active_state: true,
           };
@@ -284,8 +293,8 @@ export default function UserManagement() {
             doc_exprience: editedData.doc_exprience || "",
             doc_gender: editedData.doc_gender || "",
             speciality: editedData.speciality || "",
-            doc_country_code: editedData.doc_country_code || "IN",
-            doc_phone: editedData.doc_phone || "",
+            doc_country_code: editedData.doc_country_code || "CM",
+            doc_phone: trimPhoneNumber(editedData.doc_phone) || "",
             joining_date: editedData.joining_date || "",
             doc_licence_no: editedData.doc_licence_no || "",
             doc_city: editedData.doc_city || "",
@@ -415,12 +424,10 @@ export default function UserManagement() {
           return;
       }
 
-      // Append the profile-specific payload (skip patients — already appended above)
       if (activeTab !== "patients") {
         formData.append(keyName, JSON.stringify(updateData));
       }
 
-      // ✅ Append photo if a new file was chosen
       if (editedData.photo instanceof File) {
         formData.append("photo", editedData.photo);
         console.log("📸 Photo being uploaded:", editedData.photo.name);
@@ -448,7 +455,7 @@ export default function UserManagement() {
       if (activeTab === "caretakers") fetchCareTakers();
 
       setDrawerVisible(false);
-      setUploadedImage(null); // reset preview after save
+      setUploadedImage(null);
     } catch (error) {
       console.error("Update failed:", error);
       notification.error({
@@ -569,8 +576,10 @@ export default function UserManagement() {
           sponsor_gender: record.sponsorProfile?.sponsor_gender || "",
           work_employment: record.sponsorProfile?.work_employment || "",
           how_found_us: record.sponsorProfile?.how_found_us || "",
-          phone: record.phone || record.sponsorProfile?.phone || "",
-          country_code: record.country_code || record.countrycode || "IN",
+          phone: trimPhoneNumber(
+            record.phone || record.sponsorProfile?.phone || "",
+          ),
+          country_code: record.country_code || record.countrycode || "CM",
           photo: null, // will be set by handleImageChange if user picks a file
         });
         break;
@@ -584,8 +593,10 @@ export default function UserManagement() {
           doc_exprience: record.doctorProfile?.doc_exprience || "",
           doc_gender: record.doctorProfile?.doc_gender || record.gender || "",
           speciality: record.doctorProfile?.speciality || "",
-          doc_country_code: record.doctorProfile?.doc_country_code || "IN",
-          doc_phone: record.doctorProfile?.doc_phone || record.phone || "",
+          doc_country_code: record.doctorProfile?.doc_country_code || "CM",
+          doc_phone: trimPhoneNumber(
+            record.doctorProfile?.doc_phone || record.phone || "",
+          ),
           joining_date: record.doctorProfile?.joining_date || "",
           doc_licence_no: record.doctorProfile?.doc_licence_no || "",
           doc_city: record.doctorProfile?.doc_city || "",
@@ -836,7 +847,7 @@ export default function UserManagement() {
         avatar: s?.photo_view_url,
         name: s?.first_name + " " + s?.last_name,
         email: s?.email,
-        phone: s?.phone,
+        phone: trimPhoneNumber(s?.phone),
         country: s?.country_code,
         patientsLinked: s.sponsorProfile?.patients_count || 0,
         membership: s.sponsorProfile?.membership_plan || "N/A",
@@ -848,7 +859,7 @@ export default function UserManagement() {
         avatar: d.photo,
         name: d.first_name + " " + d.last_name,
         email: d.email,
-        phone: d.phone,
+        phone: trimPhoneNumber(d.phone),
         country: d.country,
         patientsLinked: d.doctorProfile?.patients_count || 0,
         membership: d.doctorProfile?.membership_plan || "N/A",
@@ -860,7 +871,7 @@ export default function UserManagement() {
         avatar: c.photo,
         name: c.first_name + " " + c.last_name,
         email: c.email,
-        phone: c.phone,
+        phone: trimPhoneNumber(c.phone),
         country: c.country,
         patientsLinked: c.caretakerProfile?.patients_count || 0,
         membership: c.caretakerProfile?.membership_plan || "N/A",
@@ -872,7 +883,7 @@ export default function UserManagement() {
         avatar: p.photo,
         name: p.first_name + " " + p.last_name,
         email: p.email,
-        phone: p.phone,
+        phone: trimPhoneNumber(p.phone),
         country: p.country,
         patientsLinked: 0,
         membership: p.patientProfile?.membership_plan || "N/A",
@@ -906,7 +917,7 @@ export default function UserManagement() {
         layout="vertical"
         form={form}
         onFinish={onFinish}
-        initialValues={{ countrycode: "IN" }}
+        initialValues={{ countrycode: "CM" }}
       >
         <Form.Item
           name="first_name"
@@ -1022,7 +1033,7 @@ export default function UserManagement() {
             <div>
               <label style={labelStyle}>Country Code</label>
               <Select
-                value={editedData.country_code || "IN"}
+                value={editedData.country_code || "CM"}
                 onChange={(val) =>
                   setEditedData({ ...editedData, country_code: val })
                 }
@@ -1077,7 +1088,7 @@ export default function UserManagement() {
           />
           <p style={labelStyle}>Country Code</p>
           <Select
-            value={editedData.doc_country_code || "IN"}
+            value={editedData.doc_country_code || "CM"}
             onChange={(val) =>
               setEditedData({ ...editedData, doc_country_code: val })
             }
@@ -1198,6 +1209,7 @@ export default function UserManagement() {
                 }
               />
             </div>
+
             <div>
               <p style={labelStyle}>Caretaker Address</p>
               <Input

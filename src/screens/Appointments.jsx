@@ -69,6 +69,14 @@ export default function Appointments() {
 
   const patientId = Number(localStorage.getItem("selectedPatientId"));
 
+  const trimPhoneNumber = (phone) => {
+    if (phone === undefined || phone === null) return "";
+    let formatted = String(phone).trim();
+    while (/^\+\d+-/.test(formatted)) {
+      formatted = formatted.replace(/^\+\d+-/, "");
+    }
+    return formatted.replace(/\D/g, "");
+  };
   const handleDateSelect = (date) => {
     if (!date) return;
     const formatted = date.format("YYYY-MM-DD");
@@ -592,7 +600,7 @@ export default function Appointments() {
         "bookappoinment_data",
         JSON.stringify(bookappoinment_data),
       );
-      formData.append("lab_reports_ids", null);
+      // formData.append("lab_reports_ids", null);
       await axios.patch(endpoint, formData, { headers });
       message.success("Appointment booked successfully!");
       handleCloseModal();
@@ -800,15 +808,19 @@ export default function Appointments() {
                       </div>
                       <div>
                         <b>Patient Contact Number: </b>
-                        {selectedAppointment.fullData.patient?.phone || "N/A"}
+                        {trimPhoneNumber(
+                          selectedAppointment.fullData.patient?.phone,
+                        ) || "N/A"}
                       </div>
                       <div>
                         <b>Patient Emergency Contact Person: </b>
                         {selectedAppointment.fullData.patient?.emer_con_name ||
                           "N/A"}
                         ,{" "}
-                        {selectedAppointment?.fullData?.patient
-                          ?.emer_con_phone || "N/A"}
+                        {trimPhoneNumber(
+                          selectedAppointment?.fullData?.patient
+                            ?.emer_con_phone,
+                        ) || "N/A"}
                         ,{" "}
                         {selectedAppointment?.fullData?.patient
                           ?.emer_con_relation || "N/A"}
@@ -840,8 +852,9 @@ export default function Appointments() {
                       </div>
                       <div>
                         <b>Sponsor Contact Number: </b>
-                        {selectedAppointment.fullData.sponsor?.user?.phone ||
-                          "N/A"}
+                        {trimPhoneNumber(
+                          selectedAppointment.fullData.sponsor?.user?.phone,
+                        ) || "N/A"}
                       </div>
                     </div>
                     {/* Book Appointment Form */}

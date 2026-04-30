@@ -576,12 +576,12 @@ export default function Overview() {
       ),
       width: 150,
     },
-    {
-      title: "Patient Name",
-      dataIndex: "patient",
-      key: "patient",
-      width: 140,
-    },
+    // {
+    //   title: "Patient Name",
+    //   dataIndex: "patient",
+    //   key: "patient",
+    //   width: 140,
+    // },
     {
       title: "Sponsor Name",
       dataIndex: "sponsor",
