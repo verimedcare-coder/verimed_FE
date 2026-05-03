@@ -13,7 +13,7 @@ import temperature from "../assets/icons/temperature.png";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Button, Empty, Table } from "antd";
+import { Button, Empty, Modal, Table } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarOutlined,
@@ -43,6 +43,8 @@ export default function Overview() {
   const [medicalReports, setMedicalReports] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isPatientModalVisible, setIsPatientModalVisible] = useState(false);
+  const [selectedPatientRow, setSelectedPatientRow] = useState(null);
 
   const token = localStorage.getItem("token");
 
@@ -66,6 +68,16 @@ export default function Overview() {
       console.error(error);
       message.error("Failed to delete appointment");
     }
+  };
+
+  const showPatientDetails = (record) => {
+    setSelectedPatientRow(record);
+    setIsPatientModalVisible(true);
+  };
+
+  const handlePatientModalClose = () => {
+    setIsPatientModalVisible(false);
+    setSelectedPatientRow(null);
   };
 
   const fetchAppointments = async () => {
@@ -424,6 +436,88 @@ export default function Overview() {
     },
   ];
 
+  const doctorPatientDetailsColumns = [
+    {
+      title: "Patient",
+      dataIndex: "patientName",
+      key: "patientName",
+      render: (text, record) => (
+        <div>
+          {text}
+          <br />
+          <span style={{ color: "#888", fontSize: 12 }}>
+            {record.patientId}
+          </span>
+        </div>
+      ),
+      width: 240,
+    },
+    {
+      title: "Sponsor",
+      dataIndex: "sponsor",
+      key: "sponsor",
+      width: 180,
+    },
+    {
+      title: "Care Taker",
+      dataIndex: "caretaker",
+      key: "caretaker",
+      width: 180,
+    },
+    {
+      title: "Doctor",
+      dataIndex: "doctor",
+      key: "doctor",
+      width: 220,
+    },
+    {
+      title: "Condition",
+      dataIndex: "condition",
+      key: "condition",
+      width: 220,
+    },
+    {
+      title: "Appointment Type",
+      dataIndex: "type",
+      key: "type",
+      width: 180,
+    },
+  ];
+
+  const doctorPatientDetailsData = doctorAppointments.length
+    ? doctorAppointments.map((appt, index) => ({
+        key: appt.id || `${appt.patient?.id}-${appt.doc?.id}-${index}`,
+        patientName: appt.patient?.patient_name || "N/A",
+        patientId: appt.patient?.id ? `ID: ${appt.patient.id}` : "",
+        sponsor:
+          appt.sponsor?.user?.username || appt.sponsor?.sponsor_id || "N/A",
+        caretaker:
+          appt.caretaker?.caretaker_id || appt.patient?.caretaker || "N/A",
+        doctor: appt.doc?.user
+          ? `${appt.doc.user.first_name} ${appt.doc.user.last_name}`
+          : appt.doc?.doctor_id || "N/A",
+        condition:
+          appt.patient?.medical_his_diagnosis ||
+          appt.patient?.medical_his_other ||
+          appt.appointment_reason ||
+          "N/A",
+        type: appt.appointment_type || "N/A",
+      }))
+    : patientData
+      ? [
+          {
+            key: patientData.id || "patient-details",
+            patientName: patientData.patient_name || "N/A",
+            patientId: patientData.id ? `ID: ${patientData.id}` : "",
+            sponsor: String(patientData.sponsor || "N/A"),
+            caretaker: patientData.caretaker || "N/A",
+            doctor: "N/A",
+            condition: patientData.medical_his_diagnosis || "N/A",
+            type: "N/A",
+          },
+        ]
+      : [];
+
   const todaysAppointment = [
     {
       id: 1,
@@ -547,7 +641,7 @@ export default function Overview() {
         })
       : "",
     sponsor: item?.sponsor?.user?.username,
-    patient: item.patient?.patient_id || "Unknown",
+    patient: item.patient?.patient_name || "Unknown",
     type: item.appointment_type || "-",
     caretaker: item.caretaker?.caretaker_id || "Unknown",
     time: item.appointment_time
@@ -576,12 +670,12 @@ export default function Overview() {
       ),
       width: 150,
     },
-    // {
-    //   title: "Patient Name",
-    //   dataIndex: "patient",
-    //   key: "patient",
-    //   width: 140,
-    // },
+    {
+      title: "Patient Name",
+      dataIndex: "patient",
+      key: "patient",
+      width: 140,
+    },
     {
       title: "Sponsor Name",
       dataIndex: "sponsor",
@@ -1437,6 +1531,162 @@ export default function Overview() {
               />
             </div>
           )}
+
+          {/* Doctor patient details table */}
+          {(user?.user_role === "doctor" || isAdmin) &&
+            doctorPatientDetailsData.length > 0 && (
+              <div
+                style={{
+                  width: "100%",
+                  background: "#fff",
+                  borderRadius: 16,
+                  padding: 24,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                  marginTop: 20,
+                }}
+              >
+                <SectionHeader title="Patient Details" />
+                <Table
+                  columns={doctorPatientDetailsColumns}
+                  dataSource={doctorPatientDetailsData}
+                  pagination={{ pageSize: 5 }}
+                  bordered
+                  rowKey="key"
+                  onRow={(record) => ({
+                    onClick: () => showPatientDetails(record),
+                    style: { cursor: "pointer" },
+                  })}
+                />
+                <Modal
+                  title="Patient Details"
+                  open={isPatientModalVisible}
+                  onCancel={handlePatientModalClose}
+                  footer={[
+                    <Button
+                      key="close"
+                      type="primary"
+                      onClick={handlePatientModalClose}
+                    >
+                      Close
+                    </Button>,
+                  ]}
+                  width={680}
+                >
+                  {selectedPatientRow ? (
+                    <div style={{ display: "grid", gap: 14 }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 14,
+                        }}
+                      >
+                        <div>
+                          <strong>Patient Name</strong>
+                          <div>{selectedPatientRow.patientName}</div>
+                        </div>
+                        <div>
+                          <strong>Patient ID</strong>
+                          <div>{selectedPatientRow.patientId || "N/A"}</div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 14,
+                        }}
+                      >
+                        <div>
+                          <strong>Sponsor</strong>
+                          <div>{selectedPatientRow.sponsor || "N/A"}</div>
+                        </div>
+                        <div>
+                          <strong>Care Taker</strong>
+                          <div>{selectedPatientRow.caretaker || "N/A"}</div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 14,
+                        }}
+                      >
+                        <div>
+                          <strong>Doctor</strong>
+                          <div>{selectedPatientRow.doctor || "N/A"}</div>
+                        </div>
+                        <div>
+                          <strong>Appointment Type</strong>
+                          <div>{selectedPatientRow.type || "N/A"}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Condition</strong>
+                        <div>{selectedPatientRow.condition || "N/A"}</div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 14,
+                        }}
+                      >
+                        <div>
+                          <strong>Phone</strong>
+                          <div>
+                            {selectedPatientRow.appointment?.patient?.phone ||
+                              "N/A"}
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Email</strong>
+                          <div>
+                            {selectedPatientRow.appointment?.patient?.email ||
+                              "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 14,
+                        }}
+                      >
+                        <div>
+                          <strong>Preferred Dates</strong>
+                          <div>
+                            {Array.isArray(
+                              selectedPatientRow.appointment?.preferred_dates,
+                            )
+                              ? selectedPatientRow.appointment.preferred_dates.join(
+                                  ", ",
+                                )
+                              : "N/A"}
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Preferred Times</strong>
+                          <div>
+                            {Array.isArray(
+                              selectedPatientRow.appointment?.preferred_times,
+                            )
+                              ? selectedPatientRow.appointment.preferred_times.join(
+                                  ", ",
+                                )
+                              : "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>No patient details available.</div>
+                  )}
+                </Modal>
+              </div>
+            )}
 
           {/* Today's Schedule */}
           {user?.user_role === "care_taker" && (
