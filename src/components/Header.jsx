@@ -465,10 +465,9 @@ export default function HeaderComponent() {
 
       const storedSponsorId = localStorage.getItem("sponsorProfileId");
 
-      const formattedDOB =
-        editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
-          ? new Date(editedData.patient_dob).toISOString().split("T")[0]
-          : "";
+      const formattedDOB = editedData.patient_dob
+        ? dayjs(editedData.patient_dob).format("YYYY-MM-DD")
+        : "";
 
       const medicationArray = medications.map((m) => ({
         name: m.medication_name || "",
@@ -508,11 +507,17 @@ export default function HeaderComponent() {
         emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
         emer_con_country_code: editedData.emer_con_country_code || "US",
         emer_con_phone: editedData.emer_con_phone || "",
+        emer_con_phonewithcountrycode: editedData.emer_con_phone
+          ? `${editedData.emer_con_country_code || "US"} ${editedData.emer_con_phone}`
+          : "",
         emer_con_email: editedData.emer_con_email || "",
         local_con_name: editedData.local_con_name || "",
         local_con_relation: editedData.local_con_relation || "",
         local_con_country_code: editedData.local_con_country_code || "US",
         local_con_phone: editedData.local_con_phone || "",
+        local_con_phonewithcountrycode: editedData.local_con_phone
+          ? `${editedData.local_con_country_code || "US"} ${editedData.local_con_phone}`
+          : "",
         reason_enrollment: editedData.reason_enrollment || "",
         reason_other: editedData.reason_other || "",
         medical_his_diagnosis: editedData.medical_his_diagnosis || "",
@@ -561,7 +566,7 @@ export default function HeaderComponent() {
       // ✅ Append uploaded files if present
       if (editedData.patient_upload_files?.length > 0) {
         editedData.patient_upload_files.forEach((file) =>
-          formData.append("patient_photo", file),
+          formData.append("patient_photo", file.originFileObj),
         );
       }
 
