@@ -29,6 +29,7 @@ import Primarybtn from "./PrimaryBtn";
 import { useNavigate } from "react-router-dom";
 import { base_url } from "../constants/constants";
 import dayjs from "dayjs";
+import { getData } from "country-list";
 
 const { Header } = Layout;
 const { Option } = Select;
@@ -140,24 +141,12 @@ export default function HeaderComponent() {
   const [countryOptions, setCountryOptions] = useState([]);
 
   useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const res = await axios.get(
-          "https://restcountries.com/v3.1/all?fields=name,cca2",
-        );
-        const options = res.data
-          .map((country) => ({
-            label: country.name.common,
-            value: country.cca2,
-          }))
-          .filter((c) => c.value && c.label)
-          .sort((a, b) => a.label.localeCompare(b.label));
-        setCountryOptions(options);
-      } catch (error) {
-        console.error("Failed to fetch countries", error);
-      }
-    };
-    fetchCountries();
+    const countries = getData().map((country) => ({
+      label: country.name,
+      value: country.code,
+    }));
+
+    setCountryOptions(countries);
   }, []);
 
   const data = localStorage.getItem("userData");
