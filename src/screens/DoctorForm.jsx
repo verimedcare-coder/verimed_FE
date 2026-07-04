@@ -68,11 +68,69 @@ export default function DoctorForm(doc_data) {
         Authorization: `Token ${token}`,
       };
 
+      let finalCaretakerId =
+        appointmentData?.caretaker?.id ||
+        appointmentData?.caretakerid ||
+        null;
+      let finalDoctorId =
+        appointmentData?.doc?.id || appointmentData?.docid || null;
+      let finalPatientId =
+        appointmentData?.patient?.id || appointmentData?.patientid || null;
+      let finalSponsorId =
+        appointmentData?.sponsor?.id || appointmentData?.sponsorid || null;
+
+      if (
+        !finalCaretakerId ||
+        !finalDoctorId ||
+        !finalPatientId ||
+        !finalSponsorId
+      ) {
+        try {
+          if (!finalCaretakerId) {
+            const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, {
+              headers,
+            });
+            if (Array.isArray(cRes.data) && cRes.data.length > 0) {
+              finalCaretakerId = cRes.data[0]?.id || null;
+            }
+          }
+          if (!finalDoctorId) {
+            const dRes = await axios.get(`${base_url}/doctorprofile_list/`, {
+              headers,
+            });
+            if (Array.isArray(dRes.data) && dRes.data.length > 0) {
+              finalDoctorId = dRes.data[0]?.id || null;
+            }
+          }
+          if (!finalPatientId) {
+            const pRes = await axios.get(`${base_url}/patientprofile_list/`, {
+              headers,
+            });
+            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
+              finalPatientId = pRes.data[0]?.id || null;
+            }
+          }
+          if (!finalSponsorId) {
+            const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, {
+              headers,
+            });
+            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
+              finalSponsorId = sRes.data[0]?.id || null;
+            }
+          }
+        } catch (err) {
+          console.log(
+            "Error auto-fetching fallback profile IDs in DoctorForm:",
+            err,
+          );
+        }
+      }
+
       const payloadData = {
-        doctor: appointmentData?.doc?.id,
-        patient: appointmentData?.patient?.id,
-        sponsor: appointmentData?.sponsor?.id,
-        caretaker: appointmentData?.caretaker?.id || 4,
+        doctor: finalDoctorId,
+        patient: finalPatientId,
+        sponsor: finalSponsorId,
+        caretaker: finalCaretakerId,
         patient_name: appointmentData?.patient?.patient_name,
         blood_group: values.bloodGroup || "N/A",
         bp: appointmentData?.patient?.blood_pressure || "N/A",
@@ -102,7 +160,16 @@ export default function DoctorForm(doc_data) {
       form.resetFields();
     } catch (error) {
       console.error("Error submitting report:", error);
-      message.error("Failed to submit report. Please try again.");
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to submit report. Please try again.";
+      message.error(errMsg);
+      Modal.error({
+        title: "Submission Failed",
+        content: errMsg,
+        centered: true,
+      });
     } finally {
       setLoading(false);
     }

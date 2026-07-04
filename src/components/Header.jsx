@@ -166,8 +166,24 @@ export default function HeaderComponent() {
 
   const handleMenuClick = (e) => {
     if (e.key === "1") {
+      setEditedData((prev) => ({
+        ...prev,
+        patientName: user
+          ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+          : "",
+        patientEmail: user ? user.email || "" : "",
+        patientPhone: user ? user.phone || "" : "",
+        reason_enrollment: "Self",
+      }));
       setIsSecondModalVisible(true);
     } else if (e.key === "2") {
+      setEditedData((prev) => ({
+        ...prev,
+        patientName: "",
+        patientEmail: "",
+        patientPhone: "",
+        reason_enrollment: "Loved One",
+      }));
       setIsSecondModalVisible(true);
     }
   };
@@ -281,12 +297,16 @@ export default function HeaderComponent() {
 
   const fetchSponsorPatients = async () => {
     try {
+      const storedSponsorId = localStorage.getItem("sponsorProfileId");
+      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
+        return;
+      }
       const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
       const headers = {
         Authorization: `Token ${token}`,
       };
       const payload = {
-        sponsorid: localStorage.getItem("sponsorProfileId"),
+        sponsorid: Number(storedSponsorId),
       };
       const res = await axios.post(endpoint, payload, { headers });
       const fetchedPatients = res.data || [];
@@ -346,6 +366,7 @@ export default function HeaderComponent() {
   }, []);
 
   const handleEnrollSubmit = async (values) => {
+    setLoading(true);
     try {
       const user_signup = {
         first_name: values.first_name,
@@ -370,6 +391,12 @@ export default function HeaderComponent() {
       });
 
       message.success("Sponsor enrolled successfully!");
+      Modal.success({
+        title: "Sponsor Enrolled",
+        content:
+          "Sponsor enrolled successfully! Please complete the patient profile details next.",
+        centered: true,
+      });
 
       const userViewRes = await axios.get(`${base_url}/user_view/`, {
         headers: { Authorization: `Token ${token}` },
@@ -417,6 +444,16 @@ export default function HeaderComponent() {
     } catch (error) {
       console.error("Enrollment failed:", error);
       message.error("Something went wrong while enrolling the patient.");
+      Modal.error({
+        title: "Enrollment Failed",
+        content:
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Something went wrong while enrolling the patient. Please check your inputs.",
+        centered: true,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -588,6 +625,11 @@ export default function HeaderComponent() {
       await fetchSponsorPatients();
 
       message.success("Patient details updated successfully!");
+      Modal.success({
+        title: "Enrollment Complete",
+        content: "Patient details updated and enrolled successfully!",
+        centered: true,
+      });
       setIsSecondModalVisible(false);
     } catch (error) {
       console.error("Update failed:", error);
@@ -596,13 +638,23 @@ export default function HeaderComponent() {
         console.error("Response Data:", error.response.data);
         console.error("Response Status:", error.response.status);
 
-        message.error(
+        const errMsg =
           error.response.data?.message ||
-            error.response.data?.detail ||
-            "Unable to update patient profile.",
-        );
+          error.response.data?.detail ||
+          "Unable to update patient profile.";
+        message.error(errMsg);
+        Modal.error({
+          title: "Update Failed",
+          content: errMsg,
+          centered: true,
+        });
       } else {
         message.error("Unable to update patient profile.");
+        Modal.error({
+          title: "Update Failed",
+          content: "Unable to update patient profile. Please try again.",
+          centered: true,
+        });
       }
     } finally {
       setLoading(false);
@@ -749,6 +801,7 @@ export default function HeaderComponent() {
           <Button
             key="update"
             type="primary"
+            loading={loading}
             onClick={() => {
               form
                 .validateFields()
@@ -959,7 +1012,17 @@ export default function HeaderComponent() {
                 <Input.TextArea placeholder="Enter diagnosis" />
               </Form.Item>
               <Form.Item name="medical_his_cancer" label="Cancer History">
-                <Input placeholder="Enter cancer history" autoComplete="off" />
+                <Select
+                  placeholder="Select cancer history"
+                  options={[
+                    { label: "Yes", value: "Yes" },
+                    { label: "No", value: "No" },
+                    {
+                      label: "Not Known at time of enrolment",
+                      value: "Not Known at time of enrolment",
+                    },
+                  ]}
+                />
               </Form.Item>
               <Form.Item name="medical_his_other" label="Other Medical History">
                 <Input placeholder="Other medical history" autoComplete="off" />

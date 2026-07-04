@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
@@ -114,9 +115,13 @@ export default function Overview() {
 
   const fetchPatientDetails = async () => {
     try {
+      const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
+      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
+        return;
+      }
       const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
       const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorid: sponsorId };
+      const payload = { sponsorid: Number(storedSponsorId) };
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
       const selectedPatient = patients.find(

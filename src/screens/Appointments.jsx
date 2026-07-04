@@ -16,6 +16,8 @@ import {
   CloseOutlined,
   BookOutlined,
   CalendarOutlined,
+  MedicineBoxOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import {
   Tabs,
@@ -35,14 +37,16 @@ import {
 } from "antd";
 import Primarybtn from "../components/PrimaryBtn";
 import SecondaryBtn from "../components/SecondaryBtn";
-import { base_url } from "../constants/constants";
+import { base_url, isAdminUser } from "../constants/constants";
 import axios from "axios";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 
 export default function Appointments() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [assignForm] = Form.useForm();
   const today = new Date();
   const defaultMonth = today.toLocaleString("default", {
     month: "short",
@@ -64,6 +68,8 @@ export default function Appointments() {
   const [sponsorUser, setSponsorUser] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [doctors, setDoctors] = useState([]);
+  const [sponsors, setSponsors] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
 
@@ -133,6 +139,77 @@ export default function Appointments() {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
       const headers = { Authorization: `Token ${token}` };
 
+      let storedPatientData = {};
+      try {
+        storedPatientData = JSON.parse(
+          localStorage.getItem("selectedPatientData") || "{}",
+        );
+      } catch (e) {
+        storedPatientData = {};
+      }
+
+      let finalPatientId =
+        Number(localStorage.getItem("selectedPatientId")) ||
+        storedPatientData?.id ||
+        patientId ||
+        null;
+
+      let finalSponsorId =
+        Number(localStorage.getItem("sponsorProfileId")) ||
+        storedPatientData?.sponsor?.id ||
+        storedPatientData?.sponsorid ||
+        storedPatientData?.sponsor_id ||
+        storedPatientData?.sponsorProfileId ||
+        (typeof storedPatientData?.sponsor === "number"
+          ? storedPatientData?.sponsor
+          : null) ||
+        sponsorId ||
+        null;
+
+      let finalCaretakerId =
+        storedPatientData?.caretaker?.id ||
+        storedPatientData?.caretakerid ||
+        storedPatientData?.caretaker_id ||
+        (typeof storedPatientData?.caretaker === "number" ||
+        typeof storedPatientData?.caretaker === "string"
+          ? Number(storedPatientData.caretaker)
+          : null) ||
+        caretakerId ||
+        null;
+
+      if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
+        try {
+          if (!finalPatientId) {
+            const pRes = await axios.get(`${base_url}/patientprofile_list/`, { headers });
+            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
+              const matchedP = pRes.data.find(p => p.user?.id === userData?.id) || pRes.data[0];
+              finalPatientId = matchedP?.id || null;
+              if (!finalSponsorId && matchedP?.sponsor) {
+                finalSponsorId = typeof matchedP.sponsor === "object" ? matchedP.sponsor.id : matchedP.sponsor;
+              }
+              if (!finalCaretakerId && matchedP?.caretakerid) {
+                finalCaretakerId = matchedP.caretakerid;
+              }
+            }
+          }
+          if (!finalSponsorId) {
+            const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
+            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
+              const matchedS = sRes.data.find(s => s.user?.id === userData?.id) || sRes.data[0];
+              finalSponsorId = matchedS?.id || null;
+            }
+          }
+          if (!finalCaretakerId) {
+            const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
+            if (Array.isArray(cRes.data) && cRes.data.length > 0) {
+              finalCaretakerId = cRes.data[0]?.id || null;
+            }
+          }
+        } catch (err) {
+          console.log("Error auto-fetching fallback profile IDs:", err);
+        }
+      }
+
       const formattedPreferredTimes = (values.preferred_times || []).map(
         (time) => {
           const [hour, minute] = time.split(":");
@@ -142,9 +219,9 @@ export default function Appointments() {
 
       const bookappoinment_data = {
         dep: values.depId || values.appointmentType,
-        patient: patientId,
-        sponsor: sponsorId,
-        caretaker: caretakerId,
+        patient: values.patientId || finalPatientId,
+        sponsor: values.sponsorId || finalSponsorId,
+        caretaker: finalCaretakerId,
         appointment_date: null,
         appointment_time: null,
         preferred_dates: selectedDates,
@@ -217,7 +294,29 @@ export default function Appointments() {
         console.log("Error fetching doctors: ", error);
       }
     };
+    const fetchSponsorList = async () => {
+      try {
+        const endpoint = `${base_url}/sponsorprofile_list/`;
+        const headers = { Authorization: `Token ${token}` };
+        const res = await axios.get(endpoint, { headers });
+        setSponsors(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        console.log("Error fetching sponsors: ", error);
+      }
+    };
+    const fetchPatientList = async () => {
+      try {
+        const endpoint = `${base_url}/patientprofile_list/`;
+        const headers = { Authorization: `Token ${token}` };
+        const res = await axios.get(endpoint, { headers });
+        setPatients(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        console.log("Error fetching patients: ", error);
+      }
+    };
     fetchDocList();
+    fetchSponsorList();
+    fetchPatientList();
   }, []);
 
   useEffect(() => {
@@ -313,8 +412,17 @@ export default function Appointments() {
   }, [appointmentList]);
 
   const handleDetailsCardClick = (appt) => {
-    if (userData?.user_role === "care_taker" && appt.status === "upcoming") {
+    if (
+      (userData?.user_role === "care_taker" || isAdminUser(userData)) &&
+      appt.status === "upcoming"
+    ) {
       setSelectedAppointment(appt);
+      assignForm.setFieldsValue({
+        docId: appt.fullData?.doc?.id || appt.fullData?.doc || undefined,
+        appointment_date: appt.date ? dayjs(appt.date) : undefined,
+        appointment_time: appt.time ? dayjs(appt.time, "HH:mm:ss") : undefined,
+        care_taker_notes: appt.fullData?.care_taker_notes || "",
+      });
       setIsAppointmentDetailsModal(true);
     }
   };
@@ -322,6 +430,7 @@ export default function Appointments() {
   const handleCloseModal = () => {
     setIsAppointmentDetailsModal(false);
     setSelectedAppointment(null);
+    assignForm.resetFields();
   };
 
   const renderAppointments = (status) => {
@@ -342,7 +451,9 @@ export default function Appointments() {
           <Card
             key={appt.id}
             hoverable={
-              userData?.user_role === "care_taker" && appt.status === "upcoming"
+              (userData?.user_role === "care_taker" ||
+                isAdminUser(userData)) &&
+              appt.status === "upcoming"
             }
             onClick={() => handleDetailsCardClick(appt)}
             size="small"
@@ -351,7 +462,9 @@ export default function Appointments() {
               border: "1px solid #E5E7EB",
               borderRadius: "8px",
               cursor:
-                userData?.user_role === "care_taker" ? "pointer" : "default",
+                userData?.user_role === "care_taker" || isAdminUser(userData)
+                  ? "pointer"
+                  : "default",
             }}
           >
             <div
@@ -480,21 +593,36 @@ export default function Appointments() {
                   </span>
                 )}
               </div>
-              {/* <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  style={{
-                    border: "1px solid #E5E7EB",
-                    color: "#374151",
-                    background: "transparent",
-                  }}
-                >
-                  Edit
-                </Button>
-              </div> */}
+              {(userData?.user_role === "care_taker" ||
+                isAdminUser(userData)) &&
+                appt.status === "upcoming" && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDetailsCardClick(appt);
+                      }}
+                      style={{
+                        border: "1px solid #004C91",
+                        color: "#004C91",
+                        background: "#E6F0FA",
+                        fontWeight: 500,
+                        borderRadius: "6px",
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                )}
             </div>
           </Card>
         ))}
@@ -542,7 +670,9 @@ export default function Appointments() {
     // Format date as YYYY-MM-DD string
     const formatDate = (dateObj) => {
       if (!dateObj) return null;
-      const d = dateObj.toDate();
+      if (typeof dateObj === "string") return dateObj;
+      if (dateObj.format) return dateObj.format("YYYY-MM-DD");
+      const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
@@ -552,19 +682,74 @@ export default function Appointments() {
     // Format time as HH:MM:SS string (24-hour format)
     const formatTime = (timeObj) => {
       if (!timeObj) return null;
-      const t = timeObj.toDate();
+      if (typeof timeObj === "string") return timeObj;
+      if (timeObj.format) return timeObj.format("HH:mm:ss");
+      const t = timeObj.toDate ? timeObj.toDate() : new Date(timeObj);
       const hours = String(t.getHours()).padStart(2, "0");
       const minutes = String(t.getMinutes()).padStart(2, "0");
       return `${hours}:${minutes}:00`;
     };
 
+    const headers = { Authorization: `Token ${token}` };
+
+    let finalSponsorId =
+      selectedAppointment?.fullData?.sponsor?.id ||
+      selectedAppointment?.fullData?.sponsorid ||
+      selectedAppointment?.fullData?.sponsor_id ||
+      (typeof selectedAppointment?.fullData?.sponsor === "number"
+        ? selectedAppointment?.fullData?.sponsor
+        : null) ||
+      null;
+
+    let finalPatientId =
+      selectedAppointment?.fullData?.patient?.id ||
+      selectedAppointment?.fullData?.patientid ||
+      (typeof selectedAppointment?.fullData?.patient === "number"
+        ? selectedAppointment?.fullData?.patient
+        : null) ||
+      null;
+
+    let finalCaretakerId =
+      selectedAppointment?.fullData?.caretaker?.id ||
+      selectedAppointment?.fullData?.caretakerid ||
+      selectedAppointment?.fullData?.caretaker_id ||
+      (typeof selectedAppointment?.fullData?.caretaker === "number"
+        ? selectedAppointment?.fullData?.caretaker
+        : null) ||
+      null;
+
+    if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
+      try {
+        if (!finalPatientId) {
+          const pRes = await axios.get(`${base_url}/patientprofile_list/`, { headers });
+          if (Array.isArray(pRes.data) && pRes.data.length > 0) {
+            finalPatientId = pRes.data[0]?.id || null;
+          }
+        }
+        if (!finalSponsorId) {
+          const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
+          if (Array.isArray(sRes.data) && sRes.data.length > 0) {
+            finalSponsorId = sRes.data[0]?.id || null;
+          }
+        }
+        if (!finalCaretakerId) {
+          const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
+          if (Array.isArray(cRes.data) && cRes.data.length > 0) {
+            finalCaretakerId = cRes.data[0]?.id || null;
+          }
+        }
+      } catch (err) {
+        console.log("Error auto-fetching fallback profile IDs in assignAppointment:", err);
+      }
+    }
+
     const bookappoinment_data = {
       update_appoinmentid: selectedAppointment?.id, // e.g. 34
-      sponsor: selectedAppointment?.fullData?.sponsor?.id, // e.g. 8
+      sponsor: finalSponsorId,
       dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
       doc: safe(values?.docId), // from form
-      patient: selectedAppointment?.fullData?.patient?.id, // e.g. 30
-      caretaker: 13, // fallback if null
+      patient: finalPatientId,
+      caretaker: finalCaretakerId,
       appointment_date: formatDate(values?.appointment_date), // user-provided date as YYYY-MM-DD
       appointment_time: formatTime(values?.appointment_time), // e.g. "10:30:00"
       appointment_type: safe(selectedAppointment?.appointment_type),
@@ -594,7 +779,6 @@ export default function Appointments() {
     };
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-      const headers = { Authorization: `Token ${token}` };
       const formData = new FormData();
       formData.append(
         "bookappoinment_data",
@@ -602,11 +786,27 @@ export default function Appointments() {
       );
       // formData.append("lab_reports_ids", null);
       await axios.patch(endpoint, formData, { headers });
-      message.success("Appointment booked successfully!");
+      message.success("Appointment updated successfully!");
+      Modal.success({
+        title: "Appointment Updated",
+        content:
+          "The appointment date, time, and doctor have been updated successfully.",
+        centered: true,
+      });
       handleCloseModal();
       fetchAppointments();
     } catch (error) {
-      message.error("Failed to book appointment.");
+      console.error("Error updating appointment:", error);
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to update appointment.";
+      message.error(errMsg);
+      Modal.error({
+        title: "Update Failed",
+        content: errMsg,
+        centered: true,
+      });
     }
   };
 
@@ -692,246 +892,276 @@ export default function Appointments() {
               </div>
               {renderAppointments(activeTab)}
             </div>
-            {userData?.user_role === "care_taker" && (
+            {(userData?.user_role === "care_taker" ||
+              isAdminUser(userData)) && (
               <Modal
-                title="Appointment Details"
-                width={"auto"}
+                title={null}
+                width={820}
                 open={isAppointmentDetailsModal}
                 onCancel={handleCloseModal}
                 footer={null}
                 centered
+                bodyStyle={{ padding: "28px", maxHeight: "85vh", overflowY: "auto" }}
+                closeIcon={<CloseOutlined style={{ fontSize: 18 }} />}
               >
                 {selectedAppointment ? (
-                  <>
+                  <div style={{ fontFamily: "Inter, sans-serif" }}>
+                    {/* Header Banner */}
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        columnGap: "20px",
-                        rowGap: "12px",
-                        fontSize: "15px",
+                        background: "linear-gradient(135deg, #004C91 0%, #0066C0 100%)",
+                        padding: "20px 24px",
+                        borderRadius: "12px",
+                        color: "#fff",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                         marginBottom: "24px",
+                        boxShadow: "0 4px 12px rgba(0, 76, 145, 0.15)",
                       }}
                     >
                       <div>
-                        <b>Appointment Type:</b>{" "}
-                        {selectedAppointment.appointment_type}
+                        <div style={{ fontSize: "13px", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>
+                          Appointment Overview
+                        </div>
+                        <h2 style={{ color: "#fff", fontSize: "20px", fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+                          <MedicineBoxOutlined />
+                          {selectedAppointment.appointment_type}
+                        </h2>
                       </div>
-                      <div>
-                        <b>Date:</b>{" "}
-                        {selectedAppointment.date
-                          ? new Date(
-                              selectedAppointment.date,
-                            ).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                      <div>
-                        <b>Time:</b>{" "}
-                        {Array.isArray(selectedAppointment.time)
-                          ? selectedAppointment.time.join(", ")
-                          : selectedAppointment.time || "N/A"}
-                      </div>
-                      {/* <div>
-                        <b>Doctor:</b> {selectedAppointment.doctorName || "N/A"}
-                      </div> */}
-                      <div>
-                        <b>Patient:</b> {selectedAppointment.name || "N/A"}
-                      </div>
-                      <div>
-                        <b>Issue/Reason:</b>{" "}
-                        {selectedAppointment.issue || "N/A"}
-                      </div>
-                      <div>
-                        <b>Status:</b>{" "}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
                         <Tag
-                          color={
-                            selectedAppointment.status === "upcoming"
-                              ? "blue"
-                              : selectedAppointment.status === "past"
-                                ? "gray"
-                                : "red"
-                          }
+                          style={{
+                            margin: 0,
+                            padding: "4px 12px",
+                            borderRadius: "20px",
+                            fontWeight: 600,
+                            fontSize: "12px",
+                            border: "none",
+                            background:
+                              selectedAppointment.status === "upcoming"
+                                ? "#E6F0FA"
+                                : selectedAppointment.status === "past"
+                                  ? "#F3F4F6"
+                                  : "#FEE2E2",
+                            color:
+                              selectedAppointment.status === "upcoming"
+                                ? "#004C91"
+                                : selectedAppointment.status === "past"
+                                  ? "#4B5563"
+                                  : "#DC2626",
+                          }}
                         >
                           {selectedAppointment.status.toUpperCase()}
                         </Tag>
-                      </div>
-                      {selectedAppointment.documents?.length > 0 && (
-                        <div>
-                          <b>Documents:</b>
-                          <div style={{ marginTop: "8px", marginLeft: "16px" }}>
-                            {selectedAppointment.documents.map((doc) => (
-                              <div key={doc.id}>
-                                <a
-                                  href={doc.view_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    color: "#004C91",
-                                    textDecoration: "underline",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                  }}
-                                >
-                                  <FileTextOutlined />
-                                  {doc.filename.split("/").pop()}
-                                </a>
-                              </div>
-                            ))}
-                          </div>
+                        <div style={{ fontSize: "13px", opacity: 0.9, display: "flex", alignItems: "center", gap: "6px" }}>
+                          <CalendarOutlined />
+                          {selectedAppointment.date
+                            ? new Date(selectedAppointment.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                            : "No Date"}
+                          {" | "}
+                          <ClockCircleOutlined />
+                          {Array.isArray(selectedAppointment.time)
+                            ? selectedAppointment.time.join(", ")
+                            : selectedAppointment.time || "No Time"}
                         </div>
-                      )}
+                      </div>
                     </div>
+
+                    {/* Patient & Sponsor Grid */}
                     <div
                       style={{
                         display: "grid",
                         gridTemplateColumns: "1fr 1fr",
-                        columnGap: "20px",
-                        rowGap: "12px",
-                        fontSize: "15px",
+                        gap: "20px",
                         marginBottom: "24px",
                       }}
                     >
-                      <b>Patient Details:</b>
-                      <div>
-                        <b>Patient Name: </b>
-                        {selectedAppointment.fullData.patient?.patient_name ||
-                          "N/A"}
-                      </div>
-                      <div>
-                        <b>Patient Age: </b>
-                        {selectedAppointment.fullData.patient?.age || "N/A"}
-                      </div>
-                      <div>
-                        <b>Patient Email: </b>
-                        {selectedAppointment.fullData.patient?.email || "N/A"}
-                      </div>
-                      <div>
-                        <b>Patient Contact Number: </b>
-                        {trimPhoneNumber(
-                          selectedAppointment.fullData.patient?.phone,
-                        ) || "N/A"}
-                      </div>
-                      <div>
-                        <b>Patient Emergency Contact Person: </b>
-                        {selectedAppointment.fullData.patient?.emer_con_name ||
-                          "N/A"}
-                        ,{" "}
-                        {trimPhoneNumber(
-                          selectedAppointment?.fullData?.patient
-                            ?.emer_con_phone,
-                        ) || "N/A"}
-                        ,{" "}
-                        {selectedAppointment?.fullData?.patient
-                          ?.emer_con_relation || "N/A"}
-                        ,{" "}
-                        {selectedAppointment?.fullData?.patient
-                          ?.emer_con_email || "N/A"}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        columnGap: "20px",
-                        rowGap: "12px",
-                        fontSize: "15px",
-                        marginBottom: "24px",
-                      }}
-                    >
-                      <b>Sponsor Details:</b>
-                      <div>
-                        <b>Sponsor Name: </b>
-                        {selectedAppointment.fullData.sponsor?.user
-                          ?.first_name || "N/A"}
-                      </div>
-                      <div>
-                        <b>Sponsor Email: </b>
-                        {selectedAppointment.fullData.sponsor?.user?.email ||
-                          "N/A"}
-                      </div>
-                      <div>
-                        <b>Sponsor Contact Number: </b>
-                        {trimPhoneNumber(
-                          selectedAppointment.fullData.sponsor?.user?.phone,
-                        ) || "N/A"}
-                      </div>
-                    </div>
-                    {/* Book Appointment Form */}
-                    <div style={{ marginTop: "32px" }}>
-                      <h3
+                      {/* Patient Card */}
+                      <div
                         style={{
-                          fontWeight: 600,
-                          fontSize: "16px",
-                          marginBottom: "12px",
+                          background: "#F8FAFC",
+                          border: "1px solid #E2E8F0",
+                          borderRadius: "10px",
+                          padding: "16px 20px",
                         }}
                       >
-                        Book Appointment
-                      </h3>
-                      <Form layout="vertical" onFinish={assignAppointment}>
-                        <Form.Item
-                          name="docId"
-                          label="Doctor"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please select a doctor",
-                            },
-                          ]}
-                        >
-                          <Select placeholder="Select doctor">
-                            {doctors &&
-                              doctors.length > 0 &&
-                              doctors.map((doctor) => (
-                                <Option key={doctor.id} value={doctor.id}>
-                                  {doctor.user?.first_name}{" "}
-                                  {doctor.user?.last_name}
-                                </Option>
-                              ))}
-                          </Select>
-                        </Form.Item>
-                        <Form.Item
-                          name="appointment_date"
-                          label="Appointment Date"
-                          rules={[
-                            { required: true, message: "Please select a date" },
-                          ]}
-                        >
-                          <DatePicker
-                            format="YYYY-MM-DD"
-                            placeholder="Select date (YYYY-MM-DD)"
-                            style={{ width: "100%" }}
-                          />
-                        </Form.Item>
-                        <Form.Item
-                          name="appointment_time"
-                          label="Appointment Time"
-                          rules={[
-                            { required: true, message: "Please select a time" },
-                          ]}
-                        >
-                          <TimePicker
-                            format="hh:mm A"
-                            placeholder="Select time (HH:MM AM/PM)"
-                            style={{ width: "100%" }}
-                            use12Hours
-                          />
-                        </Form.Item>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #E2E8F0", paddingBottom: "10px", marginBottom: "12px" }}>
+                          <div style={{ background: "#E6F0FA", color: "#004C91", width: "28px", height: "28px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>
+                            <UserOutlined />
+                          </div>
+                          <b style={{ fontSize: "15px", color: "#1E293B" }}>Patient Details</b>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", color: "#475569" }}>
+                          <div><span style={{ color: "#64748B" }}>Name:</span> <strong style={{ color: "#1E293B" }}>{selectedAppointment.fullData?.patient?.patient_name || selectedAppointment.name || "N/A"}</strong></div>
+                          <div><span style={{ color: "#64748B" }}>Age:</span> <strong style={{ color: "#1E293B" }}>{selectedAppointment.fullData?.patient?.age || "N/A"}</strong></div>
+                          <div><span style={{ color: "#64748B" }}>Phone:</span> <strong style={{ color: "#1E293B" }}>{trimPhoneNumber(selectedAppointment.fullData?.patient?.phone) || "N/A"}</strong></div>
+                          <div><span style={{ color: "#64748B" }}>Email:</span> <strong style={{ color: "#1E293B" }}>{selectedAppointment.fullData?.patient?.email || "N/A"}</strong></div>
+                          {selectedAppointment.fullData?.patient?.emer_con_name && (
+                            <div style={{ marginTop: "4px", padding: "8px", background: "#FFF", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                              <div style={{ fontSize: "11px", color: "#DC2626", fontWeight: 600, textTransform: "uppercase" }}>Emergency Contact</div>
+                              <div style={{ fontSize: "12px", color: "#1E293B", fontWeight: 500 }}>{selectedAppointment.fullData?.patient?.emer_con_name} ({selectedAppointment.fullData?.patient?.emer_con_relation || "Relative"})</div>
+                              <div style={{ fontSize: "12px", color: "#64748B" }}>{trimPhoneNumber(selectedAppointment.fullData?.patient?.emer_con_phone)}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sponsor Card */}
+                      <div
+                        style={{
+                          background: "#F8FAFC",
+                          border: "1px solid #E2E8F0",
+                          borderRadius: "10px",
+                          padding: "16px 20px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #E2E8F0", paddingBottom: "10px", marginBottom: "12px" }}>
+                          <div style={{ background: "#E6F0FA", color: "#004C91", width: "28px", height: "28px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>
+                            <SafetyCertificateOutlined />
+                          </div>
+                          <b style={{ fontSize: "15px", color: "#1E293B" }}>Sponsor Details</b>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", color: "#475569" }}>
+                          <div><span style={{ color: "#64748B" }}>Name:</span> <strong style={{ color: "#1E293B" }}>{selectedAppointment.fullData?.sponsor?.user?.first_name} {selectedAppointment.fullData?.sponsor?.user?.last_name || "N/A"}</strong></div>
+                          <div><span style={{ color: "#64748B" }}>Email:</span> <strong style={{ color: "#1E293B" }}>{selectedAppointment.fullData?.sponsor?.user?.email || "N/A"}</strong></div>
+                          <div><span style={{ color: "#64748B" }}>Phone:</span> <strong style={{ color: "#1E293B" }}>{trimPhoneNumber(selectedAppointment.fullData?.sponsor?.user?.phone) || "N/A"}</strong></div>
+                          <div style={{ marginTop: "4px" }}>
+                            <span style={{ color: "#64748B" }}>Issue / Reason:</span>
+                            <div style={{ background: "#FFF", padding: "8px 10px", borderRadius: "6px", border: "1px solid #E2E8F0", marginTop: "4px", color: "#1E293B", fontWeight: 500 }}>
+                              {selectedAppointment.issue || "General Consultation"}
+                            </div>
+                          </div>
+                          {selectedAppointment.documents?.length > 0 && (
+                            <div style={{ marginTop: "4px" }}>
+                              <span style={{ color: "#64748B", fontSize: "12px" }}>Attached Documents:</span>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                                {selectedAppointment.documents.map((doc) => (
+                                  <a
+                                    key={doc.id}
+                                    href={doc.view_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      background: "#FFF",
+                                      border: "1px solid #CBD5E1",
+                                      padding: "4px 8px",
+                                      borderRadius: "4px",
+                                      color: "#004C91",
+                                      fontSize: "12px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      textDecoration: "none",
+                                    }}
+                                  >
+                                    <FileTextOutlined />
+                                    {doc.filename.split("/").pop()}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reschedule Section */}
+                    <div
+                      style={{
+                        background: "#FFF",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "12px",
+                        padding: "20px 24px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", borderBottom: "1px solid #F1F5F9", paddingBottom: "12px" }}>
+                        <EditOutlined style={{ color: "#004C91", fontSize: "16px" }} />
+                        <h3 style={{ fontWeight: 600, fontSize: "16px", color: "#0F172A", margin: 0 }}>
+                          {userData?.user_role === "care_taker" || isAdminUser(userData)
+                            ? "Reschedule / Assign Appointment"
+                            : "Appointment Action"}
+                        </h3>
+                      </div>
+
+                      <Form
+                        form={assignForm}
+                        layout="vertical"
+                        onFinish={assignAppointment}
+                      >
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                          <Form.Item
+                            name="docId"
+                            label={<span style={{ fontWeight: 500, color: "#334155" }}>Assigned Doctor</span>}
+                            rules={[{ required: true, message: "Please select a doctor" }]}
+                          >
+                            <Select placeholder="Select doctor" style={{ width: "100%" }}>
+                              {doctors &&
+                                doctors.length > 0 &&
+                                doctors.map((doctor) => (
+                                  <Option key={doctor.id} value={doctor.id}>
+                                    Dr. {doctor.user?.first_name} {doctor.user?.last_name}
+                                  </Option>
+                                ))}
+                            </Select>
+                          </Form.Item>
+
+                          <Form.Item
+                            name="appointment_date"
+                            label={<span style={{ fontWeight: 500, color: "#334155" }}>New Date</span>}
+                            rules={[{ required: true, message: "Please select a date" }]}
+                          >
+                            <DatePicker
+                              format="YYYY-MM-DD"
+                              placeholder="Select date"
+                              style={{ width: "100%" }}
+                            />
+                          </Form.Item>
+
+                          <Form.Item
+                            name="appointment_time"
+                            label={<span style={{ fontWeight: 500, color: "#334155" }}>New Time</span>}
+                            rules={[{ required: true, message: "Please select a time" }]}
+                          >
+                            <TimePicker
+                              format="hh:mm A"
+                              placeholder="Select time"
+                              style={{ width: "100%" }}
+                              use12Hours
+                            />
+                          </Form.Item>
+                        </div>
 
                         <Form.Item
                           name="care_taker_notes"
-                          label="Care Taker Notes"
+                          label={<span style={{ fontWeight: 500, color: "#334155" }}>Care Team Notes / Instructions</span>}
                         >
-                          <Input.TextArea rows={2} placeholder="Enter notes" />
+                          <Input.TextArea rows={2} placeholder="Add any special instructions or clinical notes..." style={{ borderRadius: "6px" }} />
                         </Form.Item>
-                        <Form.Item>
-                          <Button type="primary" htmlType="submit">
-                            Book Appointment
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                          <Button onClick={handleCloseModal} style={{ borderRadius: "6px", padding: "0 20px", fontWeight: 500 }}>
+                            Cancel
                           </Button>
-                        </Form.Item>
+                          <Button
+                            type="primary"
+                            htmlType="submit"
+                            style={{
+                              background: "linear-gradient(135deg, #004C91 0%, #0066C0 100%)",
+                              borderColor: "#004C91",
+                              borderRadius: "6px",
+                              padding: "0 24px",
+                              fontWeight: 500,
+                              boxShadow: "0 2px 6px rgba(0, 76, 145, 0.25)",
+                            }}
+                          >
+                            Update Appointment
+                          </Button>
+                        </div>
                       </Form>
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <p>No appointment selected.</p>
                 )}
@@ -1249,6 +1479,45 @@ export default function Appointments() {
           {/* <Form.Item name="depId" hidden>
             <Input type="hidden" />
           </Form.Item> */}
+
+          <Form.Item
+            name="sponsorId"
+            label={
+              <span
+                style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
+              >
+                Sponsor
+              </span>
+            }
+          >
+            <Select placeholder="Select Sponsor" allowClear>
+              {sponsors?.map((sponsor) => (
+                <Option key={sponsor.id} value={sponsor.id}>
+                  {sponsor.user?.first_name} {sponsor.user?.last_name} (
+                  {sponsor.user?.email || `ID: ${sponsor.id}`})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="patientId"
+            label={
+              <span
+                style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
+              >
+                Patient
+              </span>
+            }
+          >
+            <Select placeholder="Select Patient" allowClear>
+              {patients?.map((patient) => (
+                <Option key={patient.id} value={patient.id}>
+                  {patient.patient_name} (Age: {patient.age || "N/A"})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
           <Form.Item
             label={

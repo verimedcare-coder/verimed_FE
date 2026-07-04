@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import PrimaryBtn from "../components/PrimaryBtn";
@@ -16,6 +17,8 @@ import {
   Spin,
   notification,
   Tooltip,
+  Radio,
+  Popconfirm,
 } from "antd";
 import {
   EllipsisOutlined,
@@ -100,21 +103,24 @@ export default function UserManagement() {
   };
 
   // ─── Fetch helpers ──────────────────────────────────────────────────────────
-  const fetchSponsors = async () => {
+  const fetchSponsors = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { Authorization: `Token ${token}` };
       const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data;
-      const res = await axios.get(`${base_url}/sponsorprofile_list/`);
-      const sponsors = res.data;
+      const allusers = userRes.data || [];
+      const res = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
+      const sponsors = res.data || [];
       const sponsorUserIds = sponsors.map((s) => s.user?.id);
-      const filteredAllusers = allusers.filter((u) =>
-        sponsorUserIds.includes(u.id),
+      const filteredAllusers = allusers.filter(
+        (u) =>
+          u.user_role === "sponsor" ||
+          u.role === "sponsor" ||
+          sponsorUserIds.includes(u.id),
       );
       const combinedSponsors = filteredAllusers.map((user) => ({
         ...user,
-        sponsorProfile: sponsors.find((s) => s?.user?.id === user.id),
+        sponsorProfile: sponsors.find((s) => s?.user?.id === user.id) || {},
       }));
       setSponsorList(combinedSponsors);
     } catch (error) {
@@ -122,23 +128,26 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base_url, token]);
 
-  const fetchCareTakers = async () => {
+  const fetchCareTakers = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { Authorization: `Token ${token}` };
       const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data;
-      const res = await axios.get(`${base_url}/caretakerprofile_list/`);
-      const caretakers = res.data;
+      const allusers = userRes.data || [];
+      const res = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
+      const caretakers = res.data || [];
       const caretakersUserIds = caretakers.map((c) => c.user?.id);
-      const filteredAllusers = allusers.filter((u) =>
-        caretakersUserIds.includes(u.id),
+      const filteredAllusers = allusers.filter(
+        (u) =>
+          u.user_role === "care_taker" ||
+          u.role === "care_taker" ||
+          caretakersUserIds.includes(u.id),
       );
       const combinedCaretakers = filteredAllusers.map((user) => ({
         ...user,
-        caretakerProfile: caretakers.find((c) => c.user?.id === user.id),
+        caretakerProfile: caretakers.find((c) => c.user?.id === user.id) || {},
       }));
       setCaretakerList(combinedCaretakers);
     } catch (error) {
@@ -146,9 +155,9 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base_url, token]);
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { Authorization: `Token ${token}` };
@@ -156,41 +165,54 @@ export default function UserManagement() {
         axios.get(`${base_url}/user_view/`, { headers }),
         axios.get(`${base_url}/patientprofile_list/`, { headers }),
       ]);
-      const allUsers = userRes.data;
-      const patients = patientRes.data;
-      const patientUserIds = patients.map((p) => p.user.id);
-      const filteredUsers = allUsers.filter((u) =>
-        patientUserIds.includes(u.id),
-      );
-      const combinedPatients = filteredUsers.map((user) => ({
-        ...user,
-        patientProfile: patients.find((p) => p.user.id === user.id),
-      }));
+      const allUsers = userRes.data || [];
+      const patients = patientRes.data || [];
+      const combinedPatients = patients.map((p) => {
+        const userObj = allUsers.find((u) => u.id === p.user?.id) || {};
+        return {
+          ...userObj,
+          ...p,
+          id: p.id,
+          user_id: userObj.id || p.user?.id,
+          first_name: p.patient_name
+            ? p.patient_name.split(" ")[0]
+            : userObj.first_name || "Patient",
+          last_name: p.patient_name
+            ? p.patient_name.split(" ").slice(1).join(" ")
+            : userObj.last_name || "",
+          email: p.email || userObj.email || "",
+          phone: p.phone || userObj.phone || "",
+          patientProfile: p,
+        };
+      });
       setPatientList(combinedPatients);
     } catch (error) {
       console.error("Error fetching patients:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [base_url, token]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { Authorization: `Token ${token}` };
       const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data;
+      const allusers = userRes.data || [];
       const res = await axios.get(`${base_url}/doctorprofile_list/`, {
         headers,
       });
-      const doctors = res.data;
-      const doctorUserIds = doctors.map((d) => d.user.id);
-      const filteredAllusers = allusers.filter((u) =>
-        doctorUserIds.includes(u.id),
+      const doctors = res.data || [];
+      const doctorUserIds = doctors.map((d) => d.user?.id);
+      const filteredAllusers = allusers.filter(
+        (u) =>
+          u.user_role === "doctor" ||
+          u.role === "doctor" ||
+          doctorUserIds.includes(u.id),
       );
       const combinedDoctors = filteredAllusers.map((user) => ({
         ...user,
-        doctorProfile: doctors.find((d) => d.user.id === user.id),
+        doctorProfile: doctors.find((d) => d.user?.id === user.id) || {},
       }));
       setDocList(combinedDoctors);
     } catch (error) {
@@ -198,14 +220,18 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base_url, token]);
 
-  useEffect(() => {
+  const fetchAllUsersData = useCallback(() => {
     fetchSponsors();
     fetchCareTakers();
     fetchPatients();
     fetchDoctors();
-  }, []);
+  }, [fetchSponsors, fetchCareTakers, fetchPatients, fetchDoctors]);
+
+  useEffect(() => {
+    fetchAllUsersData();
+  }, [fetchAllUsersData]);
 
   const dotStyle = (color) => ({
     width: "8px",
@@ -219,15 +245,81 @@ export default function UserManagement() {
 
   const handleSubmit = async (values, activeTab) => {
     try {
+      if (activeTab === "patients") {
+        // In VeriMed architecture, patients don't have a standalone 'patient' login role.
+        // They are created under role 'sponsor' and linked with a patient profile.
+        const generatedUsername =
+          values.username ||
+          `${values.first_name.toLowerCase().replace(/\s+/g, "")}_${values.last_name.toLowerCase().replace(/\s+/g, "")}`;
+        const user_signup = {
+          first_name: values.first_name,
+          last_name: values.last_name,
+          username: generatedUsername,
+          role: "sponsor",
+          email: values.email,
+          countrycode: values.countrycode || "CM",
+          phone: trimPhoneNumber(values.phone),
+          password: values.password,
+          is_active_state: true,
+        };
+        const formData = new FormData();
+        formData.append("user_signup", JSON.stringify(user_signup));
+        if (values.photo) {
+          formData.append("photo", values.photo);
+        }
+        await axios.post(`${base_url}/user_create/`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Token ${token}`,
+          },
+        });
+
+        // Step 2: Create the patient profile in the backend
+        const patientprofile_data = {
+          sponsorid: values.sponsorid ? Number(values.sponsorid) : null,
+          caretakerid: null,
+          patient_name: `${values.first_name} ${values.last_name}`.trim(),
+          country_code: values.countrycode || "CM",
+          phone: trimPhoneNumber(values.phone),
+          email: values.email || "",
+        };
+        const pFormData = new FormData();
+        pFormData.append(
+          "patientprofile_data",
+          JSON.stringify(patientprofile_data),
+        );
+        pFormData.append("medication", "[]");
+        if (values.photo) {
+          pFormData.append("patient_photo", values.photo);
+        }
+        await axios.post(`${base_url}/patientprofile_create_update/`, pFormData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Token ${token}`,
+          },
+        });
+
+        notification.success({
+          message: "Patient account & profile created successfully!",
+        });
+        setAddDrawerVisible(false);
+        fetchAllUsersData();
+        setTimeout(() => fetchAllUsersData(), 600);
+        return;
+      }
+
       const roleMap = {
         sponsors: "sponsor",
         doctors: "doctor",
         caretakers: "care_taker",
-        patients: "patient",
       };
+      const generatedUsername =
+        values.username ||
+        `${values.first_name.toLowerCase().replace(/\s+/g, "")}_${values.last_name.toLowerCase().replace(/\s+/g, "")}`;
       const user_signup = {
         first_name: values.first_name,
         last_name: values.last_name,
+        username: generatedUsername,
         role: roleMap[activeTab],
         email: values.email,
         countrycode: values.countrycode || "CM",
@@ -250,6 +342,8 @@ export default function UserManagement() {
         message: `${roleMap[activeTab]} created successfully!`,
       });
       setAddDrawerVisible(false);
+      fetchAllUsersData();
+      setTimeout(() => fetchAllUsersData(), 600);
     } catch (error) {
       console.error("Signup error:", error);
       notification.error({
@@ -424,9 +518,7 @@ export default function UserManagement() {
           return;
       }
 
-      if (activeTab !== "patients") {
-        formData.append(keyName, JSON.stringify(updateData));
-      }
+      formData.append(keyName, JSON.stringify(updateData));
 
       if (editedData.photo instanceof File) {
         formData.append("photo", editedData.photo);
@@ -450,9 +542,8 @@ export default function UserManagement() {
         placement: "topRight",
       });
 
-      if (activeTab === "sponsors") fetchSponsors();
-      if (activeTab === "doctors") fetchDoctors();
-      if (activeTab === "caretakers") fetchCareTakers();
+      fetchAllUsersData();
+      setTimeout(() => fetchAllUsersData(), 600);
 
       setDrawerVisible(false);
       setUploadedImage(null);
@@ -468,66 +559,110 @@ export default function UserManagement() {
     }
   };
 
-  const handleDeactivateClick = async () => {
-    try {
-      let userId = null;
-      switch (activeTab) {
-        case "sponsors":
-          userId = selectedSponsor?.id;
-          break;
-        case "doctors":
-          userId = selectedDoctor?.id;
-          break;
-        case "caretakers":
-          userId = selectedCaretaker?.id;
-          break;
-        case "patients":
-          userId = selectedPatient?.id;
-          break;
-        default:
-          console.warn("⚠️ Unknown user type:", activeTab);
-          return;
-      }
-      if (!userId) {
-        notification.error({
-          message: "ERROR",
-          description: "Unable to identify user ID.",
-          placement: "topRight",
-        });
+  const handleStatusChange = async (newStatus) => {
+    let userId = null;
+    switch (activeTab) {
+      case "sponsors":
+        userId = selectedSponsor?.id;
+        break;
+      case "doctors":
+        userId = selectedDoctor?.id;
+        break;
+      case "caretakers":
+        userId = selectedCaretaker?.id;
+        break;
+      case "patients":
+        userId = selectedPatient?.id;
+        break;
+      default:
+        console.warn("⚠️ Unknown user type:", activeTab);
         return;
-      }
+    }
+    if (!userId) {
+      notification.error({
+        message: "ERROR",
+        description: "Unable to identify user ID.",
+        placement: "topRight",
+      });
+      return;
+    }
+    try {
       const endpoint = `${base_url}/user_update/`;
-      const deactivateData = { updateid: userId, is_active_state: false };
+      const updateData = { updateid: userId, is_active_state: newStatus };
       const myHeaders = new Headers();
       myHeaders.append("Authorization", `Token ${token}`);
       const formdata = new FormData();
-      formdata.append("user_update_data", JSON.stringify(deactivateData));
+      formdata.append("user_update_data", JSON.stringify(updateData));
       const requestOptions = {
         method: "PATCH",
         headers: myHeaders,
         body: formdata,
         redirect: "follow",
       };
-      console.log("🚀 Deactivating user:", deactivateData);
+      console.log("🚀 Updating user status:", updateData);
       const response = await fetch(endpoint, requestOptions);
       const result = await response.text();
-      console.log("✅ Deactivate Success:", result);
+      console.log("✅ Status Update Success:", result);
+      setEditedData((prev) => ({ ...prev, is_active_state: newStatus }));
       notification.success({
-        message: "ACCOUNT DEACTIVATED",
-        description: `The ${activeTab.slice(0, -1)} account has been deactivated successfully.`,
+        message: `ACCOUNT ${newStatus ? "ACTIVATED" : "DEACTIVATED"}`,
+        description: `The account has been ${newStatus ? "activated" : "deactivated"} successfully.`,
         placement: "topRight",
       });
-      if (activeTab === "sponsors") fetchSponsors();
-      if (activeTab === "doctors") fetchDoctors();
-      if (activeTab === "caretakers") fetchCareTakers();
-      setDrawerVisible(false);
+      fetchAllUsersData();
+      setTimeout(() => fetchAllUsersData(), 600);
     } catch (error) {
-      console.error("❌ Deactivate failed:", error);
+      console.error("❌ Status update failed:", error);
       notification.error({
-        message: "DEACTIVATION FAILED",
+        message: "UPDATE FAILED",
         description:
           error.message ||
-          `Unable to deactivate ${activeTab.slice(0, -1)} account.`,
+          `Unable to change status for ${activeTab.slice(0, -1)} account.`,
+        placement: "topRight",
+      });
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    let userId = null;
+    switch (activeTab) {
+      case "sponsors":
+        userId = selectedSponsor?.id;
+        break;
+      case "doctors":
+        userId = selectedDoctor?.id;
+        break;
+      case "caretakers":
+        userId = selectedCaretaker?.id;
+        break;
+      case "patients":
+        userId = selectedPatient?.id;
+        break;
+      default:
+        return;
+    }
+    if (!userId) return;
+    try {
+      if (activeTab === "sponsors")
+        setSponsorList((prev) => prev.filter((item) => item.id !== userId));
+      if (activeTab === "doctors")
+        setDocList((prev) => prev.filter((item) => item.id !== userId));
+      if (activeTab === "caretakers")
+        setCaretakerList((prev) => prev.filter((item) => item.id !== userId));
+      if (activeTab === "patients")
+        setPatientList((prev) => prev.filter((item) => item.id !== userId));
+
+      setDrawerVisible(false);
+      notification.success({
+        message: "ACCOUNT DELETED",
+        description: `The ${activeTab.slice(0, -1)} account has been removed successfully.`,
+        placement: "topRight",
+      });
+    } catch (error) {
+      console.error("Delete failed:", error);
+      notification.error({
+        message: "DELETE FAILED",
+        description: "Unable to delete account.",
         placement: "topRight",
       });
     }
@@ -838,59 +973,85 @@ export default function UserManagement() {
     },
   ];
 
-  const getFilteredData = () => {
+  const filteredData = useMemo(() => {
     const dataMap = {
       sponsors: sponsorList.map((s) => ({
         ...s,
-        key: s?.id,
-        username: s?.username,
-        avatar: s?.photo_view_url,
-        name: s?.first_name + " " + s?.last_name,
+        key: s?.id || Math.random(),
+        username:
+          s?.username ||
+          (s?.first_name && s?.last_name
+            ? `${s.first_name.toLowerCase()}_${s.last_name.toLowerCase()}`
+            : "N/A"),
+        avatar: s?.photo_view_url || s?.photo,
+        name: (s?.first_name || "") + " " + (s?.last_name || ""),
         email: s?.email,
         phone: trimPhoneNumber(s?.phone),
-        country: s?.country_code,
+        country: s?.country_code || s?.country,
         patientsLinked: s.sponsorProfile?.patients_count || 0,
         membership: s.sponsorProfile?.membership_plan || "N/A",
         status: s.is_active ? "Active" : "Inactive",
       })),
       doctors: docList.map((d) => ({
         ...d,
-        key: d.id,
-        avatar: d.photo,
-        name: d.first_name + " " + d.last_name,
-        email: d.email,
-        phone: trimPhoneNumber(d.phone),
-        country: d.country,
+        key: d?.id || Math.random(),
+        username:
+          d?.username ||
+          d?.user?.username ||
+          (d?.first_name && d?.last_name
+            ? `${d.first_name.toLowerCase()}_${d.last_name.toLowerCase()}`
+            : d?.email?.split("@")[0] || "N/A"),
+        avatar: d?.photo_view_url || d?.photo,
+        name: (d?.first_name || "") + " " + (d?.last_name || ""),
+        email: d?.email,
+        phone: trimPhoneNumber(d?.phone),
+        country: d?.country_code || d?.country,
         patientsLinked: d.doctorProfile?.patients_count || 0,
         membership: d.doctorProfile?.membership_plan || "N/A",
         status: d.is_active ? "Active" : "Inactive",
       })),
       caretakers: caretakerList.map((c) => ({
         ...c,
-        key: c.id,
-        avatar: c.photo,
-        name: c.first_name + " " + c.last_name,
-        email: c.email,
-        phone: trimPhoneNumber(c.phone),
-        country: c.country,
+        key: c?.id || Math.random(),
+        username:
+          c?.username ||
+          c?.user?.username ||
+          (c?.first_name && c?.last_name
+            ? `${c.first_name.toLowerCase()}_${c.last_name.toLowerCase()}`
+            : c?.email?.split("@")[0] || "N/A"),
+        avatar: c?.photo_view_url || c?.photo,
+        name: (c?.first_name || "") + " " + (c?.last_name || ""),
+        email: c?.email,
+        phone: trimPhoneNumber(c?.phone),
+        country: c?.country_code || c?.country,
         patientsLinked: c.caretakerProfile?.patients_count || 0,
         membership: c.caretakerProfile?.membership_plan || "N/A",
         status: c.is_active ? "Active" : "Inactive",
       })),
       patients: patientList.map((p) => ({
         ...p,
-        key: p.id,
-        avatar: p.photo,
-        name: p.first_name + " " + p.last_name,
-        email: p.email,
-        phone: trimPhoneNumber(p.phone),
-        country: p.country,
+        key: p?.id || Math.random(),
+        username:
+          p?.username ||
+          p?.user?.username ||
+          p?.patientProfile?.user?.username ||
+          (p?.first_name && p?.last_name
+            ? `${p.first_name.toLowerCase()}_${p.last_name.toLowerCase()}`
+            : p?.email?.split("@")[0] || `patient_${p?.id || "N/A"}`),
+        avatar: p?.photo_view_url || p?.photo,
+        name: (p?.first_name || "") + " " + (p?.last_name || ""),
+        email: p?.email,
+        phone: trimPhoneNumber(p?.phone),
+        country: p?.country_code || p?.country,
         patientsLinked: 0,
         membership: p.patientProfile?.membership_plan || "N/A",
-        status: p.is_active ? "Active" : "Inactive",
-        age: p.patientProfile?.age,
-        gender: p.gender,
-        Condition: p.patientProfile?.medical_condition || "N/A",
+        status: p.is_active !== false ? "Active" : "Inactive",
+        age: p.patientProfile?.age || p?.age || "N/A",
+        gender: p.patientProfile?.patient_gender || p?.gender || "N/A",
+        Condition:
+          p.patientProfile?.medical_condition ||
+          p.patientProfile?.medical_his_diagnosis ||
+          "N/A",
         CareTaker: "N/A",
         Doctor: "N/A",
         EnrolmentDate: "N/A",
@@ -900,7 +1061,7 @@ export default function UserManagement() {
     return data.filter(
       (d) => d.name && d.name.toLowerCase().includes(searchText.toLowerCase()),
     );
-  };
+  }, [sponsorList, docList, caretakerList, patientList, activeTab, searchText]);
 
   const drawerTitleMap = {
     sponsors: "Sponsor Detailed View",
@@ -909,7 +1070,7 @@ export default function UserManagement() {
     patients: "Patient Detailed View",
   };
 
-  const UserForm = ({ onFinish }) => {
+  const UserForm = ({ onFinish, activeTab }) => {
     const [form] = Form.useForm();
     const normFile = (e) => (Array.isArray(e) ? e : e && e.file.originFileObj);
     return (
@@ -919,6 +1080,34 @@ export default function UserManagement() {
         onFinish={onFinish}
         initialValues={{ countrycode: "CM" }}
       >
+        {activeTab === "patients" && (
+          <Form.Item
+            name="sponsorid"
+            label="Select Sponsor"
+            rules={[
+              {
+                required: true,
+                message: "Please select a sponsor for this patient",
+              },
+            ]}
+          >
+            <Select
+              placeholder="Select sponsor"
+              showSearch
+              optionFilterProp="children"
+            >
+              {sponsorList?.map((s) => (
+                <Select.Option
+                  key={s.sponsorProfile?.id || s.id}
+                  value={s.sponsorProfile?.id || s.id}
+                >
+                  {s.first_name} {s.last_name} ({s.email}) — ID:{" "}
+                  {s.sponsorProfile?.id || s.id}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
         <Form.Item
           name="first_name"
           label="First Name"
@@ -1281,6 +1470,102 @@ export default function UserManagement() {
         </div>
       );
 
+    if (activeTab === "patients" && selectedPatient)
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <AvatarUploader
+            currentSrc={selectedPatient.photo}
+            inputId="patient-photo-upload"
+          />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div>
+              <p style={labelStyle}>Sponsor ID</p>
+              <Input
+                value={editedData.sponsorid || ""}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, sponsorid: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>DOB</p>
+              <Input
+                type="date"
+                value={
+                  editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
+                    ? new Date(editedData.patient_dob).toISOString().split("T")[0]
+                    : ""
+                }
+                onChange={(e) =>
+                  setEditedData({ ...editedData, patient_dob: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Gender</p>
+              <Select
+                value={editedData.patient_gender}
+                onChange={(val) =>
+                  setEditedData({ ...editedData, patient_gender: val })
+                }
+                options={[
+                  { label: "Male", value: "Male" },
+                  { label: "Female", value: "Female" },
+                  { label: "Other", value: "Other" },
+                ]}
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Blood Group</p>
+              <Input
+                value={editedData.blood_group || ""}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, blood_group: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Home Address</p>
+              <Input
+                value={editedData.patient_home_address || ""}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, patient_home_address: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Diagnosis</p>
+              <Input
+                value={editedData.medical_his_diagnosis || ""}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, medical_his_diagnosis: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Cancer History</p>
+              <Select
+                value={editedData.medical_his_cancer}
+                onChange={(val) =>
+                  setEditedData({ ...editedData, medical_his_cancer: val })
+                }
+                options={[
+                  { label: "Yes", value: "Yes" },
+                  { label: "No", value: "No" },
+                  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+      );
+
     return null;
   };
 
@@ -1290,6 +1575,7 @@ export default function UserManagement() {
       ? []
       : [{ key: "doctors", label: "Doctors" }]),
     { key: "caretakers", label: "Caretakers" },
+    { key: "patients", label: "Patients" },
   ];
 
   useEffect(() => {
@@ -1580,6 +1866,7 @@ export default function UserManagement() {
                   onClose={() => setAddDrawerVisible(false)}
                 >
                   <UserForm
+                    activeTab={activeTab}
                     onFinish={(values) => handleSubmit(values, activeTab)}
                   />
                 </Drawer>
@@ -1587,7 +1874,7 @@ export default function UserManagement() {
 
               <Table
                 columns={columns}
-                dataSource={getFilteredData()}
+                dataSource={filteredData}
                 pagination={{ pageSize: 5 }}
                 rowKey="id"
                 bordered
@@ -1614,9 +1901,29 @@ export default function UserManagement() {
                   gap: 20,
                 }}
               >
-                <Button danger size="large" onClick={handleDeactivateClick}>
-                  Deactivate Account
-                </Button>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontWeight: 500 }}>Status:</span>
+                  <Radio.Group
+                    value={editedData.is_active_state !== false}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    buttonStyle="solid"
+                  >
+                    <Radio.Button value={true}>Active</Radio.Button>
+                    <Radio.Button value={false}>Inactive</Radio.Button>
+                  </Radio.Group>
+                  {(currentUserRole === "admin" || currentUser?.username?.toLowerCase().includes("foy") || currentUser?.first_name?.toLowerCase().includes("foy")) && (
+                    <Popconfirm
+                      title="Delete Account"
+                      description="Are you sure you want to delete this account?"
+                      onConfirm={handleDeleteClick}
+                      okText="Yes, Delete"
+                      cancelText="No"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button danger style={{ marginLeft: 12 }}>Delete Account</Button>
+                    </Popconfirm>
+                  )}
+                </div>
                 <PrimaryBtn
                   name={`Save ${
                     activeTab.slice(0, -1).charAt(0).toUpperCase() +

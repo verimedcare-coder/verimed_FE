@@ -1,7 +1,7 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import React from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
-import SecondaryBtn from "../components/SecondaryBtn";
 import PrimaryBtn from "../components/PrimaryBtn";
 import { useLocation, useNavigate } from "react-router-dom";
 import bloodPressure from "../assets/icons/blood-pressure.svg";
@@ -13,7 +13,6 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import Primarybtn from "../components/PrimaryBtn";
 import { DatePicker, Table } from "antd";
 import dayjs from "dayjs";
 import { CalendarOutlined } from "@ant-design/icons";

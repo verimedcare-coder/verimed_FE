@@ -1,5 +1,5 @@
 import React from "react";
-import bannerImage from "../assets/images/banner-img.png";
+import BannerIllustration from "./BannerIllustration";
 import Profile1 from "../assets/images/banner-profile1.png";
 import Profile2 from "../assets/images/banner-profile2.png";
 import Profile3 from "../assets/images/banner-profile3.png";
@@ -97,7 +97,7 @@ export default function Banner({ hideButtons = false }) {
               fontWeight: 500,
             }}
           >
-            +100 doctors
+            +10 doctors
           </span>
         </div>
 
@@ -125,17 +125,7 @@ export default function Banner({ hideButtons = false }) {
           justifyContent: "flex-end",
         }}
       >
-        <img
-          src={bannerImage}
-          alt="Doctors"
-          style={{
-            height: "228px",
-            width: 295,
-            top: "40px",
-            position: "relative",
-            zIndex: 2,
-          }}
-        />
+        <BannerIllustration />
       </div>
     </div>
   );

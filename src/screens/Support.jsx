@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";

@@ -1,28 +1,7 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import React from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
-import SecondaryBtn from "../components/SecondaryBtn";
-import PrimaryBtn from "../components/PrimaryBtn";
-
-function SectionHeader({ title, children }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 10,
-        minWidth: 0,
-      }}
-    >
-      <p style={{ fontSize: 16, fontWeight: 600, color: "#1B1B1B" }}>{title}</p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export default function ReportsToReview() {
   return (

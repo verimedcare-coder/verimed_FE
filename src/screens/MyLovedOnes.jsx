@@ -136,9 +136,13 @@ export default function MyLovedOnes() {
 
   const fetchPatientDetails = async () => {
     try {
+      const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
+      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
+        return;
+      }
       const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
       const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorid: sponsorId };
+      const payload = { sponsorid: Number(storedSponsorId) };
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
       const selectedPatient = patients.find(
