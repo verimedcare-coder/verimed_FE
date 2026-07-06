@@ -3776,8 +3776,8 @@ export default function Overview() {
                                   e.currentTarget.querySelector(".date-box");
                                 // dateBox.style.background = "#FFFFFF";
                                 // dateBox.style.color = "#000";
-                                dateBox.style.background = "#004C91"; // keep blue for secondary cards
-                                dateBox.style.color = "#fff"; // white text on blue
+                                dateBox.style.background = "#004C91";
+                                dateBox.style.color = "#fff";
                               }
                             }}
                           >
