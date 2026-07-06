@@ -26,7 +26,7 @@ import { useState } from "react";
 import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
-import { isAdminUser } from "../constants/constants";
+import { isAdminUser, base_url } from "../constants/constants";
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -157,22 +157,30 @@ export default function CustomSider() {
   const handleEditClick = () => {
     if (!user) return;
 
+    const storedPhone = user.phone || "";
+    const phoneVal = storedPhone.includes("-")
+      ? storedPhone.split("-")[1]
+      : storedPhone;
+    const countryVal =
+      user.countrycode ||
+      (storedPhone.includes("-") ? storedPhone.split("-")[0] : "IN");
+
     form.setFieldsValue({
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
-      // split stored phone (eg "IN-9876543210")
-      phone: user.phone?.split("-")[1] || "",
-      countrycode: user.countrycode || user.phone?.split("-")[0] || "IN",
+      phone: phoneVal,
+      countrycode: countryVal,
     });
 
-    if (user.photo_view_url) {
+    const currentPhoto = user.photo_view_url || user.photo;
+    if (currentPhoto) {
       setFileList([
         {
           uid: "-1",
           name: "profile.png",
           status: "done",
-          url: user.photo_view_url,
+          url: currentPhoto,
         },
       ]);
     } else {
@@ -182,7 +190,6 @@ export default function CustomSider() {
     setIsModalOpen(true);
   };
 
-  const base_url = "https://verimedramja.pythonanywhere.com/verimed/";
   const handleUpdate = async (values) => {
     try {
       const token = localStorage.getItem("token");
@@ -202,46 +209,95 @@ export default function CustomSider() {
 
       if (fileList[0]?.originFileObj) {
         formData.append("photo", fileList[0].originFileObj);
+        formData.append("user_photo", fileList[0].originFileObj);
       }
 
-      await axios.patch(`${base_url}/user_update/`, formData, {
+      const res = await axios.patch(`${base_url}/user_update/`, formData, {
         headers: {
           Authorization: `Token ${token}`,
         },
       });
 
-      notification.success({ message: "Profile updated successfully" });
-      notification.info({
-        message: "Session expired",
-        description: "Please log in again to continue",
+      notification.success({
+        message: "Profile and photo updated successfully!",
       });
-      // setIsModalOpen(false);
-      localStorage.removeItem("token");
-      navigate("/", {
-        state: {
-          message: "Session expired. Please log in again.",
-        },
-      });
+      const updatedUser = {
+        ...user,
+        ...(typeof res?.data === "object" ? res.data : {}),
+        ...values,
+      };
+      const newPhotoUrl =
+        res?.data?.photo_view_url || res?.data?.photo || res?.data?.user_photo;
+      if (newPhotoUrl) {
+        updatedUser.photo_view_url = newPhotoUrl;
+        updatedUser.photo = newPhotoUrl;
+      }
+      localStorage.setItem("userData", JSON.stringify(updatedUser));
+      localStorage.setItem("photoUpdatedTime", Date.now().toString());
+
+      try {
+        const userRes = await axios.get(`${base_url}/user_view/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        if (Array.isArray(userRes?.data)) {
+          const freshUser = userRes.data.find((u) => u.id === user.id);
+          if (freshUser) {
+            localStorage.setItem("userData", JSON.stringify(freshUser));
+          }
+        }
+      } catch (e) {
+        console.error("Error refreshing user view:", e);
+      }
+
+      try {
+        const sponsorRes = await axios.get(`${base_url}/sponsorprofile_list/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        if (Array.isArray(sponsorRes?.data)) {
+          const matchedSponsor = sponsorRes.data.find(
+            (s) => s.user?.id === user.id,
+          );
+          if (matchedSponsor) {
+            localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
+          }
+        }
+      } catch (e) {
+        console.error("Error refreshing sponsor list:", e);
+      }
+
+      setIsModalOpen(false);
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
     } catch (err) {
       notification.error({
         message: "Update failed",
-        description: err.response?.data || "Something went wrong",
+        description:
+          err.response?.data?.detail ||
+          err.response?.data ||
+          "Something went wrong",
       });
+    } finally {
+      // Completed update request
     }
   };
 
   const getPhotoUrl = (url) => {
     // Guard against null/undefined url
     if (!url) return Profile;
-    if (url?.startsWith("http")) return url;
-
-    url = url.replace(/^\/media\/+/i, "/");
-
-    const base = base_url.replace(/\/+$/, "");
-    const cleanedUrl = url.replace(/^\/+/, "");
-
-    const finalUrl = `${base}/${cleanedUrl}`;
-
+    let finalUrl = url;
+    if (!url?.startsWith("http")) {
+      url = url.replace(/^\/media\/+/i, "/");
+      const base = base_url.replace(/\/+$/, "");
+      const cleanedUrl = url.replace(/^\/+/, "");
+      finalUrl = `${base}/${cleanedUrl}`;
+    }
+    const timestamp = localStorage.getItem("photoUpdatedTime");
+    if (timestamp && finalUrl.includes("/media/") && !finalUrl.includes("?t=")) {
+      finalUrl = finalUrl.includes("?")
+        ? `${finalUrl}&t=${timestamp}`
+        : `${finalUrl}?t=${timestamp}`;
+    }
     return finalUrl;
   };
 
@@ -290,7 +346,7 @@ export default function CustomSider() {
         >
           {/* Edit Icon */}
 
-          <Avatar src={getPhotoUrl(user?.photo_view_url)} size={67} />
+          <Avatar src={getPhotoUrl(user?.photo_view_url || user?.photo)} size={67} />
 
           <div style={{ marginTop: 10 }}>
             <Text strong style={{ fontSize: 16, display: "block" }}>

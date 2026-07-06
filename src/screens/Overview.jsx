@@ -68,12 +68,15 @@ export default function Overview() {
     } catch (error) {
       console.error(error);
       message.error("Failed to delete appointment");
+    } finally {
+      // Completed delete appointment
     }
   };
 
   const showPatientDetails = (record) => {
-    setSelectedPatientRow(record);
-    setIsPatientModalVisible(true);
+    navigate("/view_patient_details", {
+      state: { appointmentData: record.fullData || record },
+    });
   };
 
   const handlePatientModalClose = () => {
@@ -91,6 +94,9 @@ export default function Overview() {
       setAppointmentList(res.data);
     } catch (error) {
       console.log(error);
+      message.error("Failed to load appointments");
+    } finally {
+      // Completed fetching appointments
     }
   };
   useEffect(() => {
@@ -130,6 +136,9 @@ export default function Overview() {
       setPatientData(selectedPatient);
     } catch (error) {
       console.error("Error fetching patient details:", error);
+      message.error("Failed to load patient details");
+    } finally {
+      // Completed fetching patient details
     }
   };
 
@@ -157,6 +166,9 @@ export default function Overview() {
         localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
       } catch (error) {
         console.log("Error fetching logged in doctor:", error);
+        message.error("Failed to load doctor profile");
+      } finally {
+        // Completed fetching doctor profile
       }
     };
     fetchLoggedInDoctor();
@@ -197,6 +209,9 @@ export default function Overview() {
         }
       } catch (error) {
         console.error("Error fetching doctor appointments:", error);
+        message.error("Failed to load doctor appointments");
+      } finally {
+        // Completed fetching doctor appointments
       }
     };
 
@@ -216,6 +231,9 @@ export default function Overview() {
       }
     } catch (error) {
       console.error("Error fetching caretaker appointments:", error);
+      message.error("Failed to load caretaker appointments");
+    } finally {
+      // Completed fetching caretaker appointments
     }
   };
 
@@ -491,6 +509,7 @@ export default function Overview() {
 
   const doctorPatientDetailsData = doctorAppointments.length
     ? doctorAppointments.map((appt, index) => ({
+        ...appt,
         key: appt.id || `${appt.patient?.id}-${appt.doc?.id}-${index}`,
         patientName: appt.patient?.patient_name || "N/A",
         patientId: appt.patient?.id ? `ID: ${appt.patient.id}` : "",
@@ -507,10 +526,12 @@ export default function Overview() {
           appt.appointment_reason ||
           "N/A",
         type: appt.appointment_type || "N/A",
+        fullData: appt,
       }))
     : patientData
       ? [
           {
+            ...patientData,
             key: patientData.id || "patient-details",
             patientName: patientData.patient_name || "N/A",
             patientId: patientData.id ? `ID: ${patientData.id}` : "",
@@ -519,6 +540,7 @@ export default function Overview() {
             doctor: "N/A",
             condition: patientData.medical_his_diagnosis || "N/A",
             type: "N/A",
+            fullData: patientData,
           },
         ]
       : [];
@@ -738,8 +760,9 @@ export default function Overview() {
             type="link"
             style={{ color: "#B78520", fontWeight: 500, padding: 0 }}
             onClick={() => {
-              setSelectedAppointment(record);
-              setIsModalOpen(true);
+              navigate("/appointments", {
+                state: { openAppointmentId: record.id },
+              });
             }}
           >
             <EditOutlined />
@@ -826,6 +849,9 @@ export default function Overview() {
         await axios.get(endpoint, { headers });
       } catch (error) {
         console.log(error);
+        message.error("Failed to load users");
+      } finally {
+        // Completed fetching users
       }
     };
     fetchUsers();
@@ -908,6 +934,9 @@ export default function Overview() {
         setMedicalReports(reports);
       } catch (error) {
         console.error("Error fetching medical history:", error);
+        message.error("Failed to load medical history");
+      } finally {
+        // Completed fetching medical history
       }
     };
 
@@ -945,7 +974,16 @@ export default function Overview() {
           ? appointment.preferred_times.join(", ")
           : "Unknown"}
       </p>
-      {/* Add more fields as needed */}
+      <div style={{ marginTop: 16 }}>
+        <Primarybtn
+          name="View Patient Details"
+          onClick={() =>
+            navigate("/view_patient_details", {
+              state: { appointmentData: appointment },
+            })
+          }
+        />
+      </div>
     </div>
   );
 
@@ -967,6 +1005,9 @@ export default function Overview() {
         );
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
+        message.error("Failed to load caretaker profile");
+      } finally {
+        // Completed fetching caretaker profile
       }
     };
     fetchCareTakerPatients();
@@ -991,6 +1032,9 @@ export default function Overview() {
         localStorage.setItem("careTakerPatients", JSON.stringify(patients));
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
+        message.error("Failed to load caretaker patients");
+      } finally {
+        // Completed fetching caretaker patients
       }
     };
     fetchCareTakerPatients();
@@ -1991,14 +2035,21 @@ export default function Overview() {
                         }}
                       >
                         <SecondaryBtn
-                          name="Patient Details"
+                          name="Patient Profile"
                           onClick={() =>
                             navigate("/my_patients", {
                               state: { appointmentData: appt },
                             })
                           }
                         />
-                        {/* <Primarybtn name="Visit Patient" onClick={() => {}} /> */}
+                        <Primarybtn
+                          name="View Patient Details"
+                          onClick={() =>
+                            navigate("/view_patient_details", {
+                              state: { appointmentData: appt },
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   );

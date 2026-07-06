@@ -341,6 +341,9 @@ export default function HeaderComponent() {
       }
     } catch (error) {
       console.log("Error fetching sponsor patients:", error);
+      message.error("Failed to load sponsor patients");
+    } finally {
+      // Completed fetching sponsor patients
     }
   };
 
@@ -356,6 +359,7 @@ export default function HeaderComponent() {
       setCaretakerList(res.data || []);
     } catch (error) {
       console.error("Error fetching caretaker list:", error);
+      message.error("Failed to load caretaker list");
     } finally {
       setLoading(false);
     }
@@ -581,6 +585,7 @@ export default function HeaderComponent() {
       ) {
         editedData.patient_upload_files.forEach((file) => {
           formData.append("patient_photo", file.originFileObj || file);
+          formData.append("photo", file.originFileObj || file);
         });
       }
 
@@ -668,10 +673,15 @@ export default function HeaderComponent() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "0 20px",
+          padding: "12px 24px",
           backgroundColor: "#FFFFFF",
-          borderBottom: "1px solid #ddd",
-          fontFamily: "Arial, sans-serif",
+          borderBottom: "1px solid #E5E7EB",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+          height: "auto",
+          minHeight: "68px",
+          lineHeight: "normal",
+          gap: "16px",
+          flexWrap: "nowrap",
         }}
       >
         {loading && (
@@ -692,27 +702,63 @@ export default function HeaderComponent() {
             <Spin tip="Updating..." size="large" />
           </div>
         )}
+
+        {/* Left Side: Responsive Greeting */}
         <div
           style={{
             display: "flex",
-            gap: 8,
-            fontSize: 16,
-            fontWeight: 700,
-            color: "#2E2E2E",
+            flexDirection: "column",
+            justifyContent: "center",
+            minWidth: "140px",
+            flex: "0 1 auto",
+            marginRight: "8px",
+            overflow: "hidden",
           }}
         >
-          <span style={{ fontSize: 18 }}>{user?.username} –</span>
-          <span style={{ fontSize: 18, marginLeft: 4 }}>
-            Welcome Back, {user?.first_name}
-          </span>
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "#1E293B",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Welcome Back, <span style={{ color: "#007F5F" }}>{user?.first_name || user?.username || "User"}</span>!
+          </div>
+          {user?.username && (
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#64748B",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                marginTop: "2px",
+              }}
+            >
+              {user?.username}
+            </div>
+          )}
         </div>
 
-        <Space size="middle" align="center">
+        {/* Right Side: Action Controls */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "nowrap",
+            flexShrink: 0,
+          }}
+        >
           {user.user_role === "sponsor" && (
             <Select
               value={selectedPatient}
               onChange={handlePatientChange}
-              style={{ width: 220, borderRadius: 6 }}
+              style={{ minWidth: 140, width: 180, borderRadius: 8 }}
               placeholder="Select Patient"
               optionLabelProp="label"
             >
@@ -756,18 +802,21 @@ export default function HeaderComponent() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
-                padding: "6px 8px",
+                gap: 6,
+                padding: "6px 10px",
                 cursor: "pointer",
+                borderRadius: "6px",
+                border: "1px solid #E5E7EB",
+                background: "#FAFAFA",
               }}
             >
               <img
                 src={flagIcon}
                 alt="Flag"
-                style={{ width: 20, height: 20 }}
+                style={{ width: 18, height: 18 }}
               />
-              <span style={{ fontSize: 14, color: "#2E2E2E" }}>{language}</span>
-              <DownOutlined style={{ fontSize: 12, color: "#2E2E2E" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{language}</span>
+              <DownOutlined style={{ fontSize: 10, color: "#6B7280" }} />
             </div>
           </Dropdown>
 
@@ -775,17 +824,22 @@ export default function HeaderComponent() {
             <Button
               shape="circle"
               icon={
-                <LogoutOutlined style={{ color: "#FF4545", fontSize: 18 }} />
+                <LogoutOutlined style={{ color: "#FF4545", fontSize: 16 }} />
               }
               style={{
-                backgroundColor: "#FF45451F",
+                backgroundColor: "#FF454514",
                 borderColor: "#FF4545",
                 borderRadius: 8,
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
               onClick={handleLogout}
             />
           </Tooltip>
-        </Space>
+        </div>
       </Header>
 
       {/* patient update modal */}

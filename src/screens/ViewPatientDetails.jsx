@@ -13,9 +13,9 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { DatePicker, Table } from "antd";
+import { DatePicker, Table, Button } from "antd";
 import dayjs from "dayjs";
-import { CalendarOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 
 function SectionHeader({ title, children }) {
   return (
@@ -274,7 +274,26 @@ export default function ViewPatientDetails() {
             alignItems: "center",
           }}
         >
-          {" "}
+          {/* Back Navigation Button */}
+          <div style={{ width: "100%", display: "flex", justifyContent: "flex-start", marginBottom: -10 }}>
+            <Button
+              type="link"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/overview")}
+              style={{
+                color: "#007F5F",
+                fontSize: "15px",
+                fontWeight: 600,
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              Back to Overview
+            </Button>
+          </div>
+
           {/* cards */}
           <div style={vitalsGrid}>
             {vitals.map((item, i) => (
@@ -306,18 +325,41 @@ export default function ViewPatientDetails() {
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              border: "1px solid #EAEAEA",
+              display: "flex",
+              flexDirection: "column",
+              gap: 24,
+              width: "100%",
+            }}
+          >
             <SectionHeader title="My details">
               <PrimaryBtn
-                name="submit reports"
+                name="Edit Report"
                 onClick={() =>
                   navigate("/doctor_form", { state: { appointmentData } })
                 }
               />
             </SectionHeader>
-            <div style={{ display: "flex", gap: "16px" }}>
-              {/* Left - Avatar */}
 
+            {/* Profile Banner */}
+            <div
+              style={{
+                display: "flex",
+                gap: "20px",
+                alignItems: "center",
+                flexWrap: "wrap",
+                background: "#F8FAFC",
+                padding: "18px 24px",
+                borderRadius: "12px",
+                border: "1px solid #F1F5F9",
+              }}
+            >
               <img
                 src={
                   appointmentData
@@ -326,224 +368,83 @@ export default function ViewPatientDetails() {
                 }
                 alt="Profile"
                 style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "12px",
+                  width: "76px",
+                  height: "76px",
+                  borderRadius: "16px",
                   objectFit: "cover",
                   flexShrink: 0,
+                  border: "2px solid #007F5F",
+                  boxShadow: "0 4px 12px rgba(0, 127, 95, 0.15)",
                 }}
               />
-
-              {/* Right - Info Grid */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "14px",
-                }}
-              >
-                {/* Row 1 */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: "10px",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Name
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.name}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Condition
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Condition}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Assigned Doctor
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.AssignedDoctor}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Care Taker
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.CareTaker}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div style={{ borderTop: "1px solid #E5E7EB" }} />
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: "10px",
-                  }}
-                >
-                  {/* Row 3 */}
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Condition(s)
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Conditions}
-                    </div>
-                  </div>
-                  <div>
-                    {" "}
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Assigned Since
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.AssignedSince}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Sponsor Info
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.SponsorInfo}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Sponsor Number
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.SponsorNumber}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ borderTop: "1px solid #E5E7EB" }} />
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: "10px",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Address
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.Address}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Primary Care Taker
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.PrimaryCareTaker}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Assigned Physician
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.AssignedPhysician}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#2E2E2E",
-                        marginBottom: 3,
-                      }}
-                    >
-                      Care Coordinator
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                      {careTeam.CareCoordinator}
-                    </div>
-                  </div>
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: "20px", fontWeight: 700, color: "#1E293B" }}>
+                  {careTeam.name || "Unknown Patient"}
+                </span>
+                <span style={{ fontSize: "14px", color: "#64748B", fontWeight: 500 }}>
+                  Condition:{" "}
+                  <strong style={{ color: "#007F5F" }}>
+                    {careTeam.Condition || "General"}
+                  </strong>
+                </span>
               </div>
+            </div>
+
+            {/* Info Cards Grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {[
+                { label: "Assigned Doctor", value: careTeam.AssignedDoctor },
+                { label: "Care Taker", value: careTeam.CareTaker },
+                { label: "Condition(s)", value: careTeam.Conditions },
+                { label: "Assigned Since", value: careTeam.AssignedSince },
+                { label: "Sponsor Info", value: careTeam.SponsorInfo },
+                { label: "Sponsor Number", value: careTeam.SponsorNumber },
+                { label: "Address", value: careTeam.Address },
+                { label: "Primary Care Taker", value: careTeam.PrimaryCareTaker },
+                { label: "Assigned Physician", value: careTeam.AssignedPhysician },
+                { label: "Care Coordinator", value: careTeam.CareCoordinator },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: "#FAFAFA",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "10px",
+                    padding: "14px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#6B7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#1F2937",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {item.value || "N/A"}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           {/* medical history */}
@@ -799,6 +700,59 @@ export default function ViewPatientDetails() {
                   <p style={timelineDate}>{item.date}</p>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Doctor Visit Reports & Clinical Documentation (#A) */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "12px",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              width: "100%",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              border: "1px solid #007F5F33",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: "#007F5F",
+                    margin: 0,
+                  }}
+                >
+                  Doctor Visit Reports & Clinical Documentation
+                </h3>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#6B7280",
+                    margin: "4px 0 0 0",
+                  }}
+                >
+                  Upload results, medical records, diagnostic images, voice notes, and recorded vitals from this appointment. Submitting will automatically notify the sponsor via email.
+                </p>
+              </div>
+              <PrimaryBtn
+                name="Submit Visit Reports"
+                onClick={() =>
+                  navigate("/doctor_form", { state: { appointmentData } })
+                }
+              />
             </div>
           </div>
         </div>

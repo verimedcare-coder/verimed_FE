@@ -5,7 +5,7 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
 import { base_url } from "../constants/constants";
 import axios from "axios";
-import { Empty } from "antd";
+import { Empty, message } from "antd";
 const actions = [
   {
     date: "Aug 15, 2025 — 10:00 AM",
@@ -50,6 +50,9 @@ export default function CareTeam() {
       }
     } catch (error) {
       console.error("Error fetching patient + vitals:", error);
+      message.error("Failed to load care team and vitals data");
+    } finally {
+      // Completed fetching patient vitals
     }
   };
 

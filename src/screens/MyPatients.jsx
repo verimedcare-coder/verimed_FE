@@ -15,7 +15,7 @@ import patientdetails from "../assets/images/patient-profile.jpg";
 import { useNavigate } from "react-router-dom";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
-import { Empty } from "antd";
+import { Empty, message } from "antd";
 import { base_url } from "../constants/constants";
 import axios from "axios";
 
@@ -92,6 +92,9 @@ export default function MyPatients() {
         setPatient(patients);
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
+        message.error("Failed to load caretaker patients");
+      } finally {
+        // Completed fetching caretaker patients
       }
     };
     fetchCareTakerPatients();
@@ -190,7 +193,9 @@ export default function MyPatients() {
 
   const handleCardClick = (appointment) => {
     setSelectedAppointmentId(appointment.id);
-    navigate(`/appointments/${appointment.id}`);
+    navigate("/view_patient_details", {
+      state: { appointmentData: appointment },
+    });
   };
 
   const formatMonthYear = (date) => {
@@ -323,7 +328,16 @@ export default function MyPatients() {
                 Care Team Details
               </h3>
 
-              <SecondaryBtn name="view reports" onClick={() => {}} />
+              <SecondaryBtn
+                name="View Reports & Details"
+                onClick={() =>
+                  navigate("/view_patient_details", {
+                    state: {
+                      appointmentData: appointmentData || appointments[0] || {},
+                    },
+                  })
+                }
+              />
             </div>
             <div
               style={{
@@ -446,7 +460,16 @@ export default function MyPatients() {
               <p style={{ color: "#2E2E2E", fontSize: 16, fontWeight: "500" }}>
                 My Reports
               </p>
-              <Primarybtn name="View Full Reports" onClick={() => {}} />
+              <Primarybtn
+                name="View Patient Details"
+                onClick={() =>
+                  navigate("/view_patient_details", {
+                    state: {
+                      appointmentData: appointmentData || appointments[0] || {},
+                    },
+                  })
+                }
+              />
             </div>
 
             <div
@@ -580,7 +603,19 @@ export default function MyPatients() {
             {/* Left Section */}
 
             <div style={appointmentWrapper}>
-              <SectionHeader title="Appointment Details" />
+              <SectionHeader title="Appointment Details">
+                <Primarybtn
+                  name="View Patient Details"
+                  onClick={() =>
+                    navigate("/view_patient_details", {
+                      state: {
+                        appointmentData:
+                          appointmentData || appointments[0] || {},
+                      },
+                    })
+                  }
+                />
+              </SectionHeader>
               <div style={timelineWrapper}>
                 <div style={timelineLine}></div> {/* vertical line */}
                 {appointmentDetails.map((item, index) => (

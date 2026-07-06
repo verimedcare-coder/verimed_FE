@@ -4,7 +4,7 @@ import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
 import Primarybtn from "../components/PrimaryBtn";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Button, DatePicker, Table, Spin } from "antd";
+import { Button, DatePicker, Table, Spin, message } from "antd";
 import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -67,6 +67,9 @@ export default function MyAppointments() {
         }
       } catch (error) {
         console.error("Error fetching doctor appointments:", error);
+        message.error("Failed to load doctor appointments");
+      } finally {
+        // Completed fetching doctor appointments
       }
     };
     fetchDoctorAppointments();

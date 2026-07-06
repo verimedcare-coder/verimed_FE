@@ -69,6 +69,9 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error("Error fetching sponsor profile:", error);
+      notify("error", "Failed to load sponsor profile");
+    } finally {
+      // Completed fetching sponsor profile
     }
   };
 
@@ -93,6 +96,9 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error("Error fetching sponsor patients:", error);
+      notify("error", "Failed to load sponsor patients");
+    } finally {
+      // Completed fetching sponsor patients
     }
   };
 
@@ -118,6 +124,9 @@ export default function LoginScreen() {
       localStorage.setItem("sponsorAppointments", JSON.stringify(filtered));
     } catch (error) {
       console.error("Error fetching sponsor appointments:", error);
+      notify("error", "Failed to load sponsor appointments");
+    } finally {
+      // Completed fetching sponsor appointments
     }
   };
 
@@ -190,6 +199,8 @@ export default function LoginScreen() {
         "Invalid username or password. Please try again.";
 
       notify("error", backendMsg);
+      setLoading(false);
+    } finally {
       setLoading(false);
     }
   };

@@ -12,7 +12,8 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Table } from "antd";
+import { Table, message, Modal, Form, Input, Upload, Button } from "antd";
+import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { base_url } from "../constants/constants";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,9 @@ export default function MyLovedOnes() {
   const [patientData, setPatientData] = useState(null);
   const [vitalsData, setVitalsData] = useState(null);
   const [medicalReports, setMedicalReports] = useState([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm] = Form.useForm();
+  const [editLoading, setEditLoading] = useState(false);
 
   const token = localStorage.getItem("token");
   const dotStyle = (color) => ({
@@ -60,6 +64,9 @@ export default function MyLovedOnes() {
         setMedicalReports(reports);
       } catch (error) {
         console.error("Error fetching medical history:", error);
+        message.error("Failed to load medical history");
+      } finally {
+        // Completed fetching medical history
       }
     };
 
@@ -134,6 +141,15 @@ export default function MyLovedOnes() {
 
   const sponsorId = localStorage.getItem("sponsorProfileId");
 
+  const getPhotoUrl = (url) => {
+    if (!url) return patientdetails;
+    if (url?.startsWith("http")) return url;
+    url = url.replace(/^\/media\/+/i, "/");
+    const base = base_url.replace(/\/+$/, "");
+    const cleanedUrl = url.replace(/^\/+/, "");
+    return `${base}/${cleanedUrl}`;
+  };
+
   const fetchPatientDetails = async () => {
     try {
       const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
@@ -145,18 +161,77 @@ export default function MyLovedOnes() {
       const payload = { sponsorid: Number(storedSponsorId) };
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
+      if (Array.isArray(patients)) {
+        localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
+      }
       const selectedPatient = patients.find(
         (p) => p.id === Number(localStorage.getItem("selectedPatientId"))
       );
       setPatientData(selectedPatient);
     } catch (error) {
       console.error("Error fetching patient details:", error);
+      message.error("Failed to load patient details");
+    } finally {
+      // Completed fetching patient details
     }
   };
 
   useEffect(() => {
     fetchPatientDetails();
   }, []);
+
+  const handleEditOpen = () => {
+    if (!patientData) return;
+    editForm.setFieldsValue({
+      name: patientData.patient_name || "",
+      phone: patientData.phone || "",
+      email: patientData.email || "",
+      condition: patientData.medical_his_diagnosis || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (values) => {
+    setEditLoading(true);
+    try {
+      const storedSponsorId =
+        localStorage.getItem("sponsorProfileId") ||
+        patientData?.sponsorid ||
+        patientData?.sponsor ||
+        0;
+      const patientprofile_data = {
+        updateid: patientData.id,
+        patient_name: values.name,
+        phone: values.phone,
+        email: values.email,
+        medical_his_diagnosis: values.condition,
+        sponsorid: Number(storedSponsorId),
+        sponsor: Number(storedSponsorId),
+      };
+      const formData = new FormData();
+      formData.append("patientprofile_data", JSON.stringify(patientprofile_data));
+      if (values.photo && values.photo.length > 0) {
+        const fileObj = values.photo[0].originFileObj || values.photo[0];
+        formData.append("patient_photo", fileObj);
+        formData.append("photo", fileObj);
+        formData.append("user_photo", fileObj);
+      }
+      await axios.post(`${base_url}/patientprofile_create_update/`, formData, {
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      message.success("Loved one profile and photo updated successfully!");
+      setIsEditModalOpen(false);
+      await fetchPatientDetails();
+    } catch (error) {
+      console.error("Error updating loved one:", error);
+      message.error("Failed to update loved one profile.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const getVitalColor = (label, value) => {
     if (!value) return "#BDBDBD";
@@ -320,29 +395,63 @@ export default function MyLovedOnes() {
           }}
         >
           {/* Content area */}
+          {/* Back Navigation Button */}
+          <div style={{ width: "100%", display: "flex", justifyContent: "flex-start", marginBottom: -10 }}>
+            <Button
+              type="link"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/overview")}
+              style={{
+                color: "#007F5F",
+                fontSize: "15px",
+                fontWeight: 600,
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              Back to Overview
+            </Button>
+          </div>
+
           {/* patient details */}
           <div style={cardStyle}>
             <SectionHeader title="Patient Details">
-              <p
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "#2E2E2E",
-                  fontStyle: "italic",
-                }}
-              >
-                Renewal Due Aug 25, 2025
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  style={{
+                    background: "#007F5F",
+                    borderColor: "#007F5F",
+                    borderRadius: 20,
+                    fontWeight: 500,
+                  }}
+                  onClick={handleEditOpen}
+                >
+                  Edit Profile & Photo
+                </Button>
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#2E2E2E",
+                    fontStyle: "italic",
+                    margin: 0,
+                  }}
+                >
+                  Renewal Due Aug 25, 2025
+                </p>
+              </div>
             </SectionHeader>
 
             {/* Profile */}
             <div style={profileBox}>
               <img
-                src={
-                  patientData?.photo_view_url
-                    ? `${base_url}${patientData.photo_view_url}`
-                    : patientdetails
-                }
+                src={getPhotoUrl(
+                  patientData?.photo_view_url || patientData?.photo
+                )}
                 alt="profile"
                 style={{
                   width: 64,
@@ -791,6 +900,70 @@ export default function MyLovedOnes() {
           </div>
         </div>
       </div>
+
+      {/* Edit Loved One Modal (#B) */}
+      <Modal
+        title="Edit Loved One Profile & Photo"
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        footer={null}
+        centered
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEditSubmit}
+          style={{ marginTop: 16 }}
+        >
+          <Form.Item
+            label="Loved One Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter name" }]}
+          >
+            <Input placeholder="Enter patient name" />
+          </Form.Item>
+          <Form.Item label="Phone Number" name="phone">
+            <Input placeholder="Enter phone number" />
+          </Form.Item>
+          <Form.Item label="Email Address" name="email">
+            <Input placeholder="Enter email address" />
+          </Form.Item>
+          <Form.Item
+            label="Primary Medical Condition / Diagnosis"
+            name="condition"
+          >
+            <Input placeholder="e.g. Hypertension, Diabetes" />
+          </Form.Item>
+          <Form.Item
+            label="Upload New Photo"
+            name="photo"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e && e.fileList}
+          >
+            <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+              <Button icon={<UploadOutlined />}>Select Photo</Button>
+            </Upload>
+          </Form.Item>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+              marginTop: 24,
+            }}
+          >
+            <Button onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={editLoading}
+              style={{ background: "#007F5F", borderColor: "#007F5F" }}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 }

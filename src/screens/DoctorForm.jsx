@@ -19,7 +19,7 @@ import {
 import { UploadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { base_url } from "../constants/constants";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 
@@ -48,6 +48,7 @@ export default function DoctorForm(doc_data) {
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { appointmentData } = location.state || {};
 
   const token = localStorage.getItem("token");
@@ -123,6 +124,8 @@ export default function DoctorForm(doc_data) {
             "Error auto-fetching fallback profile IDs in DoctorForm:",
             err,
           );
+        } finally {
+          // Completed auto-fetching fallback profile IDs
         }
       }
 
@@ -131,25 +134,49 @@ export default function DoctorForm(doc_data) {
         patient: finalPatientId,
         sponsor: finalSponsorId,
         caretaker: finalCaretakerId,
-        patient_name: appointmentData?.patient?.patient_name,
-        blood_group: values.bloodGroup || "N/A",
-        bp: appointmentData?.patient?.blood_pressure || "N/A",
-        heart_rate: appointmentData?.patient?.heartRate || "N/A",
-        sugar: appointmentData?.patient?.blood_sugar || "N/A",
-        oxygen: appointmentData?.patient?.oxygen || "N/A",
-        temperature: appointmentData?.patient?.temperature || "N/A",
-        respiratory_rate: appointmentData?.patient?.respiratory_rate || "N/A",
-        weight: appointmentData?.patient?.weight || "N/A",
-        doctor_notes: values.doctorNotes,
+        patient_name:
+          values.patientName || appointmentData?.patient?.patient_name || "N/A",
+        blood_group:
+          values.bloodGroup || appointmentData?.patient?.blood_group || "N/A",
+        bp: values.bp || appointmentData?.patient?.blood_pressure || "N/A",
+        heart_rate:
+          values.heartRate || appointmentData?.patient?.heartRate || "N/A",
+        sugar: values.sugar || appointmentData?.patient?.blood_sugar || "N/A",
+        oxygen: values.oxygen || appointmentData?.patient?.oxygen || "N/A",
+        temperature:
+          values.temperature || appointmentData?.patient?.temperature || "N/A",
+        respiratory_rate:
+          values.respiratoryRate ||
+          appointmentData?.patient?.respiratory_rate ||
+          "N/A",
+        weight: values.weight || appointmentData?.patient?.weight || "N/A",
+        doctor_notes: values.doctorNotes || "",
       };
 
       const formData = new FormData();
       formData.append("doc_reports_data", JSON.stringify(payloadData));
 
-      const files = values.documents || [];
-      files.forEach((file) => {
+      const allFiles = [
+        ...(values.results_records || []),
+        ...(values.diagnostic_images || []),
+        ...(values.voice_notes || []),
+        ...(values.documents || []),
+      ];
+      allFiles.forEach((file) => {
         const fileObj = file.originFileObj || file;
         if (fileObj) formData.append("doc_reports", fileObj);
+      });
+      (values.results_records || []).forEach((file) => {
+        const fileObj = file.originFileObj || file;
+        if (fileObj) formData.append("results_records", fileObj);
+      });
+      (values.diagnostic_images || []).forEach((file) => {
+        const fileObj = file.originFileObj || file;
+        if (fileObj) formData.append("diagnostic_images", fileObj);
+      });
+      (values.voice_notes || []).forEach((file) => {
+        const fileObj = file.originFileObj || file;
+        if (fileObj) formData.append("voice_notes", fileObj);
       });
 
       const response = await axios.post(endpoint, formData, { headers });
@@ -482,22 +509,29 @@ export default function DoctorForm(doc_data) {
               onFinish={onFinish}
               style={{ width: "100%" }}
               initialValues={{
-                patientName: doc_data.patient_name,
-                bloodGroup: appointmentData?.patient?.blood_group,
-                bp: doc_data.bp,
-                heartRate: doc_data.heart_rate,
-                sugar: doc_data.sugar,
-                oxygen: doc_data.oxygen,
-                temperature: doc_data.temperature,
-                respiratoryRate: doc_data.respiratory_rate,
-                weight: doc_data.weight,
+                patientName:
+                  doc_data.patient_name ||
+                  appointmentData?.patient?.patient_name,
+                bloodGroup:
+                  doc_data.bloodGroup || appointmentData?.patient?.blood_group,
+                bp: doc_data.bp || appointmentData?.patient?.blood_pressure,
+                heartRate:
+                  doc_data.heart_rate || appointmentData?.patient?.heartRate,
+                sugar: doc_data.sugar || appointmentData?.patient?.blood_sugar,
+                oxygen: doc_data.oxygen || appointmentData?.patient?.oxygen,
+                temperature:
+                  doc_data.temperature || appointmentData?.patient?.temperature,
+                respiratoryRate:
+                  doc_data.respiratory_rate ||
+                  appointmentData?.patient?.respiratory_rate,
+                weight: doc_data.weight || appointmentData?.patient?.weight,
                 doctorNotes: doc_data.doctor_notes,
-                initial_visit: doc_data.initialVisit,
-                doc_reports: doc_data.documents,
+                initialVisit: doc_data.initialVisit,
+                documents: doc_data.documents,
               }}
             >
               {/* Patient Info */}
-              {/* <div
+              <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
@@ -505,12 +539,15 @@ export default function DoctorForm(doc_data) {
                 }}
               >
                 <Form.Item label="Patient Name" name="patientName">
-                  <Input />
+                  <Input placeholder="Patient Name" />
                 </Form.Item>
-              </div> */}
+                <Form.Item label="Initial Visit" name="initialVisit">
+                  <Input placeholder="Initial Visit Info" />
+                </Form.Item>
+              </div>
 
-              {/* Vitals */}
-              {/* <div
+              {/* Vitals 1 */}
+              <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
@@ -519,7 +556,7 @@ export default function DoctorForm(doc_data) {
                 }}
               >
                 <Form.Item label="Blood Group" name="bloodGroup">
-                  <Select>
+                  <Select placeholder="Select Blood Group">
                     <Option value="A+">A+</Option>
                     <Option value="A-">A-</Option>
                     <Option value="B+">B+</Option>
@@ -530,16 +567,16 @@ export default function DoctorForm(doc_data) {
                     <Option value="AB-">AB-</Option>
                   </Select>
                 </Form.Item>
-                <Form.Item label="BP" name="bp">
-                  <Input />
+                <Form.Item label="Blood Pressure (BP)" name="bp">
+                  <Input placeholder="120/80" />
                 </Form.Item>
-                <Form.Item label="Heart Rate" name="heartRate">
-                  <Input />
+                <Form.Item label="Heart Rate (bpm)" name="heartRate">
+                  <Input placeholder="72" />
                 </Form.Item>
-                <Form.Item label="Sugar" name="sugar">
-                  <Input />
+                <Form.Item label="Blood Sugar (mg/dL)" name="sugar">
+                  <Input placeholder="95" />
                 </Form.Item>
-              </div> */}
+              </div>
 
               {/* Vitals 2 */}
               <div
@@ -550,50 +587,107 @@ export default function DoctorForm(doc_data) {
                   marginTop: 16,
                 }}
               >
-                <Form.Item label="Oxygen" name="oxygen">
-                  <Input />
+                <Form.Item label="Oxygen (%)" name="oxygen">
+                  <Input placeholder="98" />
                 </Form.Item>
-                <Form.Item label="Temperature" name="temperature">
-                  <Input />
+                <Form.Item label="Temperature (°C)" name="temperature">
+                  <Input placeholder="36.8" />
                 </Form.Item>
                 <Form.Item label="Respiratory Rate" name="respiratoryRate">
-                  <Input />
+                  <Input placeholder="16" />
                 </Form.Item>
-                <Form.Item label="Weight" name="weight">
-                  <Input />
+                <Form.Item label="Weight (kg)" name="weight">
+                  <Input placeholder="70" />
                 </Form.Item>
               </div>
 
-              {/* Upload Documents & Initial Visits */}
+              {/* Categorized Report Uploads (#A) */}
+              <h3 style={{ marginTop: 24, marginBottom: 12, color: "#007F5F", fontSize: 16 }}>
+                Clinical Reports & Documentation
+              </h3>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: "repeat(3, 1fr)",
                   gap: 16,
-                  marginTop: 16,
+                  background: "#F8FAFC",
+                  padding: 16,
+                  borderRadius: 10,
+                  border: "1px solid #E2E8F0",
                 }}
               >
                 <Form.Item
-                  label="Upload Documents"
-                  name="documents"
+                  label={
+                    <span style={{ fontWeight: 600, color: "#1E293B" }}>
+                      Results & Medical Records
+                    </span>
+                  }
+                  name="results_records"
                   valuePropName="fileList"
                   getValueFromEvent={normFile}
                   style={{ margin: 0 }}
                 >
                   <Upload multiple beforeUpload={() => false} listType="text">
-                    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                    <Button icon={<UploadOutlined />} style={{ width: "100%" }}>
+                      Upload Results & Records
+                    </Button>
                   </Upload>
                 </Form.Item>
 
-                <Form.Item label="Initial Visit" name="initialVisit">
-                  <Input />
+                <Form.Item
+                  label={
+                    <span style={{ fontWeight: 600, color: "#1E293B" }}>
+                      Diagnostic Images & Scans
+                    </span>
+                  }
+                  name="diagnostic_images"
+                  valuePropName="fileList"
+                  getValueFromEvent={normFile}
+                  style={{ margin: 0 }}
+                >
+                  <Upload multiple beforeUpload={() => false} listType="text" accept="image/*">
+                    <Button icon={<UploadOutlined />} style={{ width: "100%" }}>
+                      Upload Images & Scans
+                    </Button>
+                  </Upload>
+                </Form.Item>
+
+                <Form.Item
+                  label={
+                    <span style={{ fontWeight: 600, color: "#1E293B" }}>
+                      Voice Notes & Audio
+                    </span>
+                  }
+                  name="voice_notes"
+                  valuePropName="fileList"
+                  getValueFromEvent={normFile}
+                  style={{ margin: 0 }}
+                >
+                  <Upload multiple beforeUpload={() => false} listType="text" accept="audio/*">
+                    <Button icon={<UploadOutlined />} style={{ width: "100%" }}>
+                      Upload Voice Notes
+                    </Button>
+                  </Upload>
+                </Form.Item>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <Form.Item
+                  label="Other Supplementary Documents"
+                  name="documents"
+                  valuePropName="fileList"
+                  getValueFromEvent={normFile}
+                >
+                  <Upload multiple beforeUpload={() => false} listType="text">
+                    <Button icon={<UploadOutlined />}>Upload Other Documents</Button>
+                  </Upload>
                 </Form.Item>
               </div>
 
               {/* Doctor Notes */}
-              <h3 style={{ marginTop: 20, color: "#007F5F" }}>Doctor Notes</h3>
+              <h3 style={{ marginTop: 20, color: "#007F5F" }}>Doctor Notes & Clinical Synthesis</h3>
               <Form.Item name="doctorNotes">
-                <Input.TextArea rows={4} placeholder="Add your comments here" />
+                <Input.TextArea rows={4} placeholder="Add clinical synthesis, diagnostic findings, and patient instructions here..." />
               </Form.Item>
 
               <div
@@ -602,13 +696,19 @@ export default function DoctorForm(doc_data) {
                 <Button
                   onClick={() => {
                     form.resetFields();
-                    setIsSuccessModalOpen(false);
+                    if (appointmentData) {
+                      navigate("/view_patient_details", {
+                        state: { appointmentData },
+                      });
+                    } else {
+                      navigate(-1);
+                    }
                   }}
                 >
                   Cancel
                 </Button>
-                <Button type="primary" htmlType="submit" loading={loading}>
-                  Submit Report
+                <Button type="primary" htmlType="submit" loading={loading} style={{ background: "#007F5F", borderColor: "#007F5F" }}>
+                  Submit Visit Report
                 </Button>
               </div>
             </Form>
@@ -641,18 +741,48 @@ export default function DoctorForm(doc_data) {
             >
               <p
                 style={{
-                  fontSize: "16px",
+                  fontSize: "15px",
                   fontWeight: 500,
                   color: "#2E2E2E",
                   textAlign: "center",
+                  lineHeight: "1.6",
                 }}
               >
-                Your appointment with Dr.
-                {appointmentData?.patient?.user?.first_name +
-                  " " +
-                  appointmentData?.patient?.user?.last_name}{" "}
-                has been completed successfully. You'll receive email.
+                Your clinical report for patient{" "}
+                <strong>
+                  {appointmentData?.patient?.patient_name ||
+                    appointmentData?.patient?.user?.first_name +
+                      " " +
+                      appointmentData?.patient?.user?.last_name ||
+                      "the patient"}
+                </strong>{" "}
+                has been recorded on the backend. An email notification containing the visit summary, results, and attached records has been dispatched to the sponsor.
               </p>
+              <div style={{ textAlign: "center", marginTop: 24 }}>
+                <Button
+                  type="primary"
+                  style={{
+                    background: "#007F5F",
+                    borderColor: "#007F5F",
+                    borderRadius: "6px",
+                    padding: "0 24px",
+                    height: "40px",
+                    fontWeight: 500,
+                  }}
+                  onClick={() => {
+                    setIsSuccessModalOpen(false);
+                    if (appointmentData) {
+                      navigate("/view_patient_details", {
+                        state: { appointmentData },
+                      });
+                    } else {
+                      navigate(-1);
+                    }
+                  }}
+                >
+                  Return to Patient Profile
+                </Button>
+              </div>
             </Modal>
           </div>
         </div>

@@ -16,6 +16,7 @@ import {
   Upload,
   Spin,
   notification,
+  message,
   Tooltip,
   Radio,
   Popconfirm,
@@ -125,6 +126,7 @@ export default function UserManagement() {
       setSponsorList(combinedSponsors);
     } catch (error) {
       console.log(error);
+      message.error("Failed to load sponsors");
     } finally {
       setLoading(false);
     }
@@ -152,6 +154,7 @@ export default function UserManagement() {
       setCaretakerList(combinedCaretakers);
     } catch (error) {
       console.log(error);
+      message.error("Failed to load caretakers");
     } finally {
       setLoading(false);
     }
@@ -188,6 +191,7 @@ export default function UserManagement() {
       setPatientList(combinedPatients);
     } catch (error) {
       console.error("Error fetching patients:", error);
+      message.error("Failed to load patients");
     } finally {
       setLoading(false);
     }
@@ -217,6 +221,7 @@ export default function UserManagement() {
       setDocList(combinedDoctors);
     } catch (error) {
       console.log(error);
+      message.error("Failed to load doctors");
     } finally {
       setLoading(false);
     }
@@ -350,6 +355,8 @@ export default function UserManagement() {
         message: "Error",
         description: error.response?.data?.detail || "Something went wrong.",
       });
+    } finally {
+      // Completed create user request
     }
   };
 
@@ -556,6 +563,8 @@ export default function UserManagement() {
           `Unable to update ${activeTab.slice(0, -1)} profile.`,
         placement: "topRight",
       });
+    } finally {
+      // Completed update user request
     }
   };
 
@@ -620,6 +629,8 @@ export default function UserManagement() {
           `Unable to change status for ${activeTab.slice(0, -1)} account.`,
         placement: "topRight",
       });
+    } finally {
+      // Completed status change request
     }
   };
 

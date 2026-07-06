@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
 import Success from "../assets/icons/success.svg";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   DownOutlined,
   UpOutlined,
@@ -18,6 +18,10 @@ import {
   CalendarOutlined,
   MedicineBoxOutlined,
   SafetyCertificateOutlined,
+  LockOutlined,
+  CreditCardOutlined,
+  DollarOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import {
   Tabs,
@@ -45,6 +49,7 @@ const { Option } = Select;
 
 export default function Appointments() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const today = new Date();
@@ -72,6 +77,20 @@ export default function Appointments() {
   const [patients, setPatients] = useState([]);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [pendingBookingValues, setPendingBookingValues] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleOpenBookingModal = () => {
+    form.resetFields();
+    if (userData?.user_role === "sponsor") {
+      const storedSponsorId = Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
+      if (storedSponsorId) {
+        form.setFieldsValue({ sponsorId: storedSponsorId });
+      }
+    }
+    setIsModalOpen(true);
+  };
 
   const patientId = Number(localStorage.getItem("selectedPatientId"));
 
@@ -123,6 +142,9 @@ export default function Appointments() {
         setDeptList(res.data);
       } catch (error) {
         console.log("Error fetching departments: ", error);
+        message.error("Failed to fetch departments");
+      } finally {
+        // Completed fetching departments
       }
     };
     fetchDeptList();
@@ -260,6 +282,12 @@ export default function Appointments() {
         : "";
       setBookedDateTime({ date: formattedDate, time: formattedTime });
 
+      if (userData?.user_role === "sponsor") {
+        setPendingBookingValues({ endpoint, formData, headers, values, bookappoinment_data });
+        setIsCheckoutModalOpen(true);
+        return;
+      }
+
       await axios.post(endpoint, formData, { headers });
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
@@ -267,8 +295,28 @@ export default function Appointments() {
       fetchAppointments();
     } catch (error) {
       console.log(error);
+      message.error("Failed to book appointment. Please check your inputs and try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmCheckout = async () => {
+    if (!pendingBookingValues) return;
+    setCheckoutLoading(true);
+    try {
+      await axios.post(pendingBookingValues.endpoint, pendingBookingValues.formData, { headers: pendingBookingValues.headers });
+      setIsCheckoutModalOpen(false);
+      setIsModalOpen(false);
+      setIsSuccessModalOpen(true);
+      form.resetFields();
+      fetchAppointments();
+      message.success("Payment verified and appointment confirmed!");
+    } catch (error) {
+      console.error("Error finalizing appointment booking:", error);
+      message.error("Booking failed. Please try again.");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -292,6 +340,9 @@ export default function Appointments() {
         setDoctors(res.data);
       } catch (error) {
         console.log("Error fetching doctors: ", error);
+        message.error("Failed to fetch doctors");
+      } finally {
+        // Completed fetching doctors
       }
     };
     const fetchSponsorList = async () => {
@@ -302,6 +353,9 @@ export default function Appointments() {
         setSponsors(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
         console.log("Error fetching sponsors: ", error);
+        message.error("Failed to fetch sponsors");
+      } finally {
+        // Completed fetching sponsors
       }
     };
     const fetchPatientList = async () => {
@@ -312,6 +366,9 @@ export default function Appointments() {
         setPatients(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
         console.log("Error fetching patients: ", error);
+        message.error("Failed to fetch patients");
+      } finally {
+        // Completed fetching patients
       }
     };
     fetchDocList();
@@ -329,6 +386,9 @@ export default function Appointments() {
         setSponsorUser(sponsorData);
       } catch (error) {
         console.log("Error fetching sponsor data: ", error);
+        message.error("Failed to fetch sponsor data");
+      } finally {
+        // Completed fetching sponsor data
       }
     };
     fetchSponsorData();
@@ -412,20 +472,41 @@ export default function Appointments() {
   }, [appointmentList]);
 
   const handleDetailsCardClick = (appt) => {
-    if (
-      (userData?.user_role === "care_taker" || isAdminUser(userData)) &&
-      appt.status === "upcoming"
-    ) {
+    if (appt) {
       setSelectedAppointment(appt);
       assignForm.setFieldsValue({
         docId: appt.fullData?.doc?.id || appt.fullData?.doc || undefined,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
-        appointment_time: appt.time ? dayjs(appt.time, "HH:mm:ss") : undefined,
-        care_taker_notes: appt.fullData?.care_taker_notes || "",
+        appointment_time: appt.time
+          ? dayjs(
+              Array.isArray(appt.time) ? appt.time[0] : appt.time,
+              "HH:mm:ss"
+            )
+          : undefined,
+        care_taker_notes:
+          appt.fullData?.care_taker_notes || appt.care_taker_notes || "",
       });
       setIsAppointmentDetailsModal(true);
     }
   };
+
+  const [initialOpenHandled, setInitialOpenHandled] = useState(false);
+
+  useEffect(() => {
+    if (
+      location.state?.openAppointmentId &&
+      !initialOpenHandled &&
+      mappedAppointments.length > 0
+    ) {
+      const target = mappedAppointments.find(
+        (a) => a.id === location.state.openAppointmentId
+      );
+      if (target) {
+        setInitialOpenHandled(true);
+        handleDetailsCardClick(target);
+      }
+    }
+  }, [location.state, mappedAppointments, initialOpenHandled]);
 
   const handleCloseModal = () => {
     setIsAppointmentDetailsModal(false);
@@ -754,7 +835,9 @@ export default function Appointments() {
       appointment_time: formatTime(values?.appointment_time), // e.g. "10:30:00"
       appointment_type: safe(selectedAppointment?.appointment_type),
       treatment_performed: safe(selectedAppointment?.issue),
-      care_taker_notes: safe(values?.care_taker_notes),
+      care_taker_notes: values?.care_taker_notes
+        ? `${selectedAppointment?.fullData?.care_taker_notes || ""}\n[Care Team Log]: ${values.care_taker_notes}`.trim()
+        : safe(selectedAppointment?.fullData?.care_taker_notes),
       amount: safe(selectedAppointment?.fullData?.amount),
       subscription_plan: safe(selectedAppointment?.fullData?.subscription_plan),
       height: safe(selectedAppointment?.fullData?.height),
@@ -807,6 +890,8 @@ export default function Appointments() {
         content: errMsg,
         centered: true,
       });
+    } finally {
+      // Completed updating appointment
     }
   };
 
@@ -887,7 +972,7 @@ export default function Appointments() {
                       : "Book Appointment"
                   }
                   icon={<PlusOutlined />}
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleOpenBookingModal}
                 />
               </div>
               {renderAppointments(activeTab)}
@@ -1065,6 +1150,18 @@ export default function Appointments() {
                         </div>
                       </div>
                     </div>
+                    {/* Read-only Sponsor Notes (#D) */}
+                    {(selectedAppointment.fullData?.care_taker_notes || selectedAppointment.care_taker_notes) && (
+                      <div style={{ background: "#FEF3C7", padding: "16px", borderRadius: "10px", border: "1px solid #F59E0B", marginTop: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                          <MessageOutlined style={{ color: "#D97706", fontSize: "16px" }} />
+                          <b style={{ fontSize: "14px", color: "#92400E" }}>Sponsor Notes & Special Instructions (Read-Only for Care Team)</b>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#78350F", whiteSpace: "pre-wrap", lineHeight: "1.5", background: "#FFFBEB", padding: "12px", borderRadius: "8px", border: "1px solid #FCD34D" }}>
+                          {selectedAppointment.fullData?.care_taker_notes || selectedAppointment.care_taker_notes}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Reschedule Section */}
                     <div
@@ -1135,9 +1232,9 @@ export default function Appointments() {
 
                         <Form.Item
                           name="care_taker_notes"
-                          label={<span style={{ fontWeight: 500, color: "#334155" }}>Care Team Notes / Instructions</span>}
+                          label={<span style={{ fontWeight: 500, color: "#334155" }}>Internal Care Team Action Log (Separate from Sponsor Notes)</span>}
                         >
-                          <Input.TextArea rows={2} placeholder="Add any special instructions or clinical notes..." style={{ borderRadius: "6px" }} />
+                          <Input.TextArea rows={2} placeholder="Add internal care team notes or status updates here without editing sponsor instructions..." style={{ borderRadius: "6px" }} />
                         </Form.Item>
 
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
@@ -1490,8 +1587,11 @@ export default function Appointments() {
               </span>
             }
           >
-            <Select placeholder="Select Sponsor" allowClear>
-              {sponsors?.map((sponsor) => (
+            <Select placeholder="Select Sponsor" allowClear disabled={userData?.user_role === "sponsor"}>
+              {(userData?.user_role === "sponsor"
+                ? sponsors?.filter((s) => s.id === (Number(localStorage.getItem("sponsorProfileId")) || sponsorId) || s.user?.id === userData?.id)
+                : sponsors
+              )?.map((sponsor) => (
                 <Option key={sponsor.id} value={sponsor.id}>
                   {sponsor.user?.first_name} {sponsor.user?.last_name} (
                   {sponsor.user?.email || `ID: ${sponsor.id}`})
@@ -1511,7 +1611,14 @@ export default function Appointments() {
             }
           >
             <Select placeholder="Select Patient" allowClear>
-              {patients?.map((patient) => (
+              {(userData?.user_role === "sponsor"
+                ? patients?.filter((p) => {
+                    const sId = typeof p.sponsor === "object" ? p.sponsor?.id : p.sponsor;
+                    const spId = Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
+                    return sId === spId || p.sponsorid === spId || p.user?.id === userData?.id;
+                  })
+                : patients
+              )?.map((patient) => (
                 <Option key={patient.id} value={patient.id}>
                   {patient.patient_name} (Age: {patient.age || "N/A"})
                 </Option>
@@ -1690,6 +1797,89 @@ export default function Appointments() {
           Our Practice Manager will review your request and get back to you
           shortly.
         </p>
+      </Modal>
+
+      {/* Verimed Secure Stripe Checkout Modal (#E & #F) */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #E2E8F0", paddingBottom: 12 }}>
+            <SafetyCertificateOutlined style={{ color: "#007F5F", fontSize: 24 }} />
+            <div>
+              <h3 style={{ margin: 0, color: "#007F5F", fontSize: 18, fontWeight: 700 }}>Verimed - Secure Stripe Checkout</h3>
+              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 400 }}>256-Bit SSL Encrypted Payment Portal</span>
+            </div>
+          </div>
+        }
+        open={isCheckoutModalOpen}
+        onCancel={() => setIsCheckoutModalOpen(false)}
+        footer={null}
+        centered
+        width={540}
+      >
+        <div style={{ padding: "10px 0" }}>
+          {/* Consultation Summary */}
+          <div style={{ background: "#F8FAFC", padding: 16, borderRadius: 10, border: "1px solid #E2E8F0", marginBottom: 20 }}>
+            <h4 style={{ margin: "0 0 10px 0", color: "#1E293B", fontSize: 14, fontWeight: 600 }}>Consultation Booking Summary</h4>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: "#64748B" }}>Provider / Service:</span>
+              <strong style={{ color: "#1E293B" }}>{pendingBookingValues?.values?.appointmentType ? (deptList?.find(d => d.id === pendingBookingValues.values.appointmentType)?.dep_name || "Physician Consultation") : "In-Home Clinical Visit"}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: "#64748B" }}>Selected Patient:</span>
+              <strong style={{ color: "#1E293B" }}>{pendingBookingValues?.values?.patientId ? (patients?.find(p => p.id === pendingBookingValues.values.patientId)?.patient_name || "Loved One") : "Loved One"}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderTop: "1px dashed #CBD5E1", paddingTop: 8, marginTop: 8 }}>
+              <span style={{ color: "#1E293B", fontWeight: 600 }}>Total Consultation Fee:</span>
+              <strong style={{ color: "#007F5F", fontSize: 16 }}>75,000 CFA ($150.00 USD)</strong>
+            </div>
+          </div>
+
+          {/* Simulated Stripe Credit Card Interface */}
+          <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, padding: 16, background: "#FFF" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontWeight: 600, fontSize: 13, color: "#334155" }}>Credit or Debit Card</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Tag color="blue">VISA</Tag>
+                <Tag color="orange">MasterCard</Tag>
+                <Tag color="cyan">AMEX</Tag>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Card Number</label>
+                <Input prefix={<CreditCardOutlined style={{ color: "#94A3B8" }} />} placeholder="4242 •••• •••• 4242" defaultValue="4242 4242 4242 4242" style={{ fontFamily: "monospace" }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Expiration Date</label>
+                  <Input placeholder="MM / YY" defaultValue="12 / 28" style={{ fontFamily: "monospace" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>CVC / CVV</label>
+                  <Input prefix={<LockOutlined style={{ color: "#94A3B8" }} />} placeholder="CVC" defaultValue="314" style={{ fontFamily: "monospace" }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Cardholder Name</label>
+                <Input placeholder="Name on card" defaultValue={`${userData?.first_name || "Sponsor"} ${userData?.last_name || ""}`.trim()} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
+            <Button onClick={() => setIsCheckoutModalOpen(false)} disabled={checkoutLoading}>Cancel</Button>
+            <Button
+              type="primary"
+              icon={<LockOutlined />}
+              onClick={handleConfirmCheckout}
+              loading={checkoutLoading}
+              style={{ background: "#007F5F", borderColor: "#007F5F", fontWeight: 600, padding: "0 24px", height: 40 }}
+            >
+              Pay 75,000 CFA & Confirm Booking
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

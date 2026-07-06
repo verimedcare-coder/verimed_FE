@@ -13,6 +13,7 @@ import {
   Select,
   DatePicker,
   Divider,
+  message,
 } from "antd";
 import {
   CalendarOutlined,
@@ -64,6 +65,9 @@ export default function MembershipPlans() {
       setAppointmentList(res.data);
     } catch (error) {
       console.log(error);
+      message.error("Failed to load membership plans");
+    } finally {
+      // Completed fetching membership plans
     }
   };
   useEffect(() => {
