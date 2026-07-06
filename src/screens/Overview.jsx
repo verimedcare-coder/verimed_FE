@@ -108,7 +108,6 @@ export default function Overview() {
     return data ? JSON.parse(data) : null;
   });
 
-  // flag used throughout the component
   const isAdmin = isAdminUser(user);
 
   useEffect(() => {
@@ -121,8 +120,14 @@ export default function Overview() {
 
   const fetchPatientDetails = async () => {
     try {
-      const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
-      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
+      const storedSponsorId =
+        localStorage.getItem("sponsorProfileId") || sponsorId;
+      if (
+        !storedSponsorId ||
+        storedSponsorId === "null" ||
+        storedSponsorId === "undefined" ||
+        storedSponsorId === "0"
+      ) {
         return;
       }
       const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
