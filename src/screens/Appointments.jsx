@@ -1,4 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { appointmentsService } from "../services/appointmentsService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -44,8 +47,33 @@ import SecondaryBtn from "../components/SecondaryBtn";
 import { base_url, isAdminUser } from "../constants/constants";
 import axios from "axios";
 import dayjs from "dayjs";
+import * as yup from "yup";
 
 const { Option } = Select;
+
+const bookingValidationSchema = yup.object().shape({
+  appointmentType: yup.string().required("Please select a service / department"),
+  patientId: yup.mixed().required("Please select a patient"),
+  preferred_dates: yup
+    .array()
+    .min(1, "Please select at least one preferred date")
+    .required("Please select at least one preferred date"),
+  preferred_times: yup
+    .array()
+    .min(1, "Please select at least one preferred time")
+    .required("Please select at least one preferred time"),
+});
+
+const yupRule = (schema, fieldName) => ({
+  validator: async (_, value) => {
+    try {
+      await schema.validateAt(fieldName, { [fieldName]: value });
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(new Error(err.message));
+    }
+  },
+});
 
 export default function Appointments() {
   const navigate = useNavigate();
@@ -65,16 +93,11 @@ export default function Appointments() {
   const [activeTab, setActiveTab] = useState("upcoming");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const queryClient = useQueryClient();
   const [bookedDateTime, setBookedDateTime] = useState(null);
-  const [appointmentList, setAppointmentList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
-  const [deptList, setDeptList] = useState([]);
-  const [sponsorUser, setSponsorUser] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [doctors, setDoctors] = useState([]);
-  const [sponsors, setSponsors] = useState([]);
-  const [patients, setPatients] = useState([]);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -83,6 +106,8 @@ export default function Appointments() {
 
   const handleOpenBookingModal = () => {
     form.resetFields();
+    setSelectedDates([]);
+    form.setFieldsValue({ preferred_dates: [] });
     if (userData?.user_role === "sponsor") {
       const storedSponsorId = Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
       if (storedSponsorId) {
@@ -92,7 +117,23 @@ export default function Appointments() {
     setIsModalOpen(true);
   };
 
-  const patientId = Number(localStorage.getItem("selectedPatientId"));
+  const [selectedPatientId, setSelectedPatientId] = useState(() =>
+    localStorage.getItem("selectedPatientId")
+  );
+
+  useEffect(() => {
+    const handlePatientChange = () => {
+      setSelectedPatientId(localStorage.getItem("selectedPatientId"));
+    };
+    window.addEventListener("patientChanged", handlePatientChange);
+    window.addEventListener("storage", handlePatientChange);
+    return () => {
+      window.removeEventListener("patientChanged", handlePatientChange);
+      window.removeEventListener("storage", handlePatientChange);
+    };
+  }, []);
+
+  const patientId = Number(selectedPatientId);
 
   const trimPhoneNumber = (phone) => {
     if (phone === undefined || phone === null) return "";
@@ -106,49 +147,33 @@ export default function Appointments() {
     if (!date) return;
     const formatted = date.format("YYYY-MM-DD");
     if (!selectedDates.includes(formatted)) {
-      setSelectedDates([...selectedDates, formatted]);
+      const newDates = [...selectedDates, formatted];
+      setSelectedDates(newDates);
+      form.setFieldsValue({ preferred_dates: newDates });
+      form.validateFields(["preferred_dates"]);
     }
   };
 
   const token = localStorage.getItem("token");
   const userData = JSON.parse(localStorage.getItem("userData"));
 
-  const fetchAppointments = async () => {
-    setLoading(true);
-    try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-      const headers = { Authorization: `Token ${token}` };
-      const res = await axios.get(endpoint, { headers });
-      setAppointmentList(res.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: appointmentList = [] } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      const data = await appointmentsService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-
-  useEffect(() => {
-    const fetchDeptList = async () => {
-      try {
-        const endpoint = `${base_url}/verimed_department_create_update/`;
-        const headers = {
-          Authorization: `Token ${token}`,
-        };
-        const res = await axios.get(endpoint, { headers });
-        setDeptList(res.data);
-      } catch (error) {
-        console.log("Error fetching departments: ", error);
-        message.error("Failed to fetch departments");
-      } finally {
-        // Completed fetching departments
-      }
-    };
-    fetchDeptList();
-  }, []);
+  const { data: deptList = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const data = await appointmentsService.getDepartments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
   const caretakerId = JSON.parse(
     localStorage.getItem("selectedPatientData"),
@@ -156,6 +181,22 @@ export default function Appointments() {
   const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
 
   const bookAppointment = async (values) => {
+    try {
+      await bookingValidationSchema.validate(
+        {
+          appointmentType: values.appointmentType,
+          patientId: values.patientId || selectedPatientId || localStorage.getItem("selectedPatientId"),
+          preferred_dates: selectedDates,
+          preferred_times: values.preferred_times,
+        },
+        { abortEarly: false }
+      );
+    } catch (validationError) {
+      message.error(
+        validationError.errors ? validationError.errors[0] : "Please check all required fields and try again."
+      );
+      return;
+    }
     setLoading(true);
     try {
       const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
@@ -171,7 +212,7 @@ export default function Appointments() {
       }
 
       let finalPatientId =
-        Number(localStorage.getItem("selectedPatientId")) ||
+        Number(selectedPatientId || localStorage.getItem("selectedPatientId")) ||
         storedPatientData?.id ||
         patientId ||
         null;
@@ -292,7 +333,7 @@ export default function Appointments() {
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
       form.resetFields();
-      fetchAppointments();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.log(error);
       message.error("Failed to book appointment. Please check your inputs and try again.");
@@ -310,7 +351,7 @@ export default function Appointments() {
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
       form.resetFields();
-      fetchAppointments();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       message.success("Payment verified and appointment confirmed!");
     } catch (error) {
       console.error("Error finalizing appointment booking:", error);
@@ -331,68 +372,42 @@ export default function Appointments() {
     }
   };
 
-  useEffect(() => {
-    const fetchDocList = async () => {
-      try {
-        const endpoint = `${base_url}/doctorprofile_list/`;
-        const headers = { Authorization: `Token ${token}` };
-        const res = await axios.get(endpoint, { headers });
-        setDoctors(res.data);
-      } catch (error) {
-        console.log("Error fetching doctors: ", error);
-        message.error("Failed to fetch doctors");
-      } finally {
-        // Completed fetching doctors
-      }
-    };
-    const fetchSponsorList = async () => {
-      try {
-        const endpoint = `${base_url}/sponsorprofile_list/`;
-        const headers = { Authorization: `Token ${token}` };
-        const res = await axios.get(endpoint, { headers });
-        setSponsors(Array.isArray(res.data) ? res.data : []);
-      } catch (error) {
-        console.log("Error fetching sponsors: ", error);
-        message.error("Failed to fetch sponsors");
-      } finally {
-        // Completed fetching sponsors
-      }
-    };
-    const fetchPatientList = async () => {
-      try {
-        const endpoint = `${base_url}/patientprofile_list/`;
-        const headers = { Authorization: `Token ${token}` };
-        const res = await axios.get(endpoint, { headers });
-        setPatients(Array.isArray(res.data) ? res.data : []);
-      } catch (error) {
-        console.log("Error fetching patients: ", error);
-        message.error("Failed to fetch patients");
-      } finally {
-        // Completed fetching patients
-      }
-    };
-    fetchDocList();
-    fetchSponsorList();
-    fetchPatientList();
-  }, []);
+  const { data: doctors = [] } = useQuery({
+    queryKey: ["doctors"],
+    queryFn: async () => {
+      const data = await appointmentsService.getDoctors();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
-  useEffect(() => {
-    const fetchSponsorData = async () => {
-      try {
-        const endpoint = `${base_url}/user_view/`;
-        const headers = { Authorization: `Token ${token}` };
-        const res = await axios.get(endpoint, { headers });
-        const sponsorData = res.data;
-        setSponsorUser(sponsorData);
-      } catch (error) {
-        console.log("Error fetching sponsor data: ", error);
-        message.error("Failed to fetch sponsor data");
-      } finally {
-        // Completed fetching sponsor data
-      }
-    };
-    fetchSponsorData();
-  }, []);
+  const { data: sponsors = [] } = useQuery({
+    queryKey: ["sponsors"],
+    queryFn: async () => {
+      const data = await appointmentsService.getSponsors();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
+
+  const { data: patients = [] } = useQuery({
+    queryKey: ["patients"],
+    queryFn: async () => {
+      const data = await appointmentsService.getPatients();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
+
+  // eslint-disable-next-line no-unused-vars
+  const { data: sponsorUser = null } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const data = await appointmentsService.getUsers();
+      return data;
+    },
+    enabled: !!token,
+  });
 
   // Updated status logic: treat empty string or null appointment_date as upcoming
   const getAppointmentStatus = (appointment) => {
@@ -506,7 +521,16 @@ export default function Appointments() {
         handleDetailsCardClick(target);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, mappedAppointments, initialOpenHandled]);
+
+  useEffect(() => {
+    if (location.state?.openBookingModal) {
+      handleOpenBookingModal();
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleCloseModal = () => {
     setIsAppointmentDetailsModal(false);
@@ -720,6 +744,7 @@ export default function Appointments() {
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
     );
 
+  // eslint-disable-next-line no-unused-vars
   const handleCardClick = (appointment) => {
     setSelectedAppointmentId(appointment.id);
     navigate(`/appointments/${appointment.id}`);
@@ -877,7 +902,7 @@ export default function Appointments() {
         centered: true,
       });
       handleCloseModal();
-      fetchAppointments();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.error("Error updating appointment:", error);
       const errMsg =
@@ -1563,7 +1588,7 @@ export default function Appointments() {
                 Request Service
               </span>
             }
-            rules={[{ required: true, message: "Please select a service" }]}
+            rules={[yupRule(bookingValidationSchema, "appointmentType")]}
           >
             <Select placeholder="Select Department">
               {deptList?.map((dept) => (
@@ -1609,6 +1634,7 @@ export default function Appointments() {
                 Patient
               </span>
             }
+            rules={[yupRule(bookingValidationSchema, "patientId")]}
           >
             <Select placeholder="Select Patient" allowClear>
               {(userData?.user_role === "sponsor"
@@ -1627,6 +1653,7 @@ export default function Appointments() {
           </Form.Item>
 
           <Form.Item
+            name="preferred_dates"
             label={
               <span
                 style={{ fontWeight: 600, fontSize: "15px", color: "#1B1B1B" }}
@@ -1634,20 +1661,29 @@ export default function Appointments() {
                 Preferred Date(s)
               </span>
             }
+            rules={[yupRule(bookingValidationSchema, "preferred_dates")]}
           >
-            <DatePicker onChange={handleDateSelect} />
-            <div style={{ marginTop: 8 }}>
-              {selectedDates.map((d) => (
-                <Tag
-                  key={d}
-                  closable
-                  onClose={() =>
-                    setSelectedDates(selectedDates.filter((date) => date !== d))
-                  }
-                >
-                  {d}
-                </Tag>
-              ))}
+            <div>
+              <DatePicker
+                onChange={handleDateSelect}
+                status={form.getFieldError("preferred_dates")?.length > 0 ? "error" : ""}
+              />
+              <div style={{ marginTop: 8 }}>
+                {selectedDates.map((d) => (
+                  <Tag
+                    key={d}
+                    closable
+                    onClose={() => {
+                      const newDates = selectedDates.filter((date) => date !== d);
+                      setSelectedDates(newDates);
+                      form.setFieldsValue({ preferred_dates: newDates });
+                      form.validateFields(["preferred_dates"]);
+                    }}
+                  >
+                    {d}
+                  </Tag>
+                ))}
+              </div>
             </div>
           </Form.Item>
 
@@ -1660,9 +1696,7 @@ export default function Appointments() {
                 Preferred Time(s)
               </span>
             }
-            rules={[
-              { required: true, message: "Please select at least one time" },
-            ]}
+            rules={[yupRule(bookingValidationSchema, "preferred_times")]}
           >
             <Select
               mode="multiple"

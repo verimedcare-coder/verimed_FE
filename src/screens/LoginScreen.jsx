@@ -1,4 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { loginService } from "../services/loginService";
 import {
   Form,
   Input,
@@ -50,6 +53,7 @@ export default function LoginScreen() {
       notify("info", location.state.message);
       window.history.replaceState({}, document.title);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   const token = localStorage.getItem("token");
@@ -58,9 +62,8 @@ export default function LoginScreen() {
   const fetchSponsorProfile = async (userId, token) => {
     if (!userId || !token) return;
     try {
-      const res = await axios.get(`${base_url}/sponsorprofile_list/`);
-      const sponsorList = Array.isArray(res.data) ? res.data : [];
-      const matchedSponsor = sponsorList.find((s) => s.user.id === userId);
+      const sponsorList = await loginService.getSponsorProfiles();
+      const matchedSponsor = (Array.isArray(sponsorList) ? sponsorList : []).find((s) => s.user.id === userId);
       if (matchedSponsor) {
         localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
         localStorage.setItem("sponsorProfileId", matchedSponsor.id);
@@ -70,25 +73,15 @@ export default function LoginScreen() {
     } catch (error) {
       console.error("Error fetching sponsor profile:", error);
       notify("error", "Failed to load sponsor profile");
-    } finally {
-      // Completed fetching sponsor profile
     }
   };
 
   const fetchSponsorPatients = async (sponsorProfileId, token) => {
     if (!sponsorProfileId || !token) return;
     try {
-      const res = await axios.post(
-        `${base_url}/sponsor_patients_view/`,
-        { sponsorprofileid: sponsorProfileId },
-        { headers: { Authorization: `Token ${token}` } },
-      );
-      const patients = Array.isArray(res.data) ? res.data : [];
-      if (patients.length > 0) {
-        localStorage.setItem(
-          "sponsorPatientIds",
-          JSON.stringify(patients.map((p) => p.id)),
-        );
+      const patients = await loginService.getSponsorPatients(sponsorProfileId);
+      if (Array.isArray(patients) && patients.length > 0) {
+        localStorage.setItem("sponsorPatientIds", JSON.stringify(patients.map((p) => p.id)));
         localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
       } else {
         localStorage.removeItem("sponsorPatientIds");
@@ -97,8 +90,6 @@ export default function LoginScreen() {
     } catch (error) {
       console.error("Error fetching sponsor patients:", error);
       notify("error", "Failed to load sponsor patients");
-    } finally {
-      // Completed fetching sponsor patients
     }
   };
 
@@ -110,13 +101,8 @@ export default function LoginScreen() {
       );
       if (!sponsorProfileId || sponsorPatientIds.length === 0) return;
 
-      const res = await axios.post(
-        `${base_url}/vb_patientappoinment_list/`,
-        { patientprofileid: sponsorPatientIds[0] },
-        { headers: { Authorization: `Token ${token}` } },
-      );
-      const data = Array.isArray(res.data) ? res.data : [];
-      const filtered = data.filter(
+      const data = await loginService.getPatientAppointments(sponsorPatientIds[0]);
+      const filtered = (Array.isArray(data) ? data : []).filter(
         (item) =>
           item?.patient?.sponsor === Number(sponsorProfileId) &&
           sponsorPatientIds.includes(item?.patient?.id),
@@ -125,8 +111,6 @@ export default function LoginScreen() {
     } catch (error) {
       console.error("Error fetching sponsor appointments:", error);
       notify("error", "Failed to load sponsor appointments");
-    } finally {
-      // Completed fetching sponsor appointments
     }
   };
 
@@ -137,18 +121,13 @@ export default function LoginScreen() {
 
     try {
       // Step 1 — authenticate
-      const res = await axios.post(`${base_url}/user_login/`, {
-        username,
-        password,
-      });
-      const token = res.data.token;
+      const res = await loginService.login({ username, password });
+      const token = res.token;
       localStorage.setItem("token", token);
 
       // Step 2 — get user details
-      const userRes = await axios.get(`${base_url}/user_view/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      const userData = userRes.data.find((u) => u.username === username);
+      const userList = await loginService.getUsers();
+      const userData = (Array.isArray(userList) ? userList : []).find((u) => u.username === username);
 
       if (!userData) {
         notify("error", "User not found. Please check your credentials.");
@@ -205,11 +184,14 @@ export default function LoginScreen() {
     }
   };
 
-  useEffect(() => {
-    if (user && token && user.user_role === "sponsor") {
-      fetchSponsorProfile(user.id, token);
-    }
-  }, [user, token]);
+  useQuery({
+    queryKey: ["sponsorProfileInit", user?.id],
+    queryFn: async () => {
+      await fetchSponsorProfile(user.id, token);
+      return true;
+    },
+    enabled: !!user && !!token && user.user_role === "sponsor",
+  });
 
   return (
     <div
@@ -350,6 +332,7 @@ export default function LoginScreen() {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox>Remember me</Checkbox>
                 </Form.Item>
+                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                 <a
                   onClick={() => navigate("/forgot-password")}
                   style={{ color: "#f5222d", cursor: "pointer" }}

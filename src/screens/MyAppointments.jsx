@@ -1,4 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { myAppointmentsService } from "../services/myAppointmentsService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -33,10 +36,8 @@ function SectionHeader({ title, children }) {
 
 export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(3);
-  const [doctorAppointments, setDoctorAppointments] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const [loading, setLoading] = useState(true);
   const token = localStorage.getItem("token");
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
@@ -52,28 +53,14 @@ export default function MyAppointments() {
     doctorId = doctorData?.id || null;
   }
 
-  useEffect(() => {
-    const fetchDoctorAppointments = async () => {
-      try {
-        const endpoint = `${base_url}/vb_doctorappoinment_list/`;
-        const headers = { Authorization: `Token ${token}` };
-
-        const payload = { doctorprofileid: doctorId };
-        const res = await axios.post(endpoint, payload, { headers });
-        if (Array.isArray(res.data)) {
-          setDoctorAppointments(res.data);
-        } else {
-          console.warn("Unexpected doctor appointments response:", res.data);
-        }
-      } catch (error) {
-        console.error("Error fetching doctor appointments:", error);
-        message.error("Failed to load doctor appointments");
-      } finally {
-        // Completed fetching doctor appointments
-      }
-    };
-    fetchDoctorAppointments();
-  }, [doctorId, token]);
+  const { data: doctorAppointments = [], isLoading: loading } = useQuery({
+    queryKey: ["doctorAppointments", doctorId],
+    queryFn: async () => {
+      const data = await myAppointmentsService.getDoctorAppointments(doctorId);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!doctorId && !!token,
+  });
 
   const showMore = () =>
     setVisibleCount((prev) => Math.min(prev + 3, doctorAppointments.length));

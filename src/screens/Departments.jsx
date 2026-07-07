@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { departmentsService } from "../services/departmentsService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -159,10 +162,10 @@ const getStatusTag = (status) => (
 
 // ---------- Departments Component ----------
 export default function Departments() {
+  const queryClient = useQueryClient();
   const [selectedDept, setSelectedDept] = useState(null);
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
-  const [departmentList, setDepartmentList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [logoFile, setLogoFile] = useState(null);
@@ -170,27 +173,14 @@ export default function Departments() {
   // Get token from localStorage
   const token = localStorage.getItem("token");
 
-  // Fetch departments on mount
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${base_url}/verimed_department_create_update/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        },
-      );
-      setDepartmentList(response.data);
-    } catch (error) {
-      message.error("Failed to fetch departments");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: departmentList = [], isLoading: tableLoading } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const data = await departmentsService.getDepartments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
   const handleCreateDepartment = async (values) => {
     setLoading(true);
@@ -224,7 +214,7 @@ export default function Departments() {
       setAddDrawerOpen(false);
       form.resetFields();
       setLogoFile(null);
-      fetchDepartments();
+      queryClient.invalidateQueries({ queryKey: ["departments"] });
     } catch (error) {
       message.error("Failed to create department");
     } finally {
@@ -267,7 +257,7 @@ export default function Departments() {
       setViewDrawerOpen(false);
       form.resetFields();
       setLogoFile(null);
-      fetchDepartments();
+      queryClient.invalidateQueries({ queryKey: ["departments"] });
     } catch (error) {
       message.error("Failed to update department");
     } finally {
@@ -559,7 +549,7 @@ export default function Departments() {
               scroll={{ x: true }}
               bordered
               style={{ width: "100%" }}
-              loading={loading}
+              loading={tableLoading || loading}
             />
           </div>
         </div>

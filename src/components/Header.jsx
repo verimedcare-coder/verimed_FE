@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { headerService } from "../services/headerService";
 import {
   Layout,
   Select,
@@ -113,6 +115,7 @@ const UserForm = ({ onFinish }) => {
   );
 };
 export default function HeaderComponent() {
+  const queryClient = useQueryClient();
   const [language, setLanguage] = useState("EN");
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -124,7 +127,6 @@ export default function HeaderComponent() {
   const [form] = Form.useForm();
   const [newUser, setNewUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [caretakerList, setCaretakerList] = useState([]);
   const openModal = () => setIsModalVisible(true);
   const navigate = useNavigate();
   const [medications, setMedications] = useState([
@@ -138,15 +140,11 @@ export default function HeaderComponent() {
     },
   ]);
 
-  const [countryOptions, setCountryOptions] = useState([]);
-
-  useEffect(() => {
-    const countries = getData().map((country) => ({
+  const countryOptions = useMemo(() => {
+    return getData().map((country) => ({
       label: country.name,
       value: country.code,
     }));
-
-    setCountryOptions(countries);
   }, []);
 
   const data = localStorage.getItem("userData");
@@ -261,6 +259,7 @@ export default function HeaderComponent() {
   const handlePatientChange = (value) => {
     setSelectedPatient(value);
     localStorage.setItem("selectedPatientId", value);
+    window.dispatchEvent(new Event("patientChanged"));
 
     let selectedPatientObj = null;
     let selectedSource = null;
@@ -295,79 +294,55 @@ export default function HeaderComponent() {
     setEditedData(selectedPatientObj || {});
   };
 
-  const fetchSponsorPatients = async () => {
-    try {
-      const storedSponsorId = localStorage.getItem("sponsorProfileId");
-      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
-        return;
-      }
-      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const payload = {
-        sponsorid: Number(storedSponsorId),
-      };
-      const res = await axios.post(endpoint, payload, { headers });
-      const fetchedPatients = res.data || [];
+  const storedSponsorId = localStorage.getItem("sponsorProfileId");
+  const { data: fetchedPatients = [] } = useQuery({
+    queryKey: ["sponsorPatients", storedSponsorId],
+    queryFn: async () => {
+      const data = await headerService.getSponsorPatients(storedSponsorId);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && storedSponsorId !== "0" && !!token,
+  });
+
+  useEffect(() => {
+    if (fetchedPatients.length > 0) {
       setPatients(fetchedPatients);
-
-      if (fetchedPatients.length > 0) {
-        const storedSelectedId = localStorage.getItem("selectedPatientId");
-        let foundPatient = null;
-        if (storedSelectedId) {
-          foundPatient = fetchedPatients.find(
-            (p) => String(p.id) === String(storedSelectedId),
-          );
-        }
-        if (foundPatient) {
-          setSelectedPatient(String(foundPatient.id));
-          localStorage.setItem("selectedPatientId", String(foundPatient.id));
-          localStorage.setItem(
-            "selectedPatientData",
-            JSON.stringify(foundPatient),
-          );
-          showPatientDetails(foundPatient.id);
-        } else {
-          const firstPatientId = String(fetchedPatients[0].id);
-          setSelectedPatient(firstPatientId);
-          localStorage.setItem("selectedPatientId", firstPatientId);
-          localStorage.setItem(
-            "selectedPatientData",
-            JSON.stringify(fetchedPatients[0]),
-          );
-          showPatientDetails(firstPatientId);
-        }
+      const storedSelectedId = localStorage.getItem("selectedPatientId");
+      let foundPatient = null;
+      if (storedSelectedId) {
+        foundPatient = fetchedPatients.find(
+          (p) => String(p.id) === String(storedSelectedId),
+        );
       }
-    } catch (error) {
-      console.log("Error fetching sponsor patients:", error);
-      message.error("Failed to load sponsor patients");
-    } finally {
-      // Completed fetching sponsor patients
+      if (foundPatient) {
+        setSelectedPatient(String(foundPatient.id));
+        localStorage.setItem("selectedPatientId", String(foundPatient.id));
+        localStorage.setItem(
+          "selectedPatientData",
+          JSON.stringify(foundPatient),
+        );
+        showPatientDetails(foundPatient.id);
+      } else {
+        const firstPatientId = String(fetchedPatients[0].id);
+        setSelectedPatient(firstPatientId);
+        localStorage.setItem("selectedPatientId", firstPatientId);
+        localStorage.setItem(
+          "selectedPatientData",
+          JSON.stringify(fetchedPatients[0]),
+        );
+        showPatientDetails(firstPatientId);
+      }
     }
-  };
+  }, [fetchedPatients]);
 
-  useEffect(() => {
-    fetchSponsorPatients();
-  }, []);
-
-  const fetchCareTakerList = async () => {
-    try {
-      setLoading(true);
-      const endpoint = `${base_url}/caretakerprofile_list/`;
-      const res = await axios.get(endpoint);
-      setCaretakerList(res.data || []);
-    } catch (error) {
-      console.error("Error fetching caretaker list:", error);
-      message.error("Failed to load caretaker list");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCareTakerList();
-  }, []);
+  const { data: caretakerList = [] } = useQuery({
+    queryKey: ["caretakers"],
+    queryFn: async () => {
+      const data = await headerService.getCaretakers();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
   const handleEnrollSubmit = async (values) => {
     setLoading(true);
@@ -627,7 +602,7 @@ export default function HeaderComponent() {
 
       console.log("Update Response:", response.data);
 
-      await fetchSponsorPatients();
+      queryClient.invalidateQueries({ queryKey: ["sponsorPatients"] });
 
       message.success("Patient details updated successfully!");
       Modal.success({
@@ -1424,13 +1399,14 @@ export default function HeaderComponent() {
             >
               <Checkbox style={{ marginTop: 20 }}>
                 I agree to the{" "}
-                <a href="https://verimed.care/consent-of-care" target="_blank">
+                <a href="https://verimed.care/consent-of-care" target="_blank" rel="noreferrer">
                   Consent of Care
                 </a>
                 ,{" "}
                 <a
                   href="https://verimed.care/patient-family-bill-of-rights"
                   target="_blank"
+                  rel="noreferrer"
                 >
                   Patient & Family Bill of Rights
                 </a>{" "}
@@ -1438,6 +1414,7 @@ export default function HeaderComponent() {
                 <a
                   href="https://verimed.care/hipaa-release-privacy"
                   target="_blank"
+                  rel="noreferrer"
                 >
                   HIPAA Release & Privacy Statement
                 </a>

@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { userManagementService } from "../services/userManagementService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import PrimaryBtn from "../components/PrimaryBtn";
@@ -58,6 +60,7 @@ const linkedPatients = [
 ];
 
 export default function UserManagement() {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("sponsors");
@@ -71,13 +74,89 @@ export default function UserManagement() {
   // uploadedImage: preview URL shown in avatar
   const [uploadedImage, setUploadedImage] = useState(null);
   const [searchText, setSearchText] = useState("");
-  const [docList, setDocList] = useState([]);
-  const [sponsorList, setSponsorList] = useState([]);
-  const [caretakerList, setCaretakerList] = useState([]);
-  const [patientList, setPatientList] = useState([]);
-  const [loading, setLoading] = useState(false);
-
   const token = localStorage.getItem("token");
+
+  const {
+    data: listsData,
+    isLoading: queryLoading,
+    refetch: fetchAllUsersData,
+  } = useQuery({
+    queryKey: ["userManagementLists", token],
+    queryFn: () => userManagementService.fetchAllLists(),
+    enabled: !!token,
+  });
+
+  const allusers = listsData?.allUsers || [];
+  const sponsorsData = listsData?.sponsors || [];
+  const caretakersData = listsData?.caretakers || [];
+  const patientsData = listsData?.patients || [];
+  const doctorsData = listsData?.doctors || [];
+
+  const sponsorList = useMemo(() => {
+    const sponsorUserIds = sponsorsData.map((s) => s.user?.id);
+    const filteredAllusers = allusers.filter(
+      (u) =>
+        u.user_role === "sponsor" ||
+        u.role === "sponsor" ||
+        sponsorUserIds.includes(u.id),
+    );
+    return filteredAllusers.map((user) => ({
+      ...user,
+      sponsorProfile: sponsorsData.find((s) => s?.user?.id === user.id) || {},
+    }));
+  }, [allusers, sponsorsData]);
+
+  const caretakerList = useMemo(() => {
+    const caretakersUserIds = caretakersData.map((c) => c.user?.id);
+    const filteredAllusers = allusers.filter(
+      (u) =>
+        u.user_role === "care_taker" ||
+        u.role === "care_taker" ||
+        caretakersUserIds.includes(u.id),
+    );
+    return filteredAllusers.map((user) => ({
+      ...user,
+      caretakerProfile:
+        caretakersData.find((c) => c.user?.id === user.id) || {},
+    }));
+  }, [allusers, caretakersData]);
+
+  const patientList = useMemo(() => {
+    return patientsData.map((p) => {
+      const userObj = allusers.find((u) => u.id === p.user?.id) || {};
+      return {
+        ...userObj,
+        ...p,
+        id: p.id,
+        user_id: userObj.id || p.user?.id,
+        first_name: p.patient_name
+          ? p.patient_name.split(" ")[0]
+          : userObj.first_name || "Patient",
+        last_name: p.patient_name
+          ? p.patient_name.split(" ").slice(1).join(" ")
+          : userObj.last_name || "",
+        email: p.email || userObj.email || "",
+        phone: p.phone || userObj.phone || "",
+        patientProfile: p,
+      };
+    });
+  }, [allusers, patientsData]);
+
+  const docList = useMemo(() => {
+    const doctorUserIds = doctorsData.map((d) => d.user?.id);
+    const filteredAllusers = allusers.filter(
+      (u) =>
+        u.user_role === "doctor" ||
+        u.role === "doctor" ||
+        doctorUserIds.includes(u.id),
+    );
+    return filteredAllusers.map((user) => ({
+      ...user,
+      doctorProfile: doctorsData.find((d) => d.user?.id === user.id) || {},
+    }));
+  }, [allusers, doctorsData]);
+
+  const loading = queryLoading;
 
   const trimPhoneNumber = (phone) => {
     if (phone === undefined || phone === null) return "";
@@ -103,140 +182,7 @@ export default function UserManagement() {
     setEditedData((prev) => ({ ...prev, photo: file }));
   };
 
-  // ─── Fetch helpers ──────────────────────────────────────────────────────────
-  const fetchSponsors = useCallback(async () => {
-    setLoading(true);
-    try {
-      const headers = { Authorization: `Token ${token}` };
-      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data || [];
-      const res = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
-      const sponsors = res.data || [];
-      const sponsorUserIds = sponsors.map((s) => s.user?.id);
-      const filteredAllusers = allusers.filter(
-        (u) =>
-          u.user_role === "sponsor" ||
-          u.role === "sponsor" ||
-          sponsorUserIds.includes(u.id),
-      );
-      const combinedSponsors = filteredAllusers.map((user) => ({
-        ...user,
-        sponsorProfile: sponsors.find((s) => s?.user?.id === user.id) || {},
-      }));
-      setSponsorList(combinedSponsors);
-    } catch (error) {
-      console.log(error);
-      message.error("Failed to load sponsors");
-    } finally {
-      setLoading(false);
-    }
-  }, [base_url, token]);
-
-  const fetchCareTakers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const headers = { Authorization: `Token ${token}` };
-      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data || [];
-      const res = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
-      const caretakers = res.data || [];
-      const caretakersUserIds = caretakers.map((c) => c.user?.id);
-      const filteredAllusers = allusers.filter(
-        (u) =>
-          u.user_role === "care_taker" ||
-          u.role === "care_taker" ||
-          caretakersUserIds.includes(u.id),
-      );
-      const combinedCaretakers = filteredAllusers.map((user) => ({
-        ...user,
-        caretakerProfile: caretakers.find((c) => c.user?.id === user.id) || {},
-      }));
-      setCaretakerList(combinedCaretakers);
-    } catch (error) {
-      console.log(error);
-      message.error("Failed to load caretakers");
-    } finally {
-      setLoading(false);
-    }
-  }, [base_url, token]);
-
-  const fetchPatients = useCallback(async () => {
-    setLoading(true);
-    try {
-      const headers = { Authorization: `Token ${token}` };
-      const [userRes, patientRes] = await Promise.all([
-        axios.get(`${base_url}/user_view/`, { headers }),
-        axios.get(`${base_url}/patientprofile_list/`, { headers }),
-      ]);
-      const allUsers = userRes.data || [];
-      const patients = patientRes.data || [];
-      const combinedPatients = patients.map((p) => {
-        const userObj = allUsers.find((u) => u.id === p.user?.id) || {};
-        return {
-          ...userObj,
-          ...p,
-          id: p.id,
-          user_id: userObj.id || p.user?.id,
-          first_name: p.patient_name
-            ? p.patient_name.split(" ")[0]
-            : userObj.first_name || "Patient",
-          last_name: p.patient_name
-            ? p.patient_name.split(" ").slice(1).join(" ")
-            : userObj.last_name || "",
-          email: p.email || userObj.email || "",
-          phone: p.phone || userObj.phone || "",
-          patientProfile: p,
-        };
-      });
-      setPatientList(combinedPatients);
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-      message.error("Failed to load patients");
-    } finally {
-      setLoading(false);
-    }
-  }, [base_url, token]);
-
-  const fetchDoctors = useCallback(async () => {
-    setLoading(true);
-    try {
-      const headers = { Authorization: `Token ${token}` };
-      const userRes = await axios.get(`${base_url}/user_view/`, { headers });
-      const allusers = userRes.data || [];
-      const res = await axios.get(`${base_url}/doctorprofile_list/`, {
-        headers,
-      });
-      const doctors = res.data || [];
-      const doctorUserIds = doctors.map((d) => d.user?.id);
-      const filteredAllusers = allusers.filter(
-        (u) =>
-          u.user_role === "doctor" ||
-          u.role === "doctor" ||
-          doctorUserIds.includes(u.id),
-      );
-      const combinedDoctors = filteredAllusers.map((user) => ({
-        ...user,
-        doctorProfile: doctors.find((d) => d.user?.id === user.id) || {},
-      }));
-      setDocList(combinedDoctors);
-    } catch (error) {
-      console.log(error);
-      message.error("Failed to load doctors");
-    } finally {
-      setLoading(false);
-    }
-  }, [base_url, token]);
-
-  const fetchAllUsersData = useCallback(() => {
-    fetchSponsors();
-    fetchCareTakers();
-    fetchPatients();
-    fetchDoctors();
-  }, [fetchSponsors, fetchCareTakers, fetchPatients, fetchDoctors]);
-
-  useEffect(() => {
-    fetchAllUsersData();
-  }, [fetchAllUsersData]);
+  // ─── Fetch helpers (Optimized via TanStack Query) ──────────────────────────
 
   const dotStyle = (color) => ({
     width: "8px",
@@ -309,7 +255,6 @@ export default function UserManagement() {
         });
         setAddDrawerVisible(false);
         fetchAllUsersData();
-        setTimeout(() => fetchAllUsersData(), 600);
         return;
       }
 
@@ -348,7 +293,6 @@ export default function UserManagement() {
       });
       setAddDrawerVisible(false);
       fetchAllUsersData();
-      setTimeout(() => fetchAllUsersData(), 600);
     } catch (error) {
       console.error("Signup error:", error);
       notification.error({
@@ -550,7 +494,6 @@ export default function UserManagement() {
       });
 
       fetchAllUsersData();
-      setTimeout(() => fetchAllUsersData(), 600);
 
       setDrawerVisible(false);
       setUploadedImage(null);
@@ -598,19 +541,15 @@ export default function UserManagement() {
     try {
       const endpoint = `${base_url}/user_update/`;
       const updateData = { updateid: userId, is_active_state: newStatus };
-      const myHeaders = new Headers();
-      myHeaders.append("Authorization", `Token ${token}`);
       const formdata = new FormData();
       formdata.append("user_update_data", JSON.stringify(updateData));
-      const requestOptions = {
-        method: "PATCH",
-        headers: myHeaders,
-        body: formdata,
-        redirect: "follow",
-      };
       console.log("🚀 Updating user status:", updateData);
-      const response = await fetch(endpoint, requestOptions);
-      const result = await response.text();
+      const response = await axios.patch(endpoint, formdata, {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+      const result = response.data;
       console.log("✅ Status Update Success:", result);
       setEditedData((prev) => ({ ...prev, is_active_state: newStatus }));
       notification.success({
@@ -619,7 +558,6 @@ export default function UserManagement() {
         placement: "topRight",
       });
       fetchAllUsersData();
-      setTimeout(() => fetchAllUsersData(), 600);
     } catch (error) {
       console.error("❌ Status update failed:", error);
       notification.error({
@@ -654,14 +592,16 @@ export default function UserManagement() {
     }
     if (!userId) return;
     try {
-      if (activeTab === "sponsors")
-        setSponsorList((prev) => prev.filter((item) => item.id !== userId));
-      if (activeTab === "doctors")
-        setDocList((prev) => prev.filter((item) => item.id !== userId));
-      if (activeTab === "caretakers")
-        setCaretakerList((prev) => prev.filter((item) => item.id !== userId));
-      if (activeTab === "patients")
-        setPatientList((prev) => prev.filter((item) => item.id !== userId));
+      queryClient.setQueryData(["userManagementLists", token], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          allUsers: oldData.allUsers?.filter((item) => item.id !== userId) || [],
+          sponsors: oldData.sponsors?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
+          caretakers: oldData.caretakers?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
+          patients: oldData.patients?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
+          doctors: oldData.doctors?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
+        };
+      });
 
       setDrawerVisible(false);
       notification.success({

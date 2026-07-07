@@ -106,7 +106,7 @@ export default function Banner({ hideButtons = false }) {
           <div style={{ display: "flex", gap: "12px" }}>
             <Primarybtn
               name="Request Appointment"
-              onClick={() => navigate("/appointments")}
+              onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
             />
             <TertiaryBtn
               name="Purchase Service"

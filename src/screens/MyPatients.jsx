@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { myPatientsService } from "../services/myPatientsService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import bloodPressure from "../assets/icons/blood-pressure.svg";
@@ -24,7 +27,6 @@ export default function MyPatients() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  const [patient, setPatient] = useState(null);
 
   const token = localStorage.getItem("token");
 
@@ -78,27 +80,18 @@ export default function MyPatients() {
     careTakerDataRaw && careTakerDataRaw !== "undefined"
       ? JSON.parse(careTakerDataRaw)
       : null;
-  useEffect(() => {
-    const fetchCareTakerPatients = async () => {
-      try {
-        const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-        const headers = { Authorization: `Token ${token}` };
-        const res = await axios.get(endpoint, { headers });
-        const data = res.data;
-        const patients = Array.isArray(data)
-          ? data.find((appt) => appt?.caretaker?.id === careTakerData?.id)
-          : [];
+  const { data: allAppointments = [] } = useQuery({
+    queryKey: ["allAppointments"],
+    queryFn: async () => {
+      const data = await myPatientsService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
-        setPatient(patients);
-      } catch (error) {
-        console.log("Error fetching care taker patients:", error);
-        message.error("Failed to load caretaker patients");
-      } finally {
-        // Completed fetching caretaker patients
-      }
-    };
-    fetchCareTakerPatients();
-  }, [careTakerData, token]);
+  const patient = useMemo(() => {
+    return allAppointments.find((appt) => appt?.caretaker?.id === careTakerData?.id) || null;
+  }, [allAppointments, careTakerData?.id]);
 
   console.log("patient data", patient);
 
@@ -302,7 +295,6 @@ export default function MyPatients() {
               background: "transparent",
               border: "1px solid #E5E7EB",
               borderRadius: "10px",
-              padding: "16px",
               padding: 20,
               margin: "20px",
               fontFamily: "Inter, sans-serif",
@@ -787,7 +779,6 @@ export default function MyPatients() {
             <div
               style={{
                 background: "#fff",
-                width: "300px",
                 borderRadius: "10px",
                 border: "1px solid #E5E7EB",
                 padding: "20px",

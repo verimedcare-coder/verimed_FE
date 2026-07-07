@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
 import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { overviewService } from "../services/overviewService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Banner from "../components/Banner";
@@ -35,17 +37,29 @@ export default function Overview() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+  const queryClient = useQueryClient();
   const scrollRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(3);
-  const [appointmentList, setAppointmentList] = useState([]);
   const [patientData, setPatientData] = useState(null);
-  const [doctorAppointments, setDoctorAppointments] = useState([]);
-  const [caretakerAppoinments, setCaretakerAppoinments] = useState([]);
-  const [medicalReports, setMedicalReports] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isPatientModalVisible, setIsPatientModalVisible] = useState(false);
   const [selectedPatientRow, setSelectedPatientRow] = useState(null);
+  const [selectedPatientId, setSelectedPatientId] = useState(() =>
+    localStorage.getItem("selectedPatientId")
+  );
+
+  useEffect(() => {
+    const handlePatientChange = () => {
+      setSelectedPatientId(localStorage.getItem("selectedPatientId"));
+    };
+    window.addEventListener("patientChanged", handlePatientChange);
+    window.addEventListener("storage", handlePatientChange);
+    return () => {
+      window.removeEventListener("patientChanged", handlePatientChange);
+      window.removeEventListener("storage", handlePatientChange);
+    };
+  }, []);
 
   const token = localStorage.getItem("token");
 
@@ -64,7 +78,7 @@ export default function Overview() {
 
       message.success("Appointment deleted successfully");
 
-      fetchAppointments();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.error(error);
       message.error("Failed to delete appointment");
@@ -84,24 +98,14 @@ export default function Overview() {
     setSelectedPatientRow(null);
   };
 
-  const fetchAppointments = async () => {
-    try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const res = await axios.get(endpoint, { headers });
-      setAppointmentList(res.data);
-    } catch (error) {
-      console.log(error);
-      message.error("Failed to load appointments");
-    } finally {
-      // Completed fetching appointments
-    }
-  };
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
+  const { data: appointmentList = [] } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      const data = await overviewService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
   const [user] = useState(() => {
     const data = localStorage.getItem("userData");
@@ -136,7 +140,7 @@ export default function Overview() {
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
       const selectedPatient = patients.find(
-        (p) => p.id === Number(localStorage.getItem("selectedPatientId")),
+        (p) => p.id === Number(selectedPatientId || localStorage.getItem("selectedPatientId")),
       );
       setPatientData(selectedPatient);
     } catch (error) {
@@ -151,11 +155,7 @@ export default function Overview() {
     if (user?.user_role === "sponsor" || user?.user_role === "patient") {
       fetchPatientDetails();
     }
-
-    if (user?.user_role === "care_taker") {
-      fetchcaretakerAppointments();
-    }
-  }, [user]);
+  }, [user, selectedPatientId]);
 
   useEffect(() => {
     const fetchLoggedInDoctor = async () => {
@@ -199,48 +199,23 @@ export default function Overview() {
     doctorId = doctorData?.id || null;
   }
 
-  useEffect(() => {
-    const fetchDoctorAppointments = async () => {
-      try {
-        const endpoint = `${base_url}/vb_doctorappoinment_list/`;
-        const headers = { Authorization: `Token ${token}` };
+  const { data: doctorAppointments = [] } = useQuery({
+    queryKey: ["doctorAppointments", doctorId],
+    queryFn: async () => {
+      const data = await overviewService.getDoctorAppointments(doctorId);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!doctorId && !!token,
+  });
 
-        const payload = { doctorprofileid: doctorId };
-        const res = await axios.post(endpoint, payload, { headers });
-        if (Array.isArray(res.data)) {
-          setDoctorAppointments(res.data);
-        } else {
-          console.warn("Unexpected doctor appointments response:", res.data);
-        }
-      } catch (error) {
-        console.error("Error fetching doctor appointments:", error);
-        message.error("Failed to load doctor appointments");
-      } finally {
-        // Completed fetching doctor appointments
-      }
-    };
-
-    fetchDoctorAppointments();
-  }, [doctorId, token]);
-
-  const fetchcaretakerAppointments = async () => {
-    try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-      const headers = { Authorization: `Token ${token}` };
-
-      const res = await axios.get(endpoint, { headers });
-      if (Array.isArray(res.data)) {
-        setCaretakerAppoinments(res.data);
-      } else {
-        console.warn("Unexpected caretaker appointments response:", res.data);
-      }
-    } catch (error) {
-      console.error("Error fetching caretaker appointments:", error);
-      message.error("Failed to load caretaker appointments");
-    } finally {
-      // Completed fetching caretaker appointments
-    }
-  };
+  const { data: caretakerAppoinments = [] } = useQuery({
+    queryKey: ["caretakerAppointments"],
+    queryFn: async () => {
+      const data = await overviewService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token && user?.user_role === "care_taker",
+  });
 
   const dotStyle = (color) => ({
     width: "8px",
@@ -509,6 +484,24 @@ export default function Overview() {
       dataIndex: "type",
       key: "type",
       width: 180,
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          style={{ background: "#3CC994", borderColor: "#3CC994", borderRadius: 6 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            showPatientDetails(record);
+          }}
+        >
+          View
+        </Button>
+      ),
     },
   ];
 
@@ -916,37 +909,24 @@ export default function Overview() {
 
   const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
 
-  useEffect(() => {
-    const fetchMedicalHistory = async () => {
-      try {
-        const endpoint = `${base_url}/vb_patientappoinment_list/`;
-        const headers = { Authorization: `Token ${token}` };
-        const payload = { patientprofileid: cleanedPatientId };
-
-        const res = await axios.post(endpoint, payload, { headers });
-
-        const reports = res.data.map((item, index) => ({
-          key: index,
-          appointment_date: item.appointment_date,
-          appointment_time: item.appointment_time,
-          doctor: item.doc?.user
-            ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
-            : "—",
-          appointment_type: item.appointment_type,
-          care_taker_notes: item.care_taker_notes,
-        }));
-
-        setMedicalReports(reports);
-      } catch (error) {
-        console.error("Error fetching medical history:", error);
-        message.error("Failed to load medical history");
-      } finally {
-        // Completed fetching medical history
-      }
-    };
-
-    fetchMedicalHistory();
-  }, []);
+  const { data: medicalReports = [] } = useQuery({
+    queryKey: ["medicalHistory", cleanedPatientId],
+    queryFn: async () => {
+      const data = await overviewService.getPatientAppointments(cleanedPatientId);
+      const reports = (Array.isArray(data) ? data : []).map((item, index) => ({
+        key: index,
+        appointment_date: item.appointment_date,
+        appointment_time: item.appointment_time,
+        doctor: item.doc?.user
+          ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
+          : "—",
+        appointment_type: item.appointment_type,
+        care_taker_notes: item.care_taker_notes,
+      }));
+      return reports;
+    },
+    enabled: !!cleanedPatientId && !isNaN(cleanedPatientId) && !!token,
+  });
 
   const CaretakerAppointmentCard = ({ appointment }) => (
     <div className="appointment-card">
@@ -2704,7 +2684,10 @@ export default function Overview() {
               {/* Medical History */}
               <div style={tableContainer}>
                 <SectionHeader title="Medical History">
-                  <Primarybtn name="Request Appointment" />
+                  <Primarybtn
+                    name="Request Appointment"
+                    onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
+                  />
                 </SectionHeader>
 
                 <Table
@@ -3487,7 +3470,10 @@ export default function Overview() {
           {user?.user_role === "care_taker" && (
             <div style={tableContainer}>
               <SectionHeader title="Medical History">
-                <Primarybtn name="Request Appointment" />
+                <Primarybtn
+                  name="Request Appointment"
+                  onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
+                />
                 <SecondaryBtn name="update membership" />
               </SectionHeader>
 

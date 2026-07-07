@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { myPatientsService } from "../services/myPatientsService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -50,29 +53,18 @@ function SectionHeader({ title, children }) {
 
 export default function MembershipPlans() {
   const navigate = useNavigate();
-  const [appointmentList, setAppointmentList] = useState([]);
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
 
   const token = localStorage.getItem("token");
 
-  const fetchAppointments = async () => {
-    try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
-      const headers = {
-        Authorization: `Token ${token}`,
-      };
-      const res = await axios.get(endpoint, { headers });
-      setAppointmentList(res.data);
-    } catch (error) {
-      console.log(error);
-      message.error("Failed to load membership plans");
-    } finally {
-      // Completed fetching membership plans
-    }
-  };
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
+  const { data: appointmentList = [] } = useQuery({
+    queryKey: ["allAppointments"],
+    queryFn: async () => {
+      const data = await myPatientsService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
 
   const handleFinish = (values) => {
     console.log("New Membership Plan:", values);

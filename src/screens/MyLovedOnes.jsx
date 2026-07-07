@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { myLovedOnesService } from "../services/myLovedOnesService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import Primarybtn from "../components/PrimaryBtn";
@@ -20,9 +23,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function MyLovedOnes() {
   const navigate = useNavigate();
-  const [patientData, setPatientData] = useState(null);
+  const queryClient = useQueryClient();
   const [vitalsData, setVitalsData] = useState(null);
-  const [medicalReports, setMedicalReports] = useState([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm] = Form.useForm();
   const [editLoading, setEditLoading] = useState(false);
@@ -36,42 +38,42 @@ export default function MyLovedOnes() {
     flexShrink: 0,
   });
 
-  const patientId = localStorage.getItem("selectedPatientId");
-
-  const cleanedPatientId = Number(patientId);
+  const [selectedPatientId, setSelectedPatientId] = useState(() =>
+    localStorage.getItem("selectedPatientId")
+  );
 
   useEffect(() => {
-    const fetchMedicalHistory = async () => {
-      try {
-        const endpoint = `${base_url}/vb_patientappoinment_list/`;
-        const headers = { Authorization: `Token ${token}` };
-        const payload = { patientprofileid: cleanedPatientId };
-
-        const res = await axios.post(endpoint, payload, { headers });
-
-        const reports = res.data.map((item, index) => ({
-          key: index,
-          appointment_date: item.appointment_date,
-          appointment_time: item.appointment_time,
-          doctor: item.doc?.user
-            ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
-            : "—",
-          appointment_type: item.appointment_type,
-          care_taker_notes: item.care_taker_notes,
-          treatment_performed: item.treatment_performed,
-        }));
-
-        setMedicalReports(reports);
-      } catch (error) {
-        console.error("Error fetching medical history:", error);
-        message.error("Failed to load medical history");
-      } finally {
-        // Completed fetching medical history
-      }
+    const handlePatientChange = () => {
+      setSelectedPatientId(localStorage.getItem("selectedPatientId"));
     };
-
-    fetchMedicalHistory();
+    window.addEventListener("patientChanged", handlePatientChange);
+    window.addEventListener("storage", handlePatientChange);
+    return () => {
+      window.removeEventListener("patientChanged", handlePatientChange);
+      window.removeEventListener("storage", handlePatientChange);
+    };
   }, []);
+
+  const cleanedPatientId = Number(selectedPatientId);
+
+  const { data: medicalReports = [] } = useQuery({
+    queryKey: ["lovedOnesMedicalHistory", cleanedPatientId],
+    queryFn: async () => {
+      const data = await myLovedOnesService.getPatientAppointments(cleanedPatientId);
+      return (data || []).map((item, index) => ({
+        key: index,
+        appointment_date: item.appointment_date,
+        appointment_time: item.appointment_time,
+        doctor: item.doc?.user
+          ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
+          : "—",
+        appointment_type: item.appointment_type,
+        care_taker_notes: item.care_taker_notes,
+        treatment_performed: item.treatment_performed,
+      }));
+    },
+    enabled: !isNaN(cleanedPatientId) && cleanedPatientId > 0 && !!token,
+  });
 
   const columns = [
     {
@@ -150,35 +152,22 @@ export default function MyLovedOnes() {
     return `${base}/${cleanedUrl}`;
   };
 
-  const fetchPatientDetails = async () => {
-    try {
-      const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
-      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined" || storedSponsorId === "0") {
-        return;
+  const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
+  const { data: sponsorPatients = [] } = useQuery({
+    queryKey: ["sponsorPatients", storedSponsorId],
+    queryFn: async () => {
+      const data = await myLovedOnesService.getSponsorPatients(storedSponsorId);
+      if (Array.isArray(data)) {
+        localStorage.setItem("sponsorPatientData", JSON.stringify(data));
       }
-      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorid: Number(storedSponsorId) };
-      const res = await axios.post(endpoint, payload, { headers });
-      const patients = res.data;
-      if (Array.isArray(patients)) {
-        localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
-      }
-      const selectedPatient = patients.find(
-        (p) => p.id === Number(localStorage.getItem("selectedPatientId"))
-      );
-      setPatientData(selectedPatient);
-    } catch (error) {
-      console.error("Error fetching patient details:", error);
-      message.error("Failed to load patient details");
-    } finally {
-      // Completed fetching patient details
-    }
-  };
+      return data || [];
+    },
+    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && storedSponsorId !== "0" && !!token,
+  });
 
-  useEffect(() => {
-    fetchPatientDetails();
-  }, []);
+  const patientData = useMemo(() => {
+    return sponsorPatients.find((p) => p.id === cleanedPatientId) || null;
+  }, [sponsorPatients, cleanedPatientId]);
 
   const handleEditOpen = () => {
     if (!patientData) return;
@@ -224,7 +213,7 @@ export default function MyLovedOnes() {
       });
       message.success("Loved one profile and photo updated successfully!");
       setIsEditModalOpen(false);
-      await fetchPatientDetails();
+      queryClient.invalidateQueries({ queryKey: ["sponsorPatients"] });
     } catch (error) {
       console.error("Error updating loved one:", error);
       message.error("Failed to update loved one profile.");
@@ -527,7 +516,7 @@ export default function MyLovedOnes() {
             <SectionHeader title="Medical History">
               <Primarybtn
                 name="Request Appointment"
-                onClick={() => navigate("/appointments")}
+                onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
               />
               {/* <SecondaryBtn name="update membership" /> */}
             </SectionHeader>

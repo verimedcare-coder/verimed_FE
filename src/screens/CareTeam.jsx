@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { careTeamService } from "../services/careTeamService";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import SecondaryBtn from "../components/SecondaryBtn";
@@ -25,8 +28,6 @@ const actions = [
 ];
 
 export default function CareTeam() {
-  const [patientData, setPatientData] = useState(null);
-  const [vitalsData, setVitalsData] = useState(null);
   const token = localStorage.getItem("token");
 
   const data = localStorage.getItem("userData");
@@ -35,30 +36,18 @@ export default function CareTeam() {
     window.location.href = "/";
   }
 
-  const fetchPatientDetailsAndVitals = async () => {
-    try {
-      const endpoint = `${base_url}/vb_patientappoinment_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { patientprofileid: user?.profile_id || 4 };
+  const profileId = user?.profile_id || 4;
+  const { data: appointments = [] } = useQuery({
+    queryKey: ["patientAppointments", profileId],
+    queryFn: async () => {
+      const res = await careTeamService.getPatientAppointments(profileId);
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!profileId && !!token,
+  });
 
-      const res = await axios.post(endpoint, payload, { headers });
-
-      if (res.data && res.data.length > 0) {
-        const appointment = res.data[0];
-        setPatientData(appointment.patient);
-        setVitalsData(appointment);
-      }
-    } catch (error) {
-      console.error("Error fetching patient + vitals:", error);
-      message.error("Failed to load care team and vitals data");
-    } finally {
-      // Completed fetching patient vitals
-    }
-  };
-
-  useEffect(() => {
-    fetchPatientDetailsAndVitals();
-  }, []);
+  const vitalsData = appointments.length > 0 ? appointments[0] : null;
+  const patientData = vitalsData?.patient || null;
 
   const careTeam = vitalsData
     ? {
@@ -107,7 +96,6 @@ export default function CareTeam() {
               background: "transparent",
               border: "1px solid #E5E7EB",
               borderRadius: "10px",
-              padding: "16px",
               padding: 20,
               margin: "20px",
               fontFamily: "Inter, sans-serif",

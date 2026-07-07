@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
@@ -50,6 +51,7 @@ function SectionHeader({ title, children }) {
 }
 
 export default function DailyReports() {
+  const navigate = useNavigate();
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
@@ -708,7 +710,10 @@ export default function DailyReports() {
           {/* medical history */}
           <div style={tableContainer}>
             <SectionHeader title="Medical History">
-              <Primarybtn name="Request Appointment" />
+              <Primarybtn
+                name="Request Appointment"
+                onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
+              />
               <SecondaryBtn name="update membership" />
             </SectionHeader>
 
