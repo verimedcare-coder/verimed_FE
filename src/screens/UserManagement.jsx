@@ -31,7 +31,7 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import Primarybtn from "../components/PrimaryBtn";
-import { Select } from "antd";
+import { Select, AutoComplete } from "antd";
 import bloodPressure from "../assets/icons/blood-pressure.svg";
 import heartRate from "../assets/icons/heart-rate.svg";
 import oxygen from "../assets/icons/oxygen.svg";
@@ -57,6 +57,30 @@ const linkedPatients = [
     doctor: "Dr. Linda S.",
     caretaker: "Nurse Alex P.",
   },
+];
+const NOT_KNOWN_OPTIONS = [
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const BLOOD_GROUP_OPTIONS = [
+  { label: "A+", value: "A+" },
+  { label: "A−", value: "A−" },
+  { label: "B+", value: "B+" },
+  { label: "B−", value: "B−" },
+  { label: "AB+", value: "AB+" },
+  { label: "AB−", value: "AB−" },
+  { label: "O+", value: "O+" },
+  { label: "O−", value: "O−" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const GENDER_OPTIONS = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
+const YES_NO_NOT_KNOWN_OPTIONS = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
 ];
 
 export default function UserManagement() {
@@ -350,20 +374,33 @@ export default function UserManagement() {
           break;
 
         case "patients":
-          endpoint = `${base_url}/patientprofile_update/`;
-          keyName = "patientprofile_update_data";
+          endpoint = `${base_url}/patientprofile_create_update/`;
+          keyName = "patientprofile_data";
           const formattedDOB =
             editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
               ? new Date(editedData.patient_dob).toISOString().split("T")[0]
               : "";
           updateData = {
+            id: selectedPatient?.patientProfile?.id,
             patient_profile_updateid: selectedPatient?.patientProfile?.id,
+            updateid: selectedPatient?.patientProfile?.id,
+            patientprofileid: selectedPatient?.patientProfile?.id,
+            reason_enrollment: selectedPatient?.patientProfile?.reason_enrollment || editedData.reason_enrollment || "Patient",
+            reason: selectedPatient?.patientProfile?.reason_enrollment || editedData.reason_enrollment || "Patient",
             sponsorid: editedData.sponsorid || "",
             doctorid: editedData.doctorid || "",
             caretakerid: editedData.caretakerid || "",
             patient_dob: formattedDOB,
             patient_gender: editedData.patient_gender || "",
             blood_group: editedData.blood_group || "",
+            height: editedData.height || "",
+            weight: editedData.weight || "",
+            blood_pressure: editedData.blood_pressure || editedData.bp || "",
+            blood_sugar: editedData.blood_sugar || editedData.sugar || "",
+            heart_rate: editedData.heart_rate || editedData.heartRate || "",
+            oxygen: editedData.oxygen || "",
+            temperature: editedData.temperature || "",
+            respiratory_rate: editedData.respiratory_rate || editedData.respiratoryRate || "",
             patient_home_address: editedData.patient_home_address || "",
             primary_language: editedData.primary_language || "",
             religion: editedData.religion || "",
@@ -378,7 +415,6 @@ export default function UserManagement() {
             local_con_relation: editedData.local_con_relation || "",
             local_con_country_code: editedData.local_con_country_code || "",
             local_con_phone: editedData.local_con_phone || "",
-            reason_enrollment: editedData.reason_enrollment || "",
             reason_other: editedData.reason_other || "",
             medical_his_diagnosis: editedData.medical_his_diagnosis || "",
             medical_his_cancer: editedData.medical_his_cancer || "",
@@ -388,6 +424,9 @@ export default function UserManagement() {
             medical_his_major_surgeries:
               editedData.medical_his_major_surgeries || "",
             medical_his_curr_symp: editedData.medical_his_curr_symp || "",
+            last_doctor_visit: editedData.last_doctor_visit || "",
+            has_regular_doctor: editedData.has_regular_doctor || "",
+            regular_doctor_name: editedData.regular_doctor_name || "",
             medication_name: editedData.medication_name || "",
             medication_dose: editedData.medication_dose || "",
             medication_frequency: editedData.medication_frequency || "",
@@ -470,6 +509,9 @@ export default function UserManagement() {
       }
 
       formData.append(keyName, JSON.stringify(updateData));
+      if (activeTab === "patients") {
+        formData.append("patientprofile_update_data", JSON.stringify(updateData));
+      }
 
       if (editedData.photo instanceof File) {
         formData.append("photo", editedData.photo);
@@ -748,6 +790,9 @@ export default function UserManagement() {
             record.patientProfile?.medical_his_major_surgeries || "",
           medical_his_curr_symp:
             record.patientProfile?.medical_his_curr_symp || "",
+          last_doctor_visit: record.patientProfile?.last_doctor_visit || "",
+          has_regular_doctor: record.patientProfile?.has_regular_doctor || "",
+          regular_doctor_name: record.patientProfile?.regular_doctor_name || "",
           medication_name: record.patientProfile?.medication_name || "",
           medication_dose: record.patientProfile?.medication_dose || "",
           medication_frequency:
@@ -1465,20 +1510,123 @@ export default function UserManagement() {
                 onChange={(val) =>
                   setEditedData({ ...editedData, patient_gender: val })
                 }
-                options={[
-                  { label: "Male", value: "Male" },
-                  { label: "Female", value: "Female" },
-                  { label: "Other", value: "Other" },
-                ]}
+                options={GENDER_OPTIONS}
               />
             </div>
             <div>
               <p style={labelStyle}>Blood Group</p>
-              <Input
-                value={editedData.blood_group || ""}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, blood_group: e.target.value })
+              <Select
+                style={{ width: "100%" }}
+                value={editedData.blood_group || undefined}
+                placeholder="Select Blood Group"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, blood_group: val })
                 }
+                options={BLOOD_GROUP_OPTIONS}
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Height</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.height || undefined}
+                placeholder="e.g. 175 cm or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, height: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Weight</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.weight || undefined}
+                placeholder="e.g. 70 kg or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, weight: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Blood Pressure</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.blood_pressure || editedData.bp || undefined}
+                placeholder="Enter Blood Pressure or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, blood_pressure: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Heart Rate</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.heart_rate || editedData.heartRate || undefined}
+                placeholder="Enter Heart Rate or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, heart_rate: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Blood Sugar</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.blood_sugar || editedData.sugar || undefined}
+                placeholder="Enter Blood Sugar or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, blood_sugar: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Oxygen</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.oxygen || undefined}
+                placeholder="Enter Oxygen or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, oxygen: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Temperature</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.temperature || undefined}
+                placeholder="Enter Temperature or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, temperature: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Respiratory Rate</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.respiratory_rate || editedData.respiratoryRate || undefined}
+                placeholder="Enter Respiratory Rate or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, respiratory_rate: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
               />
             </div>
             <div>
@@ -1502,15 +1650,61 @@ export default function UserManagement() {
             <div>
               <p style={labelStyle}>Cancer History</p>
               <Select
-                value={editedData.medical_his_cancer}
+                style={{ width: "100%" }}
+                value={editedData.medical_his_cancer || undefined}
+                placeholder="Select cancer history"
                 onChange={(val) =>
                   setEditedData({ ...editedData, medical_his_cancer: val })
                 }
-                options={[
-                  { label: "Yes", value: "Yes" },
-                  { label: "No", value: "No" },
-                  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
-                ]}
+                options={YES_NO_NOT_KNOWN_OPTIONS}
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Current Symptoms</p>
+              <Input
+                value={editedData.medical_his_curr_symp || ""}
+                placeholder="Enter current symptoms"
+                onChange={(e) =>
+                  setEditedData({ ...editedData, medical_his_curr_symp: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Last Doctor / Hospital Visit</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.last_doctor_visit || undefined}
+                placeholder="e.g. 2 months ago, June 2024, or select Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, last_doctor_visit: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Do you have a doctor you see regularly?</p>
+              <Select
+                style={{ width: "100%" }}
+                value={editedData.has_regular_doctor || undefined}
+                placeholder="Select Yes, No, or Not Known"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, has_regular_doctor: val })
+                }
+                options={YES_NO_NOT_KNOWN_OPTIONS}
+              />
+            </div>
+            <div>
+              <p style={labelStyle}>Regular Doctor's Name & Contact Info</p>
+              <AutoComplete
+                style={{ width: "100%" }}
+                value={editedData.regular_doctor_name || undefined}
+                placeholder="Enter doctor's name, clinic, or contact details"
+                onChange={(val) =>
+                  setEditedData({ ...editedData, regular_doctor_name: val })
+                }
+                options={NOT_KNOWN_OPTIONS}
+                allowClear
               />
             </div>
           </div>

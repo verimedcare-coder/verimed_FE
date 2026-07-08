@@ -1,63 +1,16 @@
-import React from "react";
-import { Table, Button, DatePicker } from "antd";
-import { DownloadOutlined, CalendarOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { Table, Button, DatePicker, message } from "antd";
+import {
+  DownloadOutlined,
+  CalendarOutlined,
+  CreditCardOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import VerimedLogo from "../assets/icons/VerimedLogo.png";
 import Primarybtn from "../components/PrimaryBtn";
-
-// Table Columns
-const columns = [
-  {
-    title: "Date",
-    dataIndex: "date",
-    key: "date",
-  },
-  {
-    title: "Invoice No.",
-    dataIndex: "invoice",
-    key: "invoice",
-  },
-  {
-    title: "Plan",
-    dataIndex: "plan",
-    key: "plan",
-  },
-  {
-    title: "Amount",
-    dataIndex: "amount",
-    key: "amount",
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-    render: (text) => (
-      <span style={{ color: text === "Active" ? "#10B981" : "#6B7280" }}>
-        {text}
-      </span>
-    ),
-  },
-  {
-    title: "Download",
-    dataIndex: "download",
-    key: "download",
-    render: () => (
-      <a
-        href="#"
-        style={{
-          color: "#111827",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <DownloadOutlined /> Download PDF
-      </a>
-    ),
-  },
-];
+import StripeCheckoutModal from "../components/StripeCheckoutModal";
 
 // Table Data
 const dataSource = [
@@ -105,6 +58,92 @@ const Info = ({ label, value }) => (
 );
 
 export default function BillingAndMembership() {
+  const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  const openPayModal = (record = null) => {
+    setSelectedInvoice(record);
+    setIsStripeModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsStripeModalOpen(false);
+    message.success(
+      "Payment verified and membership / invoice successfully processed via Stripe!"
+    );
+  };
+
+  const columns = [
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+    },
+    {
+      title: "Invoice No.",
+      dataIndex: "invoice",
+      key: "invoice",
+    },
+    {
+      title: "Plan",
+      dataIndex: "plan",
+      key: "plan",
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      key: "amount",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (text) => (
+        <span style={{ color: text === "Active" ? "#10B981" : "#6B7280" }}>
+          {text}
+        </span>
+      ),
+    },
+    {
+      title: "Download",
+      dataIndex: "download",
+      key: "download",
+      render: () => (
+        <a
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          style={{
+            color: "#111827",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <DownloadOutlined /> Download PDF
+        </a>
+      ),
+    },
+    {
+      title: "Payment Action",
+      key: "action",
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<CreditCardOutlined />}
+          style={{
+            background: record.status === "Active" ? "#94A3B8" : "#007F5F",
+            borderColor: record.status === "Active" ? "#94A3B8" : "#007F5F",
+            fontWeight: 500,
+          }}
+          onClick={() => openPayModal(record)}
+        >
+          {record.status === "Active" ? "Paid (Receipt)" : "Pay via Stripe"}
+        </Button>
+      ),
+    },
+  ];
+
   const currentMembershipTop = [
     { label: "Plan Name", value: "Premium Plan" },
     { label: "Status", value: "Active" },
@@ -235,7 +274,10 @@ export default function BillingAndMembership() {
                   suffixIcon={<CalendarOutlined />}
                   style={{ width: 100 }}
                 />
-                <Primarybtn name="update Membership" />
+                <Primarybtn
+                  name="Renew / Pay via Stripe"
+                  onClick={() => openPayModal(null)}
+                />
               </div>
             </div>
 
@@ -249,6 +291,35 @@ export default function BillingAndMembership() {
           </div>
         </div>
       </div>
+
+      {/* Stripe Checkout Payment Portal */}
+      <StripeCheckoutModal
+        open={isStripeModalOpen}
+        onCancel={() => setIsStripeModalOpen(false)}
+        onSuccess={handlePaymentSuccess}
+        title={selectedInvoice ? "Invoice Payment" : "Membership Plan Renewal"}
+        summaryTitle={
+          selectedInvoice
+            ? `Invoice Summary (${selectedInvoice.invoice})`
+            : "Plan Renewal Summary"
+        }
+        itemName={
+          selectedInvoice ? selectedInvoice.plan : "Premium Membership Plan"
+        }
+        subItemName={
+          selectedInvoice
+            ? `Invoice Date: ${selectedInvoice.date}`
+            : "Annual Vitals Monitoring & Doctor Coordination"
+        }
+        amount={
+          selectedInvoice ? selectedInvoice.amount : "150,000 CFA ($150.00 USD)"
+        }
+        buttonText={
+          selectedInvoice
+            ? `Pay ${selectedInvoice.amount} & Verify`
+            : "Pay 150,000 CFA & Renew Membership"
+        }
+      />
     </div>
   );
 }

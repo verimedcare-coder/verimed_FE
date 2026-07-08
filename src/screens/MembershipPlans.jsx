@@ -22,11 +22,13 @@ import {
   CalendarOutlined,
   FilterOutlined,
   PlusOutlined,
+  CreditCardOutlined,
 } from "@ant-design/icons";
 import { Column, Pie } from "@ant-design/plots";
 import { base_url } from "../constants/constants";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import StripeCheckoutModal from "../components/StripeCheckoutModal";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -54,6 +56,20 @@ function SectionHeader({ title, children }) {
 export default function MembershipPlans() {
   const navigate = useNavigate();
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
+  const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
+  const openPlanStripeModal = (plan = null) => {
+    setSelectedPlan(plan);
+    setIsStripeModalOpen(true);
+  };
+
+  const handlePlanStripeSuccess = () => {
+    setIsStripeModalOpen(false);
+    message.success(
+      "Payment verified and membership plan successfully subscribed via Stripe!"
+    );
+  };
 
   const token = localStorage.getItem("token");
 
@@ -255,7 +271,7 @@ export default function MembershipPlans() {
     {
       title: "Action",
       key: "action",
-      width: 120,
+      width: 80,
       render: (_, record) => (
         <Button
           type="link"
@@ -263,6 +279,22 @@ export default function MembershipPlans() {
           onClick={() => alert(`Viewing details for ${record.planName}`)}
         >
           ...
+        </Button>
+      ),
+    },
+    {
+      title: "Subscription Action",
+      key: "subscribe",
+      width: 180,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<CreditCardOutlined />}
+          style={{ background: "#007F5F", borderColor: "#007F5F", fontWeight: 500 }}
+          onClick={() => openPlanStripeModal(record)}
+        >
+          Subscribe via Stripe
         </Button>
       ),
     },
@@ -617,6 +649,11 @@ export default function MembershipPlans() {
               </p>
               <div style={{ display: "flex", gap: 10 }}>
                 <PrimaryBtn
+                  icon={<CreditCardOutlined />}
+                  name="Subscribe / Upgrade via Stripe"
+                  onClick={() => openPlanStripeModal(null)}
+                />
+                <PrimaryBtn
                   icon={<PlusOutlined />}
                   name="New Membership Plan"
                   onClick={() => setAddDrawerOpen(true)}
@@ -629,31 +666,33 @@ export default function MembershipPlans() {
             <Table
               columns={columns}
               dataSource={membershipData}
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: true }}
-              bordered
-              style={{ width: "100%" }}
+              rowKey="id"
+              pagination={false}
             />
           </div>
         </div>
 
+        {/* Add Plan Drawer */}
         <Drawer
           title="Add New Membership Plan"
-          width={700}
+          width={450}
           onClose={() => setAddDrawerOpen(false)}
           open={addDrawerOpen}
-          destroyOnClose
+          bodyStyle={{ paddingBottom: 80 }}
         >
           <Form layout="vertical" onFinish={handleFinish}>
             {/* Plan Info */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-                marginTop: 8,
-              }}
-            >
+            <div style={{ marginBottom: 24 }}>
+              <h4
+                style={{
+                  color: "#1F2329",
+                  fontWeight: 600,
+                  marginBottom: 16,
+                }}
+              >
+                Plan Information
+              </h4>
+
               <Form.Item
                 name="planName"
                 label="Plan Name"
@@ -667,17 +706,8 @@ export default function MembershipPlans() {
               </Form.Item>
 
               <Form.Item
-                name="tagline"
-                label="Tagline / Short Description"
-                style={{ gridColumn: "1 / span 2" }}
-              >
-                <Input placeholder="Enter tagline or short description" />
-              </Form.Item>
-
-              <Form.Item
                 name="description"
                 label="Detailed Description"
-                style={{ gridColumn: "1 / span 2" }}
               >
                 <TextArea rows={3} placeholder="Describe this plan in detail" />
               </Form.Item>
@@ -885,6 +915,33 @@ export default function MembershipPlans() {
           </Form>
         </Drawer>
       </div>
+
+      {/* Verimed Multi-Step Secure Stripe Checkout Portal */}
+      <StripeCheckoutModal
+        open={isStripeModalOpen}
+        onCancel={() => setIsStripeModalOpen(false)}
+        onSuccess={handlePlanStripeSuccess}
+        title="Membership Plan"
+        summaryTitle={
+          selectedPlan
+            ? `Subscription Summary (${selectedPlan.planName})`
+            : "Plan Enrollment Summary"
+        }
+        itemName={selectedPlan ? selectedPlan.planName : "Premium Plan"}
+        subItemName={
+          selectedPlan
+            ? `Included: ${selectedPlan.visits}, ${selectedPlan.consults}`
+            : "Annual Medical Coordination & Monitoring"
+        }
+        amount={
+          selectedPlan ? selectedPlan.price : "150,000 CFA ($150.00 USD)"
+        }
+        buttonText={
+          selectedPlan
+            ? `Subscribe & Pay ${selectedPlan.price}`
+            : "Subscribe & Pay 150,000 CFA"
+        }
+      />
     </div>
   );
 }

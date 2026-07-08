@@ -266,61 +266,59 @@ export default function Overview() {
     }
   };
 
-  const vitals = patientData
-    ? [
-        {
-          icon: bloodPressure,
-          label: "Blood Pressure",
-          value: patientData.blood_pressure || "N/A",
-          color: getVitalColor("Blood Pressure", patientData.blood_pressure),
-        },
-        {
-          icon: heartRate,
-          label: "Heart Rate",
-          value: patientData.heart_rate || "N/A",
-          color: getVitalColor("Heart Rate", patientData.heart_rate),
-        },
-        {
-          icon: sugar,
-          label: "Blood Sugar",
-          value: patientData.blood_sugar || "N/A",
-          color: getVitalColor("Blood Sugar", patientData.blood_sugar),
-        },
-        {
-          icon: oxygen,
-          label: "Oxygen",
-          value: patientData.oxygen || "N/A",
-          color: getVitalColor("Oxygen", patientData.oxygen),
-        },
-        {
-          icon: temperature,
-          label: "Temperature",
-          value: patientData.temperature || "N/A",
-          color: getVitalColor("Temperature", patientData.temperature),
-        },
-        {
-          icon: respiratory,
-          label: "Respiratory Rate",
-          value: patientData.respiratory_rate || "N/A",
-          color: getVitalColor(
-            "Respiratory Rate",
-            patientData.respiratory_rate,
-          ),
-        },
-        {
-          icon: weight,
-          label: "Weight",
-          value: patientData.weight || "N/A",
-          color: getVitalColor("Weight", patientData.weight),
-        },
-        {
-          icon: statusIcon,
-          label: "Status",
-          value: patientData.status || "N/A",
-          color: getVitalColor("Status", patientData.status),
-        },
-      ]
-    : [];
+  const vitals = [
+    {
+      icon: bloodPressure,
+      label: "Blood Pressure",
+      value: patientData?.blood_pressure || "N/A",
+      color: getVitalColor("Blood Pressure", patientData?.blood_pressure),
+    },
+    {
+      icon: heartRate,
+      label: "Heart Rate",
+      value: patientData?.heart_rate || "N/A",
+      color: getVitalColor("Heart Rate", patientData?.heart_rate),
+    },
+    {
+      icon: sugar,
+      label: "Blood Sugar",
+      value: patientData?.blood_sugar || "N/A",
+      color: getVitalColor("Blood Sugar", patientData?.blood_sugar),
+    },
+    {
+      icon: oxygen,
+      label: "Oxygen",
+      value: patientData?.oxygen || "N/A",
+      color: getVitalColor("Oxygen", patientData?.oxygen),
+    },
+    {
+      icon: temperature,
+      label: "Temperature",
+      value: patientData?.temperature || "N/A",
+      color: getVitalColor("Temperature", patientData?.temperature),
+    },
+    {
+      icon: respiratory,
+      label: "Respiratory Rate",
+      value: patientData?.respiratory_rate || "N/A",
+      color: getVitalColor(
+        "Respiratory Rate",
+        patientData?.respiratory_rate,
+      ),
+    },
+    {
+      icon: weight,
+      label: "Weight",
+      value: patientData?.weight || "N/A",
+      color: getVitalColor("Weight", patientData?.weight),
+    },
+    {
+      icon: statusIcon,
+      label: "Status",
+      value: patientData?.status || "N/A",
+      color: getVitalColor("Status", patientData?.status),
+    },
+  ];
 
   const careTeam = patientData
     ? {
@@ -1119,32 +1117,28 @@ export default function Overview() {
                 {/* Vitals */}
                 <div style={vitalsGrid}>
                   <div style={vitalsGrid}>
-                    {vitals.length > 0 ? (
-                      vitals.map((item, i) => (
-                        <div key={i} style={vitalCard}>
-                          <img
-                            src={item.icon}
-                            alt={item.label}
-                            style={{ width: 24, height: 24 }}
-                          />
-                          <div>
-                            <p style={vitalLabel}>{item.label}</p>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 5,
-                              }}
-                            >
-                              <div style={dotStyle(item.color)}></div>
-                              <span style={vitalValue}>{item.value}</span>
-                            </div>
+                    {vitals.map((item, i) => (
+                      <div key={i} style={vitalCard}>
+                        <img
+                          src={item.icon}
+                          alt={item.label}
+                          style={{ width: 24, height: 24 }}
+                        />
+                        <div>
+                          <p style={vitalLabel}>{item.label}</p>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                          >
+                            <div style={dotStyle(item.color)}></div>
+                            <span style={vitalValue}>{item.value}</span>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p style={{ color: "#999" }}>Loading vitals...</p>
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

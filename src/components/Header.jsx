@@ -19,6 +19,7 @@ import {
   Radio,
   DatePicker,
   Spin,
+  AutoComplete,
 } from "antd";
 import {
   DownOutlined,
@@ -114,6 +115,32 @@ const UserForm = ({ onFinish }) => {
     </Form>
   );
 };
+
+const NOT_KNOWN_OPTIONS = [
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const BLOOD_GROUP_OPTIONS = [
+  { label: "A+", value: "A+" },
+  { label: "A−", value: "A−" },
+  { label: "B+", value: "B+" },
+  { label: "B−", value: "B−" },
+  { label: "AB+", value: "AB+" },
+  { label: "AB−", value: "AB−" },
+  { label: "O+", value: "O+" },
+  { label: "O−", value: "O−" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const GENDER_OPTIONS = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
+const YES_NO_NOT_KNOWN_OPTIONS = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+
 export default function HeaderComponent() {
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState("EN");
@@ -164,8 +191,11 @@ export default function HeaderComponent() {
 
   const handleMenuClick = (e) => {
     if (e.key === "1") {
+      localStorage.removeItem("patient_profile_updateid");
       setEditedData((prev) => ({
         ...prev,
+        id: undefined,
+        patient_profile_updateid: undefined,
         patientName: user
           ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
           : "",
@@ -175,8 +205,11 @@ export default function HeaderComponent() {
       }));
       setIsSecondModalVisible(true);
     } else if (e.key === "2") {
+      localStorage.removeItem("patient_profile_updateid");
       setEditedData((prev) => ({
         ...prev,
+        id: undefined,
+        patient_profile_updateid: undefined,
         patientName: "",
         patientEmail: "",
         patientPhone: "",
@@ -335,6 +368,48 @@ export default function HeaderComponent() {
     }
   }, [fetchedPatients]);
 
+  const checkIsLovedOne = (p) => {
+    if (!p) return false;
+    const reasonObj =
+      p.reason_enrollment ||
+      p.reason ||
+      p.patient?.reason_enrollment ||
+      p.patient?.reason ||
+      p.enrollment_type ||
+      p.patient?.enrollment_type ||
+      "";
+    const cleanReason = String(reasonObj).trim().toLowerCase();
+    if (
+      cleanReason === "loved one" ||
+      cleanReason === "loved ones" ||
+      cleanReason === "loved_one" ||
+      cleanReason === "lovedone" ||
+      cleanReason === "loved-one"
+    ) {
+      return true;
+    }
+    if (p.is_loved_one === true || p.patient?.is_loved_one === true) {
+      return true;
+    }
+    return false;
+  };
+
+  const patientList = useMemo(() => {
+    const list = Array.isArray(patients) && patients.length > 0
+      ? patients
+      : Array.isArray(careTakerPatients) ? careTakerPatients : [];
+    const uniqueList = Array.from(new Map(list.map(p => [String(p.id), p])).values());
+    return uniqueList.filter((p) => !checkIsLovedOne(p));
+  }, [patients, careTakerPatients]);
+
+  const lovedOnesList = useMemo(() => {
+    const list = Array.isArray(patients) && patients.length > 0
+      ? patients
+      : Array.isArray(careTakerPatients) ? careTakerPatients : [];
+    const uniqueList = Array.from(new Map(list.map(p => [String(p.id), p])).values());
+    return uniqueList.filter((p) => checkIsLovedOne(p));
+  }, [patients, careTakerPatients]);
+
   const { data: caretakerList = [] } = useQuery({
     queryKey: ["caretakers"],
     queryFn: async () => {
@@ -436,7 +511,7 @@ export default function HeaderComponent() {
     }
   };
 
-  const handleUpdateClick = async () => {
+  const handleUpdateClick = async (formValues = {}) => {
     setLoading(true);
 
     try {
@@ -459,7 +534,19 @@ export default function HeaderComponent() {
         },
       }));
 
+      const storedUpdateId =
+        localStorage.getItem("patient_profile_updateid") ||
+        editedData.id ||
+        editedData.patient_profile_updateid ||
+        null;
+
       const patientprofile_data = {
+        id: storedUpdateId ? Number(storedUpdateId) : null,
+        patient_profile_updateid: storedUpdateId ? Number(storedUpdateId) : null,
+        updateid: storedUpdateId ? Number(storedUpdateId) : null,
+        patientprofileid: storedUpdateId ? Number(storedUpdateId) : null,
+        reason_enrollment: editedData.reason_enrollment || editedData.reason || "Patient",
+        reason: editedData.reason_enrollment || editedData.reason || "Patient",
         sponsorid: storedSponsorId ? Number(storedSponsorId) : null,
         caretakerid: editedData.caretakerid || null,
 
@@ -472,12 +559,12 @@ export default function HeaderComponent() {
         height: editedData.height || "",
         weight: editedData.weight || "",
 
-        blood_pressure: editedData.bp || "",
-        blood_sugar: editedData.sugar || "",
-        heart_rate: editedData.heartRate || "",
+        blood_pressure: editedData.bp || editedData.blood_pressure || "",
+        blood_sugar: editedData.sugar || editedData.blood_sugar || "",
+        heart_rate: editedData.heartRate || editedData.heart_rate || "",
         oxygen: editedData.oxygen || "",
         temperature: editedData.temperature || "",
-        respiratory_rate: editedData.respiratoryRate || "",
+        respiratory_rate: editedData.respiratoryRate || editedData.respiratory_rate || "",
 
         patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
@@ -499,7 +586,6 @@ export default function HeaderComponent() {
         local_con_country_code: editedData.local_con_country_code || "",
         local_con_phone: editedData.local_con_phone || "",
 
-        reason_enrollment: editedData.reason_enrollment || "",
         reason_other: editedData.reason_other || null,
 
         medical_his_diagnosis: editedData.medical_his_diagnosis || "",
@@ -510,6 +596,9 @@ export default function HeaderComponent() {
         medical_his_major_surgeries:
           editedData.medical_his_major_surgeries || "",
         medical_his_curr_symp: editedData.medical_his_curr_symp || "",
+        last_doctor_visit: editedData.last_doctor_visit || "",
+        has_regular_doctor: editedData.has_regular_doctor || "",
+        regular_doctor_name: editedData.regular_doctor_name || "",
 
         allergies_issues: editedData.allergies_issues || false,
         allergies_drug: editedData.allergies_drug || "",
@@ -553,14 +642,26 @@ export default function HeaderComponent() {
 
       formData.append("medication", JSON.stringify(medicationArray));
 
+      // Profile Photo
+      const photoList =
+        formValues?.profile_photo ||
+        editedData.profile_photo ||
+        formValues?.photo ||
+        editedData.photo;
+      if (photoList && photoList.length > 0) {
+        const fileObj = photoList[0].originFileObj || photoList[0];
+        formData.append("patient_photo", fileObj);
+        formData.append("photo", fileObj);
+        formData.append("user_photo", fileObj);
+      }
+
       // Upload files
       if (
         editedData.patient_upload_files &&
         editedData.patient_upload_files.length > 0
       ) {
         editedData.patient_upload_files.forEach((file) => {
-          formData.append("patient_photo", file.originFileObj || file);
-          formData.append("photo", file.originFileObj || file);
+          formData.append("patient_upload_files", file.originFileObj || file);
         });
       }
 
@@ -592,13 +693,16 @@ export default function HeaderComponent() {
       console.log("medication:", JSON.stringify(medicationArray, null, 2));
 
       const endpoint = `${base_url}/patientprofile_create_update/`;
-
-      const response = await axios.post(endpoint, formData, {
+      const config = {
         headers: {
           Authorization: `Token ${token}`,
           "Content-Type": "multipart/form-data",
         },
-      });
+      };
+
+      const response = storedUpdateId
+        ? await axios.patch(endpoint, formData, config)
+        : await axios.post(endpoint, formData, config);
 
       console.log("Update Response:", response.data);
 
@@ -610,6 +714,7 @@ export default function HeaderComponent() {
         content: "Patient details updated and enrolled successfully!",
         centered: true,
       });
+      localStorage.removeItem("patient_profile_updateid");
       setIsSecondModalVisible(false);
     } catch (error) {
       console.error("Update failed:", error);
@@ -730,32 +835,49 @@ export default function HeaderComponent() {
           }}
         >
           {user.user_role === "sponsor" && (
-            <Select
-              value={selectedPatient}
-              onChange={handlePatientChange}
-              style={{ minWidth: 140, width: 180, borderRadius: 8 }}
-              placeholder="Select Patient"
-              optionLabelProp="label"
-            >
-              {Array.isArray(patients) && patients.length > 0
-                ? patients.map((p) => (
-                    <Option key={p.id} value={p.id} label={p.patient_name}>
-                      {p.patient_name}
+            <>
+              <Select
+                value={
+                  patientList.some((p) => String(p.id) === String(selectedPatient))
+                    ? selectedPatient
+                    : null
+                }
+                onChange={handlePatientChange}
+                style={{ minWidth: 140, width: 170, borderRadius: 8 }}
+                placeholder="Select Patient"
+                optionLabelProp="label"
+              >
+                {patientList.map((p) => {
+                  const name = p.patient_name || p.patient?.patient_name || "Unknown Patient";
+                  return (
+                    <Option key={p.id} value={p.id} label={name}>
+                      {name}
                     </Option>
-                  ))
-                : Array.isArray(careTakerPatients) &&
-                    careTakerPatients.length > 0
-                  ? careTakerPatients.map((p) => (
-                      <Option
-                        key={p.id}
-                        value={p.id}
-                        label={p.patient?.patient_name}
-                      >
-                        {p.patient?.patient_name}
-                      </Option>
-                    ))
-                  : null}
-            </Select>
+                  );
+                })}
+              </Select>
+
+              <Select
+                value={
+                  lovedOnesList.some((p) => String(p.id) === String(selectedPatient))
+                    ? selectedPatient
+                    : null
+                }
+                onChange={handlePatientChange}
+                style={{ minWidth: 140, width: 170, borderRadius: 8 }}
+                placeholder="Select Loved One"
+                optionLabelProp="label"
+              >
+                {lovedOnesList.map((p) => {
+                  const name = p.patient_name || p.patient?.patient_name || "Unknown Loved One";
+                  return (
+                    <Option key={p.id} value={p.id} label={name}>
+                      {name}
+                    </Option>
+                  );
+                })}
+              </Select>
+            </>
           )}
 
           {user.user_role === "sponsor" && (
@@ -852,14 +974,21 @@ export default function HeaderComponent() {
           autoComplete="off"
           initialValues={{
             ...editedData,
+            bp: editedData.bp || editedData.blood_pressure,
+            heartRate: editedData.heartRate || editedData.heart_rate,
+            sugar: editedData.sugar || editedData.blood_sugar,
+            respiratoryRate: editedData.respiratoryRate || editedData.respiratory_rate,
             patient_dob: editedData.patient_dob
               ? dayjs(editedData.patient_dob)
               : null,
           }}
           onValuesChange={(changed, all) => {
-            setEditedData({
-              ...editedData,
-              ...all,
+            setEditedData((prev) => {
+              const next = { ...prev, ...all };
+              if (JSON.stringify(prev) === JSON.stringify(next)) {
+                return prev;
+              }
+              return next;
             });
           }}
         >
@@ -870,6 +999,22 @@ export default function HeaderComponent() {
             <div style={twoColGrid}>
               <Form.Item name="patientName" label="Patient Name">
                 <Input placeholder="Enter Patient Name" autoComplete="off" />
+              </Form.Item>
+              <Form.Item
+                name="profile_photo"
+                label="Profile Photo"
+                valuePropName="fileList"
+                getValueFromEvent={(e) =>
+                  Array.isArray(e) ? e : e && e.fileList
+                }
+              >
+                <Upload
+                  beforeUpload={() => false}
+                  maxCount={1}
+                  listType="picture"
+                >
+                  <Button icon={<UploadOutlined />}>Upload Photo</Button>
+                </Upload>
               </Form.Item>
               <Form.Item name="age" label="Age">
                 <Input placeholder="Enter Age" autoComplete="off" />
@@ -903,56 +1048,83 @@ export default function HeaderComponent() {
                 />
               </Form.Item>
               <Form.Item name="bp" label="Blood Pressure">
-                <Input placeholder="Enter Blood Pressure" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Blood Pressure or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="heartRate" label="Heart Rate">
-                <Input placeholder="Enter Heart Rate" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Heart Rate or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="sugar" label="Blood Sugar">
-                <Input placeholder="Enter Blood Sugar" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Blood Sugar or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="oxygen" label="Oxygen">
-                <Input placeholder="Enter Oxygen" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Oxygen or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="temperature" label="Temperature">
-                <Input placeholder="Enter Temperature" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Temperature or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="respiratoryRate" label="Respiratory Rate">
-                <Input
-                  placeholder="Enter Respiratory Rate"
-                  autoComplete="off"
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Respiratory Rate or select Not Known"
+                  allowClear
                 />
               </Form.Item>
               <Form.Item name="height" label="Height">
-                <Input placeholder="Enter Height" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Height or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="weight" label="Weight">
-                <Input placeholder="Enter Weight" autoComplete="off" />
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Weight or select Not Known"
+                  allowClear
+                />
               </Form.Item>
               <Form.Item name="patient_dob" label="Date of Birth">
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
               <Form.Item name="patient_gender" label="Gender">
                 <Select
-                  options={[
-                    { label: "Male", value: "male" },
-                    { label: "Female", value: "female" },
-                    { label: "Other", value: "other" },
-                  ]}
+                  style={{ width: "100%" }}
+                  options={GENDER_OPTIONS}
                 />
               </Form.Item>
               <Form.Item name="blood_group" label="Blood Group">
                 <Select
-                  options={[
-                    { label: "A+", value: "A+" },
-                    { label: "A−", value: "A−" },
-                    { label: "B+", value: "B+" },
-                    { label: "B−", value: "B−" },
-                    { label: "AB+", value: "AB+" },
-                    { label: "AB−", value: "AB−" },
-                    { label: "O+", value: "O+" },
-                    { label: "O−", value: "O−" },
-                  ]}
+                  style={{ width: "100%" }}
+                  placeholder="Select Blood Group"
+                  options={BLOOD_GROUP_OPTIONS}
                 />
               </Form.Item>
               <Form.Item name="patient_home_address" label="Home Address">
@@ -1042,15 +1214,9 @@ export default function HeaderComponent() {
               </Form.Item>
               <Form.Item name="medical_his_cancer" label="Cancer History">
                 <Select
+                  style={{ width: "100%" }}
                   placeholder="Select cancer history"
-                  options={[
-                    { label: "Yes", value: "Yes" },
-                    { label: "No", value: "No" },
-                    {
-                      label: "Not Known at time of enrolment",
-                      value: "Not Known at time of enrolment",
-                    },
-                  ]}
+                  options={YES_NO_NOT_KNOWN_OPTIONS}
                 />
               </Form.Item>
               <Form.Item name="medical_his_other" label="Other Medical History">
@@ -1070,6 +1236,38 @@ export default function HeaderComponent() {
               </Form.Item>
               <Form.Item name="medical_his_curr_symp" label="Current Symptoms">
                 <Input.TextArea placeholder="Enter current symptoms" />
+              </Form.Item>
+              <Form.Item
+                name="last_doctor_visit"
+                label="Last Doctor / Hospital Visit"
+              >
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="e.g. 2 months ago, June 2024, or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item
+                name="has_regular_doctor"
+                label="Do you have a doctor you see regularly?"
+              >
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Select Yes, No, or Not Known"
+                  options={YES_NO_NOT_KNOWN_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item
+                name="regular_doctor_name"
+                label="Regular Doctor's Name & Contact Info"
+              >
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter doctor's name, clinic, or contact details"
+                  allowClear
+                />
               </Form.Item>
             </div>
 

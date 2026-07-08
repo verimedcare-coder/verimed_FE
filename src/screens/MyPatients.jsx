@@ -261,32 +261,28 @@ export default function MyPatients() {
           {/* cards */}
 
           <div style={vitalsGrid}>
-            {vitals.length > 0 ? (
-              vitals.map((item, i) => (
-                <div key={i} style={vitalCard}>
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    style={{ width: 24, height: 24 }}
-                  />
-                  <div>
-                    <p style={vitalLabel}>{item.label}</p>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 5,
-                      }}
-                    >
-                      <div style={dotStyle(item.color)}></div>
-                      <span style={vitalValue}>{item.value}</span>
-                    </div>
+            {vitals.map((item, i) => (
+              <div key={i} style={vitalCard}>
+                <img
+                  src={item.icon}
+                  alt={item.label}
+                  style={{ width: 24, height: 24 }}
+                />
+                <div>
+                  <p style={vitalLabel}>{item.label}</p>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <div style={dotStyle(item.color)}></div>
+                    <span style={vitalValue}>{item.value}</span>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p style={{ color: "#999" }}>Loading vitals...</p>
-            )}
+              </div>
+            ))}
           </div>
 
           {/* my details */}

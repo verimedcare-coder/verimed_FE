@@ -7,6 +7,7 @@ import Sider from "../components/Sider";
 import Banner from "../components/Banner";
 import Success from "../assets/icons/success.svg";
 import { useNavigate, useLocation } from "react-router-dom";
+import StripeCheckoutModal from "../components/StripeCheckoutModal";
 import {
   DownOutlined,
   UpOutlined,
@@ -1833,88 +1834,31 @@ export default function Appointments() {
         </p>
       </Modal>
 
-      {/* Verimed Secure Stripe Checkout Modal (#E & #F) */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #E2E8F0", paddingBottom: 12 }}>
-            <SafetyCertificateOutlined style={{ color: "#007F5F", fontSize: 24 }} />
-            <div>
-              <h3 style={{ margin: 0, color: "#007F5F", fontSize: 18, fontWeight: 700 }}>Verimed - Secure Stripe Checkout</h3>
-              <span style={{ fontSize: 12, color: "#64748B", fontWeight: 400 }}>256-Bit SSL Encrypted Payment Portal</span>
-            </div>
-          </div>
-        }
+      {/* Verimed Multi-Step Secure Stripe Checkout Portal */}
+      <StripeCheckoutModal
         open={isCheckoutModalOpen}
         onCancel={() => setIsCheckoutModalOpen(false)}
-        footer={null}
-        centered
-        width={540}
-      >
-        <div style={{ padding: "10px 0" }}>
-          {/* Consultation Summary */}
-          <div style={{ background: "#F8FAFC", padding: 16, borderRadius: 10, border: "1px solid #E2E8F0", marginBottom: 20 }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "#1E293B", fontSize: 14, fontWeight: 600 }}>Consultation Booking Summary</h4>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
-              <span style={{ color: "#64748B" }}>Provider / Service:</span>
-              <strong style={{ color: "#1E293B" }}>{pendingBookingValues?.values?.appointmentType ? (deptList?.find(d => d.id === pendingBookingValues.values.appointmentType)?.dep_name || "Physician Consultation") : "In-Home Clinical Visit"}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
-              <span style={{ color: "#64748B" }}>Selected Patient:</span>
-              <strong style={{ color: "#1E293B" }}>{pendingBookingValues?.values?.patientId ? (patients?.find(p => p.id === pendingBookingValues.values.patientId)?.patient_name || "Loved One") : "Loved One"}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderTop: "1px dashed #CBD5E1", paddingTop: 8, marginTop: 8 }}>
-              <span style={{ color: "#1E293B", fontWeight: 600 }}>Total Consultation Fee:</span>
-              <strong style={{ color: "#007F5F", fontSize: 16 }}>75,000 CFA ($150.00 USD)</strong>
-            </div>
-          </div>
-
-          {/* Simulated Stripe Credit Card Interface */}
-          <div style={{ border: "1px solid #E2E8F0", borderRadius: 10, padding: 16, background: "#FFF" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontWeight: 600, fontSize: 13, color: "#334155" }}>Credit or Debit Card</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                <Tag color="blue">VISA</Tag>
-                <Tag color="orange">MasterCard</Tag>
-                <Tag color="cyan">AMEX</Tag>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Card Number</label>
-                <Input prefix={<CreditCardOutlined style={{ color: "#94A3B8" }} />} placeholder="4242 •••• •••• 4242" defaultValue="4242 4242 4242 4242" style={{ fontFamily: "monospace" }} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Expiration Date</label>
-                  <Input placeholder="MM / YY" defaultValue="12 / 28" style={{ fontFamily: "monospace" }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>CVC / CVV</label>
-                  <Input prefix={<LockOutlined style={{ color: "#94A3B8" }} />} placeholder="CVC" defaultValue="314" style={{ fontFamily: "monospace" }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "#64748B", display: "block", marginBottom: 4 }}>Cardholder Name</label>
-                <Input placeholder="Name on card" defaultValue={`${userData?.first_name || "Sponsor"} ${userData?.last_name || ""}`.trim()} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
-            <Button onClick={() => setIsCheckoutModalOpen(false)} disabled={checkoutLoading}>Cancel</Button>
-            <Button
-              type="primary"
-              icon={<LockOutlined />}
-              onClick={handleConfirmCheckout}
-              loading={checkoutLoading}
-              style={{ background: "#007F5F", borderColor: "#007F5F", fontWeight: 600, padding: "0 24px", height: 40 }}
-            >
-              Pay 75,000 CFA & Confirm Booking
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onSuccess={handleConfirmCheckout}
+        title="Consultation Service"
+        summaryTitle="Appointment & Clinical Review"
+        itemName={
+          pendingBookingValues?.values?.appointmentType
+            ? deptList?.find(
+                (d) => d.id === pendingBookingValues.values.appointmentType
+              )?.dep_name || "Physician Consultation"
+            : "In-Home Clinical Visit"
+        }
+        subItemName={
+          pendingBookingValues?.values?.patientId
+            ? patients?.find(
+                (p) => p.id === pendingBookingValues.values.patientId
+              )?.patient_name || "Loved One Patient"
+            : "Loved One Patient"
+        }
+        amount="75,000 CFA ($150.00 USD)"
+        buttonText="Complete & Confirm Booking"
+        userData={userData}
+      />
     </div>
   );
 }

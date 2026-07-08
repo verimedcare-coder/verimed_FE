@@ -15,11 +15,37 @@ import sugar from "../assets/icons/sugar.svg";
 import weight from "../assets/icons/weight.svg";
 import temperature from "../assets/icons/temperature.png";
 import patientdetails from "../assets/images/patient-profile.jpg";
-import { Table, message, Modal, Form, Input, Upload, Button } from "antd";
+import { Table, message, Modal, Form, Input, Upload, Button, Select, DatePicker, AutoComplete } from "antd";
+import dayjs from "dayjs";
+import { getData } from "country-list";
 import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { base_url } from "../constants/constants";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+const NOT_KNOWN_OPTIONS = [
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const BLOOD_GROUP_OPTIONS = [
+  { label: "A+", value: "A+" },
+  { label: "A−", value: "A−" },
+  { label: "B+", value: "B+" },
+  { label: "B−", value: "B−" },
+  { label: "AB+", value: "AB+" },
+  { label: "AB−", value: "AB−" },
+  { label: "O+", value: "O+" },
+  { label: "O−", value: "O−" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
+const GENDER_OPTIONS = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
+const YES_NO_NOT_KNOWN_OPTIONS = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
+  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+];
 
 export default function MyLovedOnes() {
   const navigate = useNavigate();
@@ -28,6 +54,19 @@ export default function MyLovedOnes() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm] = Form.useForm();
   const [editLoading, setEditLoading] = useState(false);
+
+  const countryOptions = useMemo(() => {
+    return getData().map((country) => ({
+      label: country.name,
+      value: country.code,
+    }));
+  }, []);
+
+  const twoColGrid = {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 16,
+  };
 
   const token = localStorage.getItem("token");
   const dotStyle = (color) => ({
@@ -144,7 +183,7 @@ export default function MyLovedOnes() {
   const sponsorId = localStorage.getItem("sponsorProfileId");
 
   const getPhotoUrl = (url) => {
-    if (!url) return patientdetails;
+    if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
     if (url?.startsWith("http")) return url;
     url = url.replace(/^\/media\/+/i, "/");
     const base = base_url.replace(/\/+$/, "");
@@ -175,7 +214,40 @@ export default function MyLovedOnes() {
       name: patientData.patient_name || "",
       phone: patientData.phone || "",
       email: patientData.email || "",
+      age: patientData.age || "",
+      patient_dob: patientData.patient_dob ? dayjs(patientData.patient_dob) : null,
+      patient_gender: patientData.patient_gender || "",
+      blood_group: patientData.blood_group || "",
+      height: patientData.height || "",
+      weight: patientData.weight || "",
+      blood_pressure: patientData.blood_pressure || patientData.bp || "",
+      heart_rate: patientData.heart_rate || patientData.heartRate || "",
+      blood_sugar: patientData.blood_sugar || patientData.sugar || "",
+      oxygen: patientData.oxygen || "",
+      temperature: patientData.temperature || "",
+      respiratory_rate: patientData.respiratory_rate || patientData.respiratoryRate || "",
+      country_code: patientData.country_code || "",
+      patient_home_address: patientData.patient_home_address || "",
+      primary_language: patientData.primary_language || "",
+      religion: patientData.religion || "",
+      emer_con_name: patientData.emer_con_name || "",
+      emer_con_relation: patientData.emer_con_relation || "",
+      emer_con_country_code: patientData.emer_con_country_code || "",
+      emer_con_phone: patientData.emer_con_phone || "",
+      local_con_name: patientData.local_con_name || "",
+      local_con_relation: patientData.local_con_relation || "",
+      local_con_country_code: patientData.local_con_country_code || "",
+      local_con_phone: patientData.local_con_phone || "",
       condition: patientData.medical_his_diagnosis || "",
+      medical_his_cancer: patientData.medical_his_cancer || "",
+      medical_his_major_surgeries: patientData.medical_his_major_surgeries || "",
+      medical_his_curr_symp: patientData.medical_his_curr_symp || "",
+      last_doctor_visit: patientData.last_doctor_visit || "",
+      has_regular_doctor: patientData.has_regular_doctor || "",
+      regular_doctor_name: patientData.regular_doctor_name || "",
+      allergies_drug: patientData.allergies_drug || "",
+      allergies_food: patientData.allergies_food || "",
+      photo: undefined,
     });
     setIsEditModalOpen(true);
   };
@@ -188,16 +260,58 @@ export default function MyLovedOnes() {
         patientData?.sponsorid ||
         patientData?.sponsor ||
         0;
+      const formattedDOB =
+        values.patient_dob && dayjs.isDayjs(values.patient_dob)
+          ? values.patient_dob.format("YYYY-MM-DD")
+          : values.patient_dob || "";
       const patientprofile_data = {
-        updateid: patientData.id,
-        patient_name: values.name,
-        phone: values.phone,
-        email: values.email,
-        medical_his_diagnosis: values.condition,
+        id: Number(patientData.id),
+        patient_profile_updateid: Number(patientData.id),
+        updateid: Number(patientData.id),
+        patientprofileid: Number(patientData.id),
+        patient_name: values.name || "",
+        phone: values.phone || "",
+        email: values.email || "",
+        age: values.age || "",
+        patient_dob: formattedDOB,
+        patient_gender: values.patient_gender || "",
+        blood_group: values.blood_group || "",
+        height: values.height || "",
+        weight: values.weight || "",
+        blood_pressure: values.blood_pressure || "",
+        heart_rate: values.heart_rate || "",
+        blood_sugar: values.blood_sugar || "",
+        oxygen: values.oxygen || "",
+        temperature: values.temperature || "",
+        respiratory_rate: values.respiratory_rate || "",
+        country_code: values.country_code || patientData.country_code || "",
+        patient_home_address: values.patient_home_address || "",
+        primary_language: values.primary_language || "",
+        religion: values.religion || "",
+        emer_con_name: values.emer_con_name || "",
+        emer_con_relation: values.emer_con_relation || "",
+        emer_con_country_code: values.emer_con_country_code || "",
+        emer_con_phone: values.emer_con_phone || "",
+        local_con_name: values.local_con_name || "",
+        local_con_relation: values.local_con_relation || "",
+        local_con_country_code: values.local_con_country_code || "",
+        local_con_phone: values.local_con_phone || "",
+        medical_his_diagnosis: values.condition || "",
+        medical_his_cancer: values.medical_his_cancer || "",
+        medical_his_major_surgeries: values.medical_his_major_surgeries || "",
+        medical_his_curr_symp: values.medical_his_curr_symp || "",
+        last_doctor_visit: values.last_doctor_visit || "",
+        has_regular_doctor: values.has_regular_doctor || "",
+        regular_doctor_name: values.regular_doctor_name || "",
+        allergies_drug: values.allergies_drug || "",
+        allergies_food: values.allergies_food || "",
+        reason_enrollment: patientData.reason_enrollment || patientData.reason || "Loved One",
+        reason: patientData.reason_enrollment || patientData.reason || "Loved One",
         sponsorid: Number(storedSponsorId),
         sponsor: Number(storedSponsorId),
       };
       const formData = new FormData();
+      formData.append("patientprofile_update_data", JSON.stringify(patientprofile_data));
       formData.append("patientprofile_data", JSON.stringify(patientprofile_data));
       if (values.photo && values.photo.length > 0) {
         const fileObj = values.photo[0].originFileObj || values.photo[0];
@@ -205,15 +319,12 @@ export default function MyLovedOnes() {
         formData.append("photo", fileObj);
         formData.append("user_photo", fileObj);
       }
-      await axios.post(`${base_url}/patientprofile_create_update/`, formData, {
-        headers: {
-          Authorization: `Token ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      message.success("Loved one profile and photo updated successfully!");
+      await myLovedOnesService.patchPatientProfile(formData);
+      message.success("Loved one profile updated successfully!");
       setIsEditModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["sponsorPatients"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["lovedOnesMedicalHistory"] });
     } catch (error) {
       console.error("Error updating loved one:", error);
       message.error("Failed to update loved one profile.");
@@ -263,58 +374,56 @@ export default function MyLovedOnes() {
     }
   };
 
-  const vitals = vitalsData
-    ? [
-        {
-          icon: bloodPressure,
-          label: "Blood Pressure",
-          value: vitalsData.blood_pressure || "N/A",
-          color: getVitalColor("Blood Pressure", vitalsData.blood_pressure),
-        },
-        {
-          icon: heartRate,
-          label: "Heart Rate",
-          value: vitalsData.heart_rate || "N/A",
-          color: getVitalColor("Heart Rate", vitalsData.heart_rate),
-        },
-        {
-          icon: sugar,
-          label: "Blood Sugar",
-          value: vitalsData.blood_sugar || "N/A",
-          color: getVitalColor("Blood Sugar", vitalsData.blood_sugar),
-        },
-        {
-          icon: oxygen,
-          label: "Oxygen",
-          value: vitalsData.oxygen || "N/A",
-          color: getVitalColor("Oxygen", vitalsData.oxygen),
-        },
-        {
-          icon: temperature,
-          label: "Temperature",
-          value: vitalsData.temperature || "N/A",
-          color: getVitalColor("Temperature", vitalsData.temperature),
-        },
-        {
-          icon: respiratory,
-          label: "Respiratory Rate",
-          value: vitalsData.respiratory_rate || "N/A",
-          color: getVitalColor("Respiratory Rate", vitalsData.respiratory_rate),
-        },
-        {
-          icon: weight,
-          label: "Weight",
-          value: vitalsData.weight || "N/A",
-          color: getVitalColor("Weight", vitalsData.weight),
-        },
-        {
-          icon: statusIcon,
-          label: "Status",
-          value: vitalsData.status || "N/A",
-          color: getVitalColor("Status", vitalsData.status),
-        },
-      ]
-    : [];
+  const vitals = [
+    {
+      icon: bloodPressure,
+      label: "Blood Pressure",
+      value: vitalsData?.blood_pressure || "N/A",
+      color: getVitalColor("Blood Pressure", vitalsData?.blood_pressure),
+    },
+    {
+      icon: heartRate,
+      label: "Heart Rate",
+      value: vitalsData?.heart_rate || "N/A",
+      color: getVitalColor("Heart Rate", vitalsData?.heart_rate),
+    },
+    {
+      icon: sugar,
+      label: "Blood Sugar",
+      value: vitalsData?.blood_sugar || "N/A",
+      color: getVitalColor("Blood Sugar", vitalsData?.blood_sugar),
+    },
+    {
+      icon: oxygen,
+      label: "Oxygen",
+      value: vitalsData?.oxygen || "N/A",
+      color: getVitalColor("Oxygen", vitalsData?.oxygen),
+    },
+    {
+      icon: temperature,
+      label: "Temperature",
+      value: vitalsData?.temperature || "N/A",
+      color: getVitalColor("Temperature", vitalsData?.temperature),
+    },
+    {
+      icon: respiratory,
+      label: "Respiratory Rate",
+      value: vitalsData?.respiratory_rate || "N/A",
+      color: getVitalColor("Respiratory Rate", vitalsData?.respiratory_rate),
+    },
+    {
+      icon: weight,
+      label: "Weight",
+      value: vitalsData?.weight || "N/A",
+      color: getVitalColor("Weight", vitalsData?.weight),
+    },
+    {
+      icon: statusIcon,
+      label: "Status",
+      value: vitalsData?.status || "N/A",
+      color: getVitalColor("Status", vitalsData?.status),
+    },
+  ];
 
   const appointmentDetailsDynamic = vitalsData
     ? [
@@ -442,6 +551,10 @@ export default function MyLovedOnes() {
                   patientData?.photo_view_url || patientData?.photo
                 )}
                 alt="profile"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = patientdetails;
+                }}
                 style={{
                   width: 64,
                   height: 64,
@@ -481,32 +594,28 @@ export default function MyLovedOnes() {
             {/* Vitals */}
             <div style={vitalsGrid}>
               <div style={vitalsGrid}>
-                {vitals.length > 0 ? (
-                  vitals.map((item, i) => (
-                    <div key={i} style={vitalCard}>
-                      <img
-                        src={item.icon}
-                        alt={item.label}
-                        style={{ width: 24, height: 24 }}
-                      />
-                      <div>
-                        <p style={vitalLabel}>{item.label}</p>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          <div style={dotStyle(item.color)}></div>
-                          <span style={vitalValue}>{item.value}</span>
-                        </div>
+                {vitals.map((item, i) => (
+                  <div key={i} style={vitalCard}>
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      style={{ width: 24, height: 24 }}
+                    />
+                    <div>
+                      <p style={vitalLabel}>{item.label}</p>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <div style={dotStyle(item.color)}></div>
+                        <span style={vitalValue}>{item.value}</span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <p style={{ color: "#999" }}>Loading vitals...</p>
-                )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -892,10 +1001,11 @@ export default function MyLovedOnes() {
 
       {/* Edit Loved One Modal (#B) */}
       <Modal
-        title="Edit Loved One Profile & Photo"
+        title="Edit Profile & Photo"
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
         footer={null}
+        width={720}
         centered
       >
         <Form
@@ -904,35 +1014,207 @@ export default function MyLovedOnes() {
           onFinish={handleEditSubmit}
           style={{ marginTop: 16 }}
         >
-          <Form.Item
-            label="Loved One Name"
-            name="name"
-            rules={[{ required: true, message: "Please enter name" }]}
-          >
-            <Input placeholder="Enter patient name" />
-          </Form.Item>
-          <Form.Item label="Phone Number" name="phone">
-            <Input placeholder="Enter phone number" />
-          </Form.Item>
-          <Form.Item label="Email Address" name="email">
-            <Input placeholder="Enter email address" />
-          </Form.Item>
-          <Form.Item
-            label="Primary Medical Condition / Diagnosis"
-            name="condition"
-          >
-            <Input placeholder="e.g. Hypertension, Diabetes" />
-          </Form.Item>
-          <Form.Item
-            label="Upload New Photo"
-            name="photo"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e && e.fileList}
-          >
-            <Upload beforeUpload={() => false} maxCount={1} listType="picture">
-              <Button icon={<UploadOutlined />}>Select Photo</Button>
-            </Upload>
-          </Form.Item>
+          <div style={{ maxHeight: "68vh", overflowY: "auto", paddingRight: 8 }}>
+            <h3>1. Personal Information</h3>
+            <div style={twoColGrid}>
+              <Form.Item
+                label="Name"
+                name="name"
+                rules={[{ required: true, message: "Please enter name" }]}
+              >
+                <Input placeholder="Enter patient name" />
+              </Form.Item>
+              <Form.Item label="Upload New Photo" name="photo" valuePropName="fileList" getValueFromEvent={(e) => e && e.fileList}>
+                <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+                  <Button icon={<UploadOutlined />}>Select Photo</Button>
+                </Upload>
+              </Form.Item>
+              <Form.Item label="Age" name="age">
+                <Input placeholder="Age" />
+              </Form.Item>
+              <Form.Item label="Date of Birth" name="patient_dob">
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item label="Gender" name="patient_gender">
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Select Gender"
+                  options={GENDER_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item label="Blood Group" name="blood_group">
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Select Blood Group"
+                  options={BLOOD_GROUP_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item label="Height" name="height">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="e.g. 175 cm or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Weight" name="weight">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="e.g. 70 kg or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Blood Pressure" name="blood_pressure">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Blood Pressure or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Heart Rate" name="heart_rate">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Heart Rate or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Blood Sugar" name="blood_sugar">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Blood Sugar or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Oxygen" name="oxygen">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Oxygen or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Temperature" name="temperature">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Temperature or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Respiratory Rate" name="respiratory_rate">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter Respiratory Rate or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Phone Number" name="phone">
+                <Input placeholder="Enter phone number" />
+              </Form.Item>
+              <Form.Item label="Email Address" name="email">
+                <Input placeholder="Enter email address" />
+              </Form.Item>
+              <Form.Item label="Country" name="country_code">
+                <Select showSearch options={countryOptions} placeholder="Select Country" />
+              </Form.Item>
+              <Form.Item label="Home Address" name="patient_home_address">
+                <Input placeholder="Enter address" />
+              </Form.Item>
+              <Form.Item label="Primary Language" name="primary_language">
+                <Input placeholder="e.g. English" />
+              </Form.Item>
+              <Form.Item label="Religion" name="religion">
+                <Input placeholder="Enter religion" />
+              </Form.Item>
+            </div>
+
+            <h3>2. Emergency Contact</h3>
+            <div style={twoColGrid}>
+              <Form.Item label="Full Name" name="emer_con_name">
+                <Input placeholder="Enter emergency contact name" />
+              </Form.Item>
+              <Form.Item label="Relationship" name="emer_con_relation">
+                <Input placeholder="e.g. Spouse, Brother" />
+              </Form.Item>
+              <Form.Item label="Country" name="emer_con_country_code">
+                <Select showSearch options={countryOptions} placeholder="Select Country" />
+              </Form.Item>
+              <Form.Item label="Phone Number" name="emer_con_phone">
+                <Input placeholder="Enter phone number" />
+              </Form.Item>
+            </div>
+
+            <h3>3. Local Contact (if different)</h3>
+            <div style={twoColGrid}>
+              <Form.Item label="Full Name" name="local_con_name">
+                <Input placeholder="Enter local contact name" />
+              </Form.Item>
+              <Form.Item label="Relationship" name="local_con_relation">
+                <Input placeholder="e.g. Friend" />
+              </Form.Item>
+              <Form.Item label="Country" name="local_con_country_code">
+                <Select showSearch options={countryOptions} placeholder="Select Country" />
+              </Form.Item>
+              <Form.Item label="Phone Number" name="local_con_phone">
+                <Input placeholder="Enter phone number" />
+              </Form.Item>
+            </div>
+
+            <h3>4. Medical History & Allergies</h3>
+            <div style={twoColGrid}>
+              <Form.Item label="Primary Medical Condition / Diagnosis" name="condition">
+                <Input.TextArea placeholder="e.g. Hypertension, Diabetes" />
+              </Form.Item>
+              <Form.Item label="Cancer History" name="medical_his_cancer">
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Select cancer history"
+                  options={YES_NO_NOT_KNOWN_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item label="Major Surgeries" name="medical_his_major_surgeries">
+                <Input placeholder="Enter major surgeries" />
+              </Form.Item>
+              <Form.Item label="Current Symptoms" name="medical_his_curr_symp">
+                <Input.TextArea placeholder="Enter current symptoms" />
+              </Form.Item>
+              <Form.Item label="Last Doctor / Hospital Visit" name="last_doctor_visit">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="e.g. 2 months ago, June 2024, or select Not Known"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Do you have a doctor you see regularly?" name="has_regular_doctor">
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Select Yes, No, or Not Known"
+                  options={YES_NO_NOT_KNOWN_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item label="Regular Doctor's Name & Contact Info" name="regular_doctor_name">
+                <AutoComplete
+                  style={{ width: "100%" }}
+                  options={NOT_KNOWN_OPTIONS}
+                  placeholder="Enter doctor's name, clinic, or contact details"
+                  allowClear
+                />
+              </Form.Item>
+              <Form.Item label="Drug Allergies" name="allergies_drug">
+                <Input placeholder="Enter drug allergies" />
+              </Form.Item>
+              <Form.Item label="Food Allergies" name="allergies_food">
+                <Input placeholder="Enter food allergies" />
+              </Form.Item>
+            </div>
+          </div>
+
           <div
             style={{
               display: "flex",

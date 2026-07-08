@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
-import React from "react";
+import React, { useMemo } from "react";
 import Header from "../components/Header";
 import Sider from "../components/Sider";
 import PrimaryBtn from "../components/PrimaryBtn";
@@ -16,6 +16,9 @@ import patientdetails from "../assets/images/patient-profile.jpg";
 import { DatePicker, Table, Button } from "antd";
 import dayjs from "dayjs";
 import { CalendarOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import { myLovedOnesService } from "../services/myLovedOnesService";
+import { base_url } from "../constants/constants";
 
 function SectionHeader({ title, children }) {
   return (
@@ -41,84 +44,117 @@ export default function ViewPatientDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { appointmentData } = location.state || {};
+  const initialPData = appointmentData?.patient || appointmentData || {};
+
+  const token = localStorage.getItem("token");
+  const storedSponsorId = localStorage.getItem("sponsorProfileId") || initialPData?.sponsorid || initialPData?.sponsor;
+
+  const { data: sponsorPatients = [] } = useQuery({
+    queryKey: ["sponsorPatients", storedSponsorId],
+    queryFn: async () => {
+      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined") return [];
+      const data = await myLovedOnesService.getSponsorPatients(storedSponsorId);
+      return data || [];
+    },
+    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && !!token,
+  });
+
+  const livePatient = useMemo(() => {
+    if (!initialPData?.id) return null;
+    return sponsorPatients.find((p) => Number(p.id) === Number(initialPData.id)) || null;
+  }, [sponsorPatients, initialPData]);
+
+  const pData = livePatient ? { ...initialPData, ...livePatient } : initialPData;
+
+  const getPhotoUrl = (url) => {
+    if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
+    if (url?.startsWith("http")) return url;
+    url = url.replace(/^\/media\/+/i, "/");
+    const base = base_url.replace(/\/+$/, "");
+    const cleanedUrl = url.replace(/^\/+/, "");
+    return `${base}/${cleanedUrl}`;
+  };
 
   const vitals = [
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: appointmentData?.patient?.blood_pressure || "N/A",
+      value: pData?.blood_pressure || "N/A",
       color: "#27AE60",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: appointmentData?.patient?.heartRate || "N/A",
+      value: pData?.heart_rate || pData?.heartRate || "N/A",
       color: "#EF1E1E",
     },
     {
       icon: sugar,
       label: "Sugar",
-      value: appointmentData?.patient?.blood_sugar || "N/A",
+      value: pData?.blood_sugar || "N/A",
       color: "#27AE60",
     },
     {
       icon: oxygen,
       label: "Oxygen",
-      value: appointmentData?.patient?.oxygen || "N/A",
+      value: pData?.oxygen || "N/A",
       color: "#27AE60",
     },
     {
       icon: temperature,
       label: "Temperature",
-      value: appointmentData?.patient?.temperature || "N/A",
+      value: pData?.temperature || "N/A",
       color: "#27AE60",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: appointmentData?.patient?.respiratory_rate || "N/A",
+      value: pData?.respiratory_rate || "N/A",
       color: "#EF1E1E",
     },
     {
       icon: weight,
       label: "Weight",
-      value: appointmentData?.patient?.weight || "N/A",
+      value: pData?.weight || "N/A",
       color: "#27AE60",
     },
     { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
   ];
 
+  const docUser = appointmentData?.doc?.user || pData?.doctor?.user || {};
+  const docName = docUser.first_name || docUser.last_name
+    ? `${docUser.first_name || ""} ${docUser.last_name || ""}`.trim()
+    : pData?.doctor_name || "N/A";
+
+  const caretakerUser = appointmentData?.caretaker?.user || pData?.caretaker?.user || {};
+  const caretakerName = caretakerUser.first_name || caretakerUser.last_name
+    ? `${caretakerUser.first_name || ""} ${caretakerUser.last_name || ""}`.trim()
+    : pData?.caretaker_name || "N/A";
+
+  const sponsorUser = appointmentData?.sponsor?.user || pData?.sponsor?.user || {};
+  const sponsorName = sponsorUser.first_name || sponsorUser.last_name
+    ? `${sponsorUser.first_name || ""} ${sponsorUser.last_name || ""}`.trim()
+    : pData?.sponsor_name || "N/A";
+  const sponsorPhone = sponsorUser.phone || pData?.sponsor?.phone || "N/A";
+
+  const patientPhone = pData?.phone || sponsorPhone || "N/A";
+  const patientEmail = pData?.email || "N/A";
+
   const careTeam = {
-    name: appointmentData?.patient?.patient_name || "",
-    Condition: appointmentData?.appointment_type,
-    AssignedDoctor:
-      appointmentData?.doc?.user?.first_name +
-        " " +
-        appointmentData?.doc?.user?.last_name || "N/A",
-    // CareTaker:
-    //   appointmentData?.caretaker?.user?.first_name +
-    //     " " +
-    //     appointmentData?.caretaker?.user?.last_name || "N/A",
-    Conditions: appointmentData?.appointment_type,
-    AssignedSince: appointmentData?.appointment_date || "N/A",
-    SponsorInfo:
-      appointmentData?.sponsor?.user?.first_name +
-        " " +
-        appointmentData?.sponsor?.user?.last_name || "N/A",
-    SponsorNumber: appointmentData?.sponsor?.user?.phone || "N/A",
-    Address: appointmentData?.patient?.patient_home_address || "N/A",
-    PrimaryCareTaker:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
-    AssignedPhysician:
-      appointmentData?.doc?.user?.first_name +
-        " " +
-        appointmentData?.doc?.user?.last_name || "N/A",
-    CareCoordinator:
-      appointmentData?.caretaker?.user?.first_name +
-        " " +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+    name: pData?.patient_name || appointmentData?.patient_name || "Unknown Patient",
+    Condition: appointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
+    Phone: patientPhone,
+    Email: patientEmail,
+    AssignedDoctor: docName,
+    CareTaker: caretakerName,
+    Conditions: appointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
+    AssignedSince: appointmentData?.appointment_date || pData?.created_at?.split("T")[0] || "N/A",
+    SponsorInfo: sponsorName,
+    SponsorNumber: sponsorPhone,
+    Address: pData?.patient_home_address || "N/A",
+    PrimaryCareTaker: caretakerName,
+    AssignedPhysician: docName,
+    CareCoordinator: caretakerName,
   };
 
   const medicalHistory = [
@@ -360,13 +396,15 @@ export default function ViewPatientDetails() {
                 border: "1px solid #F1F5F9",
               }}
             >
-              <img
-                src={
-                  appointmentData
-                    ? appointmentData?.patient?.photo_view_url
-                    : patientdetails
-                }
+               <img
+                src={getPhotoUrl(
+                  pData?.photo_view_url || pData?.photo
+                )}
                 alt="Profile"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = patientdetails;
+                }}
                 style={{
                   width: "76px",
                   height: "76px",
@@ -399,6 +437,8 @@ export default function ViewPatientDetails() {
               }}
             >
               {[
+                { label: "Phone Number", value: careTeam.Phone },
+                { label: "Email Address", value: careTeam.Email },
                 { label: "Assigned Doctor", value: careTeam.AssignedDoctor },
                 { label: "Care Taker", value: careTeam.CareTaker },
                 { label: "Condition(s)", value: careTeam.Conditions },

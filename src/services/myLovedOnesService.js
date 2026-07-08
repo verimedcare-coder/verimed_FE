@@ -19,4 +19,9 @@ export const myLovedOnesService = {
     const response = await apiClient.post("/patientprofile_create_update/", formData);
     return response.data;
   },
+
+  patchPatientProfile: async (formData) => {
+    const response = await apiClient.patch("/patientprofile_create_update/", formData);
+    return response.data;
+  },
 };
