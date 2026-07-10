@@ -672,7 +672,6 @@ export default function Appointments() {
   // eslint-disable-next-line no-unused-vars
   const handleCardClick = (appointment) => {
     setSelectedAppointmentId(appointment.id);
-    navigate(`/appointments/${appointment.id}`);
   };
 
   const formatMonthYear = (date) =>

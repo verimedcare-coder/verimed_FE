@@ -115,6 +115,11 @@ const menuConfig = {
   doctor: [
     { label: "Overview", icon: <HomeOutlined />, path: "/overview" },
     {
+      label: "User Management",
+      icon: <UserOutlined />,
+      path: "/user_management",
+    },
+    {
       label: "My Appointments",
       icon: <CalendarOutlined />,
       path: "/my_appointments",

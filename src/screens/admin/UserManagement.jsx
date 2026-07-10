@@ -366,7 +366,7 @@ export default function UserManagement() {
           };
           break;
 
-        case "patients":
+        case "patients": {
           endpoint = `${base_url}/patientprofile_create_update/`;
           keyName = "patientprofile_data";
           const formattedDOB =
@@ -480,6 +480,7 @@ export default function UserManagement() {
             editedData.patient_files_name || "",
           );
           break;
+        }
 
         case "caretakers":
           endpoint = `${base_url}/caretakerprofile_update/`;

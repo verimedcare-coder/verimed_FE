@@ -285,7 +285,7 @@ export default function MyPatients() {
               <p className="text-[16px] font-semibold">Care Team Details</p>
               <Primarybtn
                 name="Care Team Details"
-                onClick={() => navigate("/care-team")}
+                onClick={() => navigate("/care_team")}
               />
             </div>
 

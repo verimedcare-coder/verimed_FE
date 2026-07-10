@@ -811,7 +811,7 @@ export default function Overview() {
 
   const handleCardClick = (appointment) => {
     setSelectedAppointmentId(appointment.id);
-    navigate(`/appointments/${appointment.id}`);
+    navigate(`/appointments`, { state: { selectedAppointmentId: appointment.id } });
   };
 
   const formatMonthYear = (date) => {
