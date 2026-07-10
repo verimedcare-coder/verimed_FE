@@ -1,13 +1,15 @@
 import axios from "axios";
-import { base_url } from "../constants/constants";
+import { getToken, removeToken } from "../utils/storage";
 
 const apiClient = axios.create({
-  baseURL: base_url,
+  baseURL:
+    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+    process.env.REACT_APP_API_BASE_URL,
 });
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Token ${token}`;
     }
@@ -23,6 +25,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Session expired or unauthorized (401). Clearing token.");
+      removeToken();
+      if (typeof window !== "undefined" && window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
+    }
     console.error("API Error:", error.response || error.message);
     return Promise.reject(error);
   }
