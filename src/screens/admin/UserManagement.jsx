@@ -29,7 +29,7 @@ import {
   UploadOutlined,
   CameraOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+import apiClient from "../../services/apiClient";
 import Primarybtn from "../../components/common/PrimaryBtn";
 import { Select, AutoComplete } from "antd";
 import bloodPressure from "../../assets/icons/blood-pressure.svg";
@@ -235,10 +235,9 @@ export default function UserManagement() {
         if (values.photo) {
           formData.append("photo", values.photo);
         }
-        await axios.post(`${base_url}/user_create/`, formData, {
+        await apiClient.post('/user_create/', formData, {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Token ${token}`,
           },
         });
 
@@ -260,10 +259,9 @@ export default function UserManagement() {
         if (values.photo) {
           pFormData.append("patient_photo", values.photo);
         }
-        await axios.post(`${base_url}/patientprofile_create_update/`, pFormData, {
+        await apiClient.post('/patientprofile_create_update/', pFormData, {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Token ${token}`,
           },
         });
 
@@ -299,10 +297,9 @@ export default function UserManagement() {
       if (values.photo) {
         formData.append("photo", values.photo);
       }
-      await axios.post(`${base_url}/user_create/`, formData, {
+      await apiClient.post('/user_create/', formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Token ${token}`,
         },
       });
       notification.success({
@@ -333,7 +330,7 @@ export default function UserManagement() {
 
       switch (activeTab) {
         case "sponsors":
-          endpoint = `${base_url}/user_update/`;
+          endpoint = '/user_update/';
           keyName = "user_update_data";
           updateData = {
             updateid: selectedSponsor?.id,
@@ -346,7 +343,7 @@ export default function UserManagement() {
           break;
 
         case "doctors":
-          endpoint = `${base_url}/doctorprofile_update/`;
+          endpoint = '/doctorprofile_update/';
           keyName = "doctorprofile_update_data";
           updateData = {
             doc_profile_updateid: selectedDoctor?.doctorProfile?.id || "",
@@ -367,7 +364,7 @@ export default function UserManagement() {
           break;
 
         case "patients": {
-          endpoint = `${base_url}/patientprofile_create_update/`;
+          endpoint = '/patientprofile_create_update/';
           keyName = "patientprofile_data";
           const formattedDOB =
             editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
@@ -483,7 +480,7 @@ export default function UserManagement() {
         }
 
         case "caretakers":
-          endpoint = `${base_url}/caretakerprofile_update/`;
+          endpoint = '/caretakerprofile_update/';
           keyName = "caretakerprofile_update_data";
           updateData = {
             caretaker_profile_updateid:
@@ -507,7 +504,7 @@ export default function UserManagement() {
         formData.append("patientprofile_update_data", JSON.stringify(updateData));
       }
 
-      if (editedData.photo instanceof File) {
+      if (editedData.photo && typeof editedData.photo === "object" && editedData.photo.name) {
         formData.append("photo", editedData.photo);
         console.log("📸 Photo being uploaded:", editedData.photo.name);
       }
@@ -516,11 +513,10 @@ export default function UserManagement() {
       console.log("📦 FormData content:", updateData);
 
       const headers = {
-        Authorization: `Token ${token}`,
         "Content-Type": "multipart/form-data",
       };
 
-      const res = await axios.patch(endpoint, formData, { headers });
+      const res = await apiClient.patch(endpoint, formData, { headers });
       console.log("✅ Update Success:", res.data);
 
       notification.success({
@@ -575,16 +571,12 @@ export default function UserManagement() {
       return;
     }
     try {
-      const endpoint = `${base_url}/user_update/`;
+      const endpoint = '/user_update/';
       const updateData = { updateid: userId, is_active_state: newStatus };
       const formdata = new FormData();
       formdata.append("user_update_data", JSON.stringify(updateData));
       console.log("🚀 Updating user status:", updateData);
-      const response = await axios.patch(endpoint, formdata, {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-      });
+      const response = await apiClient.patch(endpoint, formdata);
       const result = response.data;
       console.log("✅ Status Update Success:", result);
       setEditedData((prev) => ({ ...prev, is_active_state: newStatus }));

@@ -26,6 +26,11 @@ export const appointmentsService = {
     return response.data;
   },
 
+  getCaretakers: async () => {
+    const response = await apiClient.get("/caretakerprofile_list/");
+    return response.data;
+  },
+
   getUsers: async () => {
     const response = await apiClient.get("/user_view/");
     return response.data;

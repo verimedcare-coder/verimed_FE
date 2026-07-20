@@ -20,7 +20,7 @@ import {
 import LoginBg from "../../assets/images/loginBg.jpg";
 import VerimedLogo from "../../assets/icons/VerimedLogo.png";
 import { base_url, isAdminUser } from "../../constants/constants";
-import axios from "axios";
+
 import { useLocation, useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;

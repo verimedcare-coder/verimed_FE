@@ -45,8 +45,8 @@ import {
 } from "antd";
 import Primarybtn from "../../components/common/PrimaryBtn";
 import SecondaryBtn from "../../components/common/SecondaryBtn";
-import { base_url, isAdminUser } from "../../constants/constants";
-import axios from "axios";
+import { base_url, isAdminUser, REQUEST_SERVICES_LIST } from "../../constants/constants";
+import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import * as yup from "yup";
 
@@ -181,6 +181,67 @@ export default function Appointments() {
   )?.caretaker;
   const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
 
+  const resolveServiceInfo = (val) => {
+    if (!val && !pendingBookingValues?.values?.appointmentType) return null;
+    const targetVal = val || pendingBookingValues?.values?.appointmentType;
+
+    // 1. Direct exact match by string ID or Name
+    let service = REQUEST_SERVICES_LIST.find(
+      (s) => s.id === targetVal || s.name === targetVal || String(s.id) === String(targetVal)
+    );
+    if (service) return service;
+
+    // 2. Look up department object from API deptList by ID or dep_name
+    const dept = deptList?.find(
+      (d) => d.id === targetVal || String(d.id) === String(targetVal) || d.dep_name === targetVal
+    );
+    const nameToMatch = dept?.dep_name || (typeof targetVal === "string" ? targetVal : "");
+
+    if (nameToMatch) {
+      const cleanName = nameToMatch.toLowerCase().trim();
+      // Case-insensitive & substring match
+      service = REQUEST_SERVICES_LIST.find((s) => {
+        const sName = s.name.toLowerCase().trim();
+        return sName === cleanName || sName.includes(cleanName) || cleanName.includes(sName);
+      });
+      if (service) return service;
+
+      // Robust keyword mapping for all 10 services so numeric ID or different backend spelling always matches exactly
+      if (cleanName.includes("comprehensive") || cleanName.includes("intake")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Comprehensive"));
+      }
+      if (cleanName.includes("home") && (cleanName.includes("visit") || cleanName.includes("follow"))) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("In Home"));
+      }
+      if (cleanName.includes("virtual")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Virtual"));
+      }
+      if (cleanName.includes("nurse") && cleanName.includes("wellness")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id === "Nurse Wellness Check");
+      }
+      if (cleanName.includes("rehydration") || cleanName.includes("fluid") || cleanName.includes("iv")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Rehydration"));
+      }
+      if (cleanName.includes("infusion")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Infusion"));
+      }
+      if (cleanName.includes("navigation") || cleanName.includes("care management")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Care Management"));
+      }
+      if (cleanName.includes("wellness coaching")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id === "Wellness Coaching");
+      }
+      if (cleanName.includes("diabetes") || cleanName.includes("chronic")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Diabetes"));
+      }
+      if (cleanName.includes("live-in") || cleanName.includes("family wellness nurse")) {
+        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Live-in"));
+      }
+    }
+
+    return null;
+  };
+
   const bookAppointment = async (values) => {
     try {
       await bookingValidationSchema.validate(
@@ -200,7 +261,7 @@ export default function Appointments() {
     }
     setLoading(true);
     try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const endpoint = '/verimed_bookappoinment_create_update/';
       const headers = { Authorization: `Token ${token}` };
 
       let storedPatientData = {};
@@ -244,7 +305,7 @@ export default function Appointments() {
       if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
         try {
           if (!finalPatientId) {
-            const pRes = await axios.get(`${base_url}/patientprofile_list/`, { headers });
+            const pRes = await apiClient.get('/patientprofile_list/');
             if (Array.isArray(pRes.data) && pRes.data.length > 0) {
               const matchedP = pRes.data.find(p => p.user?.id === userData?.id) || pRes.data[0];
               finalPatientId = matchedP?.id || null;
@@ -257,14 +318,14 @@ export default function Appointments() {
             }
           }
           if (!finalSponsorId) {
-            const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
+            const sRes = await apiClient.get('/sponsorprofile_list/');
             if (Array.isArray(sRes.data) && sRes.data.length > 0) {
               const matchedS = sRes.data.find(s => s.user?.id === userData?.id) || sRes.data[0];
               finalSponsorId = matchedS?.id || null;
             }
           }
           if (!finalCaretakerId) {
-            const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
+            const cRes = await apiClient.get('/caretakerprofile_list/');
             if (Array.isArray(cRes.data) && cRes.data.length > 0) {
               finalCaretakerId = cRes.data[0]?.id || null;
             }
@@ -281,6 +342,9 @@ export default function Appointments() {
         },
       );
 
+      const selectedServiceObj = resolveServiceInfo(values.appointmentType);
+      const computedAmount = values.amount || selectedServiceObj?.priceLabel || null;
+
       const bookappoinment_data = {
         dep: values.depId || values.appointmentType,
         patient: values.patientId || finalPatientId,
@@ -293,7 +357,7 @@ export default function Appointments() {
         appointment_type: values.appointmentType || null,
         treatment_performed: values.treatment || null,
         care_taker_notes: values.notes || null,
-        amount: values.amount || null,
+        amount: computedAmount,
         subscription_plan: values.subscription_plan || null,
         appointment_history: values.appointment_history || null,
         time_line: values.time_line || null,
@@ -324,13 +388,13 @@ export default function Appointments() {
         : "";
       setBookedDateTime({ date: formattedDate, time: formattedTime });
 
-      if (userData?.user_role === "sponsor") {
+      if (userData?.user_role === "sponsor" || selectedServiceObj || values.appointmentType) {
         setPendingBookingValues({ endpoint, formData, headers, values, bookappoinment_data });
         setIsCheckoutModalOpen(true);
         return;
       }
 
-      await axios.post(endpoint, formData, { headers });
+      await apiClient.post(endpoint, formData);
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
       form.resetFields();
@@ -347,7 +411,7 @@ export default function Appointments() {
     if (!pendingBookingValues) return;
     setCheckoutLoading(true);
     try {
-      await axios.post(pendingBookingValues.endpoint, pendingBookingValues.formData, { headers: pendingBookingValues.headers });
+      await apiClient.post(pendingBookingValues.endpoint, pendingBookingValues.formData);
       setIsCheckoutModalOpen(false);
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
@@ -377,6 +441,15 @@ export default function Appointments() {
     queryKey: ["doctors"],
     queryFn: async () => {
       const data = await appointmentsService.getDoctors();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
+
+  const { data: caretakers = [] } = useQuery({
+    queryKey: ["caretakers_assign"],
+    queryFn: async () => {
+      const data = await appointmentsService.getCaretakers();
       return Array.isArray(data) ? data : [];
     },
     enabled: !!token,
@@ -491,7 +564,7 @@ export default function Appointments() {
     if (appt) {
       setSelectedAppointment(appt);
       assignForm.setFieldsValue({
-        docId: appt.fullData?.doc?.id || appt.fullData?.doc || undefined,
+        caretakerId: appt.fullData?.caretaker?.id || appt.fullData?.caretaker || undefined,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
         appointment_time: appt.time
           ? dayjs(
@@ -501,6 +574,7 @@ export default function Appointments() {
           : undefined,
         care_taker_notes:
           appt.fullData?.care_taker_notes || appt.care_taker_notes || "",
+        doctor_notes: appt.fullData?.doctor_notes || "",
       });
       setIsAppointmentDetailsModal(true);
     }
@@ -751,19 +825,19 @@ export default function Appointments() {
     if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
       try {
         if (!finalPatientId) {
-          const pRes = await axios.get(`${base_url}/patientprofile_list/`, { headers });
+          const pRes = await apiClient.get('/patientprofile_list/');
           if (Array.isArray(pRes.data) && pRes.data.length > 0) {
             finalPatientId = pRes.data[0]?.id || null;
           }
         }
         if (!finalSponsorId) {
-          const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, { headers });
+          const sRes = await apiClient.get('/sponsorprofile_list/');
           if (Array.isArray(sRes.data) && sRes.data.length > 0) {
             finalSponsorId = sRes.data[0]?.id || null;
           }
         }
         if (!finalCaretakerId) {
-          const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, { headers });
+          const cRes = await apiClient.get('/caretakerprofile_list/');
           if (Array.isArray(cRes.data) && cRes.data.length > 0) {
             finalCaretakerId = cRes.data[0]?.id || null;
           }
@@ -777,9 +851,9 @@ export default function Appointments() {
       update_appoinmentid: selectedAppointment?.id, // e.g. 34
       sponsor: finalSponsorId,
       dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
-      doc: safe(values?.docId), // from form
+      doc: safe(selectedAppointment?.fullData?.doc?.id || selectedAppointment?.fullData?.doc), 
       patient: finalPatientId,
-      caretaker: finalCaretakerId,
+      caretaker: safe(values?.caretakerId) || finalCaretakerId,
       appointment_date: formatDate(values?.appointment_date), // user-provided date as YYYY-MM-DD
       appointment_time: formatTime(values?.appointment_time), // e.g. "10:30:00"
       appointment_type: safe(selectedAppointment?.appointment_type),
@@ -787,6 +861,7 @@ export default function Appointments() {
       care_taker_notes: values?.care_taker_notes
         ? `${selectedAppointment?.fullData?.care_taker_notes || ""}\n[Care Team Log]: ${values.care_taker_notes}`.trim()
         : safe(selectedAppointment?.fullData?.care_taker_notes),
+      doctor_notes: values?.doctor_notes || safe(selectedAppointment?.fullData?.doctor_notes),
       amount: safe(selectedAppointment?.fullData?.amount),
       subscription_plan: safe(selectedAppointment?.fullData?.subscription_plan),
       height: safe(selectedAppointment?.fullData?.height),
@@ -801,23 +876,21 @@ export default function Appointments() {
       appointment_reason: safe(
         selectedAppointment?.fullData?.appointment_reason,
       ),
-      appointment_status: safe(
-        selectedAppointment?.fullData?.appointment_status,
-      ),
+      appointment_status: "Rescheduled",
       preferred_dates: selectedAppointment?.fullData?.preferred_dates,
       preferred_times: selectedAppointment?.fullData?.preferred_times,
       service_purchased:
         selectedAppointment?.fullData?.service_purchased ?? true,
     };
     try {
-      const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
+      const endpoint = '/verimed_bookappoinment_create_update/';
       const formData = new FormData();
       formData.append(
         "bookappoinment_data",
         JSON.stringify(bookappoinment_data),
       );
       // formData.append("lab_reports_ids", null);
-      await axios.patch(endpoint, formData, { headers });
+      await apiClient.patch(endpoint, formData);
       message.success("Appointment updated successfully!");
       Modal.success({
         title: "Appointment Updated",
@@ -1012,6 +1085,19 @@ export default function Appointments() {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Read-only Doctor Notes */}
+                    {selectedAppointment.fullData?.doctor_notes && (
+                      <div className="bg-[#E6F0FA] p-[16px] rounded-[10px] border-[1px] border-solid border-[#004C91] mt-[16px]">
+                        <div className="flex items-center gap-[8px] mb-[8px]">
+                          <MessageOutlined className="text-[#004C91] text-[16px]" />
+                          <b className="text-[14px] text-[#004C91]">Doctor's Notes & Recommendations</b>
+                        </div>
+                        <div className="text-[13px] text-[#003B73] bg-[#F8FAFC] p-[12px] rounded-[8px] border-[1px] border-solid border-[#93C5FD] whitespace-pre-wrap leading-[1.5]">
+                          {selectedAppointment.fullData?.doctor_notes}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Reschedule Section */}
                     <div className="bg-white border border-solid border-[#E2E8F0] rounded-[12px] py-[20px] px-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -1031,16 +1117,16 @@ export default function Appointments() {
                       >
                         <div className="grid grid-cols-[repeat(3,1fr)] gap-[16px]">
                           <Form.Item
-                            name="docId"
-                            label={<span className="font-medium text-[#334155]">Assigned Doctor</span>}
-                            rules={[{ required: true, message: "Please select a doctor" }]}
+                            name="caretakerId"
+                            label={<span className="font-medium text-[#334155]">Assigned Caretaker</span>}
+                            rules={[{ required: true, message: "Please select a caretaker" }]}
                           >
-                            <Select placeholder="Select doctor" className="w-full">
-                              {doctors &&
-                                doctors.length > 0 &&
-                                doctors.map((doctor) => (
-                                  <Option key={doctor.id} value={doctor.id}>
-                                    Dr. {doctor.user?.first_name} {doctor.user?.last_name}
+                            <Select placeholder="Select caretaker" className="w-full">
+                              {caretakers &&
+                                caretakers.length > 0 &&
+                                caretakers.map((caretaker) => (
+                                  <Option key={caretaker.id} value={caretaker.id}>
+                                    {caretaker.user?.first_name} {caretaker.user?.last_name}
                                   </Option>
                                 ))}
                             </Select>
@@ -1078,6 +1164,15 @@ export default function Appointments() {
                         >
                           <Input.TextArea rows={2} placeholder="Add internal care team notes or status updates here without editing sponsor instructions..." className="rounded-[6px]" />
                         </Form.Item>
+                        
+                        {(userData?.user_role === "doctor" || isAdminUser(userData)) && (
+                          <Form.Item
+                            name="doctor_notes"
+                            label={<span className="font-medium text-[#334155]">Doctor's Notes (Visible to Patient and Sponsor)</span>}
+                          >
+                            <Input.TextArea rows={3} placeholder="Add clinical notes, recommendations, or instructions for the patient and sponsor..." className="rounded-[6px]" />
+                          </Form.Item>
+                        )}
 
                         <div className="flex justify-end gap-[12px] mt-[16px]">
                           <Button onClick={handleCloseModal} className="rounded-[6px] py-[0px] px-[20px] font-medium">
@@ -1294,8 +1389,28 @@ export default function Appointments() {
             }
             rules={[yupRule(bookingValidationSchema, "appointmentType")]}
           >
-            <Select placeholder="Select Department">
-              {deptList?.map((dept) => (
+            <Select
+              placeholder="Select Service"
+              onChange={(val) => {
+                const service = resolveServiceInfo(val);
+                if (service) {
+                  form.setFieldsValue({ amount: service.priceLabel });
+                }
+              }}
+            >
+              {REQUEST_SERVICES_LIST.map((service) => (
+                <Option key={service.id} value={service.id}>
+                  <div className="flex justify-between items-center w-full">
+                    <span>{service.name}</span>
+                    <span className="text-[#007F5F] font-semibold ml-2">
+                      {service.priceLabel}
+                    </span>
+                  </div>
+                </Option>
+              ))}
+              {deptList?.filter(
+                (dept) => !REQUEST_SERVICES_LIST.some((s) => s.id === dept.id || s.name === dept.dep_name)
+              )?.map((dept) => (
                 <Option key={dept.id} value={dept.id}>
                   {dept.dep_name}
                 </Option>
@@ -1525,20 +1640,29 @@ export default function Appointments() {
         title="Consultation Service"
         summaryTitle="Appointment & Clinical Review"
         itemName={
-          pendingBookingValues?.values?.appointmentType
-            ? deptList?.find(
-                (d) => d.id === pendingBookingValues.values.appointmentType
-              )?.dep_name || "Physician Consultation"
-            : "In-Home Clinical Visit"
+          (() => {
+            const resolved = resolveServiceInfo(pendingBookingValues?.values?.appointmentType);
+            if (resolved) return resolved.name;
+            const dept = deptList?.find(
+              (d) => d.id === pendingBookingValues?.values?.appointmentType || String(d.id) === String(pendingBookingValues?.values?.appointmentType)
+            );
+            return dept?.dep_name || pendingBookingValues?.values?.appointmentType || "Physician Consultation";
+          })()
         }
         subItemName={
           pendingBookingValues?.values?.patientId
             ? patients?.find(
-                (p) => p.id === pendingBookingValues.values.patientId
+                (p) => p.id === pendingBookingValues.values.patientId || p.id === Number(pendingBookingValues.values.patientId)
               )?.patient_name || "Loved One Patient"
             : "Loved One Patient"
         }
-        amount="75,000 CFA ($150.00 USD)"
+        amount={
+          (() => {
+            const resolved = resolveServiceInfo(pendingBookingValues?.values?.appointmentType);
+            if (resolved) return resolved.stripeAmount;
+            return "75,000 CFA ($150.00 USD)";
+          })()
+        }
         buttonText="Complete & Confirm Booking"
         userData={userData}
       />

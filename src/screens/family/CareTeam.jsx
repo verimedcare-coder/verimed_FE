@@ -7,7 +7,7 @@ import Sider from "../../components/layout/Sider";
 import SecondaryBtn from "../../components/common/SecondaryBtn";
 import patientdetails from "../../assets/images/patient-profile.jpg";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+
 import { Empty, message } from "antd";
 const actions = [
   {

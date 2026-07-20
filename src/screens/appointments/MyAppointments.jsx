@@ -11,8 +11,9 @@ import { Button, DatePicker, Table, Spin, message } from "antd";
 import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
+import BackButton from "../../components/common/BackButton";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+
 
 function SectionHeader({ title, children }) {
   return (
@@ -137,18 +138,18 @@ export default function MyAppointments() {
     const patientUser = appt?.patient?.patient_name;
     const dateTime = appt.appointment_date
       ? new Date(
-          `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`,
-        )
+        `${appt.appointment_date}T${appt.appointment_time || "00:00:00"}`,
+      )
       : null;
     return {
       key: index,
       dateTime: dateTime
         ? dateTime.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
         : "-",
       patientName: patientUser || "",
       type: appt?.dep?.dep_name || "-",
@@ -157,9 +158,9 @@ export default function MyAppointments() {
         "-",
       time: dateTime
         ? dateTime.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+          hour: "2-digit",
+          minute: "2-digit",
+        })
         : "-",
       status: appt.appointment_status || "Ongoing",
       action: "View Details",
@@ -167,49 +168,27 @@ export default function MyAppointments() {
   });
 
   return (
-    <div
-      className="flex h-screen bg-[#F7F9FB]"
-    >
-      <div className="w-[240px] shrink-0">
+    <div className="flex h-screen w-full bg-[#F3F4F6] overflow-hidden">
+      <div className="w-[240px] shrink-0 bg-white border-r border-[#E5E7EB]">
         <Sider />
       </div>
 
-      <div className="flex-1 flex flex-col">
-        <Header />
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <div className="shrink-0 bg-white border-b border-[#E5E7EB]">
+          <Header />
+        </div>
 
-        <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
-          {/* Appointment Cards */}
-          <div className="w-full">
-            {/* <div
-              className="flex items-center justify-between"
-            >
-            {doctorAppointments.length > 3 && !loading && (
-              <div className="text-center mt-[16px]">
-                {hasMore ? (
-                  <button
-                    onClick={showMore}
-                    className="bg-transparent text-[#004E89] border-[1px] border-solid border-[#004E89] py-[8px] px-[16px] rounded-[8px] cursor-pointer"
-                  >
-                    Show More
-                  </button>
-                ) : (
-                  <button
-                    onClick={showLess}
-                    className="bg-transparent text-[#004E89] border-[1px] border-solid border-[#004E89] py-[8px] px-[16px] rounded-[8px] cursor-pointer"
-                  >
-                    Show Less
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="w-full">
-            {/* Appointment Table */}
-            <div className="bg-white rounded-[12px] p-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-[16px] w-full min-w-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-[16px] lg:p-[24px]">
+          <div className="w-full flex flex-col gap-[20px] box-border">
+            {/* Back Button */}
+            <div className="flex items-center">
+              <BackButton fallbackPath="/overview" />
+            </div>
+
+            {/* Appointment Table Card */}
+            <div className="bg-white rounded-[16px] p-[20px] lg:p-[24px] shadow-sm border border-[#E5E7EB]  min-w-0">
               <SectionHeader title="Appointment List">
-                <div
-                  className="flex items-center justify-center gap-[12px]"
-                >
+                <div className="flex items-center justify-center gap-[12px]">
                   <DatePicker
                     picker="year"
                     defaultValue={dayjs("2025", "YYYY")}
@@ -220,13 +199,16 @@ export default function MyAppointments() {
                 </div>
               </SectionHeader>
 
-              <Table
-                columns={columns}
-                dataSource={dataSource}
-                pagination={false}
-                bordered={false}
-                className="w-full"
-              />
+              <div className="overflow-x-auto w-full mt-[16px]">
+                <Table
+                  columns={columns}
+                  dataSource={dataSource}
+                  pagination={false}
+                  bordered={false}
+                  className="w-full"
+                  loading={loading}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -234,5 +216,4 @@ export default function MyAppointments() {
     </div>
   );
 }
-
 

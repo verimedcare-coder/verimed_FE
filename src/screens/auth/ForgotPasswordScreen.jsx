@@ -19,7 +19,7 @@ import {
 import LoginBg from "../../assets/images/loginBg.jpg";
 import VerimedLogo from "../../assets/icons/VerimedLogo.png";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+import apiClient from "../../services/apiClient";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
         JSON.stringify({ username, password }),
       );
 
-      await axios.patch(`${base_url}/user_update_user/`, formData, {
+      await apiClient.patch('/user_update_user/', formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

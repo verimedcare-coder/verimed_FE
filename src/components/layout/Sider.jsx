@@ -25,7 +25,7 @@ import Profile from "../../assets/images/profileBg.jpg";
 import { useState } from "react";
 import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import axios from "axios";
+
 import { isAdminUser, base_url } from "../../constants/constants";
 
 const { Sider } = Layout;

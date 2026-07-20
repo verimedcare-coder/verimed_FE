@@ -26,7 +26,7 @@ import {
 } from "@ant-design/icons";
 import { Column, Pie } from "@ant-design/plots";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+
 import { useNavigate } from "react-router-dom";
 import StripeCheckoutModal from "../../components/modals/StripeCheckoutModal";
 

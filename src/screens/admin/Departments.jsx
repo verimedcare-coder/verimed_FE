@@ -21,7 +21,7 @@ import {
   Spin,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import axios from "axios";
+
 import { base_url } from "../../constants/constants";
 import {
   CalendarOutlined,

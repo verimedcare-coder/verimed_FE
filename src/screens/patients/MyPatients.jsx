@@ -20,7 +20,7 @@ import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
 import { Empty, message } from "antd";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+
 
 export default function MyPatients() {
   const navigate = useNavigate();
@@ -250,109 +250,71 @@ export default function MyPatients() {
         </div>
         {/* Content area with just text */}
         <div
-          className="flex bg-[#F7F9FB] flex-col p-[20px] gap-[20px]"
+          className="flex bg-[#F7F9FB] flex-col p-[24px] gap-[24px] overflow-y-auto"
         >
           {/* cards */}
 
-          <div className="grid grid-cols-[repeat(4,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
+          <div className="grid grid-cols-[repeat(4,minmax(180px,1fr))] gap-[16px] min-w-0 w-full">
             {vitals.map((item, i) => (
-              <div key={i} className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0">
-                <img
-                  src={item.icon}
-                  alt={item.label}
-                  className="w-[24px] h-[24px]"
-                />
+              <div key={i} className="flex items-center gap-[12px] border border-solid border-[#E2E8F0] bg-white rounded-[12px] p-[16px] min-h-[80px] min-w-0 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
+                <div className="bg-[#F8FAFC] p-[8px] rounded-[8px]">
+                  <img
+                    src={item.icon}
+                    alt={item.label}
+                    className="w-[28px] h-[28px]"
+                  />
+                </div>
                 <div>
-                  <p className="text-[14px] font-semibold mb-[2px]">{item.label}</p>
+                  <p className="text-[13px] font-medium text-[#64748B] mb-[4px] m-0">{item.label}</p>
                   <div
-                    className="flex items-center gap-[5px]"
+                    className="flex items-center gap-[6px]"
                   >
-                    <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ background: item.color }}></div>
-                    <span className="text-[14px] text-[#2E2E2E] break-words">{item.value}</span>
+                    <div className="w-[10px] h-[10px] rounded-full shrink-0 shadow-[0_0_0_3px_rgba(255,255,255,0.8)]" style={{ background: item.color }}></div>
+                    <span className="text-[16px] font-bold text-[#0F172A] break-words">{item.value}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* my details */}          <div
-            className="bg-transparent border-[1px] border-solid border-[#E5E7EB] rounded-[10px] p-[20px] m-[20px] font-['Inter',sans-serif]"
-          >
-            {/* Header Row */}
-            <div
-              className="flex justify-between items-center mb-[16px]"
-            >
-              <p className="text-[16px] font-semibold">Care Team Details</p>
-              <Primarybtn
-                name="Care Team Details"
-                onClick={() => navigate("/care_team")}
-              />
+          {/* Care Team Details */}
+          <div className="bg-white rounded-[16px] p-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.05)] border-[1px] border-solid border-[#F0F2F5] transition-all duration-300 flex flex-col gap-[20px] font-['Inter',sans-serif]">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b-[1px] border-solid border-[#F0F2F5] pb-[16px]">
+              <h2 className="text-[18px] font-bold text-[#1E293B] m-0">Care Team Details</h2>
+              <Primarybtn name="View Full Care Team" onClick={() => navigate("/care_team")} />
             </div>
 
-            <div
-              className="mb-[16px] border-t-[1px] border-solid border-[#E5E7EB]"
-            />
-
-            {/* Content Row */}
-            <div className="flex gap-[16px]">
-              {/* Left - Avatar */}
+            {/* Profile Info */}
+            <div className="flex items-center gap-[20px]">
               <img
                 src={patientdetails}
-                alt="profile"
-                className="w-[60px] h-[60px] rounded-[12px] shrink-0 object-cover"
+                alt="Care Team Profile"
+                className="w-[80px] h-[80px] rounded-[100px] object-cover border-[3px] border-solid border-[#007F5F]"
               />
               <div>
-                <p
-                  className="text-[#2E2E2E] font-medium opacity-60"
-                >
-                  Name
+                <p className="text-[#64748B] text-[13px] font-bold tracking-wide uppercase m-0 mb-[4px]">
+                  {careTeam.role || "Primary CareTaker"}
                 </p>
-                <p className="text-[#2E2E2E] text-[16px] font-bold">
+                <h3 className="text-[#0F172A] text-[24px] font-extrabold m-0 leading-tight">
                   {careTeam.name}
-                </p>
+                </h3>
               </div>
+            </div>
 
-              {/* Row 2 */}
-              <div
-                className="flex items-center justify-between mt-[16px] mb-[16px]"
-              >
-                <div>
-                  <div className="text-[13px] text-[#6B7280]">Role</div>
-                  <div className="text-[14px] font-medium">
-                    {careTeam.role}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[13px] text-[#6B7280]">
-                    Contact Number
-                  </div>
-                  <div className="text-[14px] font-medium">
-                    {careTeam.contact}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[13px] text-[#6B7280]">
-                    Assigned Since
-                  </div>
-                  <div className="text-[14px] font-medium">
-                    {careTeam.assignedSince}
-                  </div>
-                </div>
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] bg-[#F8FAFC] p-[16px] rounded-[12px] border-[1px] border-solid border-[#E2E8F0]">
+              <div className="flex flex-col">
+                <span className="text-[12px] font-bold text-[#64748B] uppercase tracking-wider mb-[4px]">Contact Number</span>
+                <span className="text-[15px] font-semibold text-[#334155]">{careTeam.contact || "N/A"}</span>
               </div>
-
-              {/* Divider */}
-              <div className="border-t-[1px] border-solid border-[#E5E7EB]" />
-
-              {/* Row 3 */}
-              <div>
-                <div className="text-[13px] text-[#6B7280]">
-                  Specialization
-                </div>
-                <div className="text-[14px] font-medium">
-                  {careTeam.specialization}
-                </div>
+              <div className="flex flex-col">
+                <span className="text-[12px] font-bold text-[#64748B] uppercase tracking-wider mb-[4px]">Assigned Since</span>
+                <span className="text-[15px] font-semibold text-[#334155]">{careTeam.assignedSince || "N/A"}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[12px] font-bold text-[#64748B] uppercase tracking-wider mb-[4px]">Address</span>
+                <span className="text-[15px] font-semibold text-[#334155] truncate" title={careTeam.address || "N/A"}>{careTeam.address || "N/A"}</span>
               </div>
             </div>
           </div>
@@ -454,11 +416,11 @@ export default function MyPatients() {
 
           {/* appointments */}
           <div
-            className="flex gap-[20px] w-full bg-[#F9FAFB] rounded-[10px]"
+            className="flex gap-[24px] w-full flex-col lg:flex-row"
           >
             {/* Left Section */}
 
-            <div className="bg-white rounded-[12px] p-[20px] flex flex-col gap-[20px] w-[70%]">
+            <div className="bg-white rounded-[16px] border border-solid border-[#E2E8F0] p-[24px] flex flex-col gap-[20px] lg:w-[65%] xl:w-[70%] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
               <SectionHeader title="Appointment Details">
                 <Primarybtn
                   name="View Patient Details"
@@ -580,7 +542,7 @@ export default function MyPatients() {
 
             {/* Right Section */}
             <div
-              className="bg-white rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] w-[30%]"
+              className="bg-white rounded-[16px] border-[1px] border-solid border-[#E2E8F0] p-[24px] flex flex-col gap-[20px] lg:w-[35%] xl:w-[30%] shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
             >
               {/* Header */}
               <div

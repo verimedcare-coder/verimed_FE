@@ -25,8 +25,10 @@ import {
   DownOutlined,
   LogoutOutlined,
   UploadOutlined,
+  UserOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+
 import flagIcon from "../../assets/icons/flag.svg";
 import Primarybtn from "../common/PrimaryBtn";
 import { useNavigate } from "react-router-dom";
@@ -782,49 +784,52 @@ export default function HeaderComponent() {
           className="flex items-center gap-[12px] shrink-0 flex-nowrap"
         >
           {user.user_role === "sponsor" && (
-            <>
-              <Select
-                value={
-                  patientList.some((p) => String(p.id) === String(selectedPatient))
-                    ? selectedPatient
-                    : null
-                }
-                onChange={handlePatientChange}
-                className="w-[170px] rounded-[8px] min-w-[140px]"
-                placeholder="Select Patient"
-                optionLabelProp="label"
-              >
+            <Select
+              value={
+                [...patientList, ...lovedOnesList].some(
+                  (p) => String(p.id) === String(selectedPatient)
+                )
+                  ? selectedPatient
+                  : null
+              }
+              onChange={handlePatientChange}
+              className="w-[200px] rounded-[8px] min-w-[170px]"
+              placeholder="Select Patient or Loved One"
+              optionLabelProp="label"
+            >
+              <Select.OptGroup label="Self">
                 {patientList.map((p) => {
-                  const name = p.patient_name || p.patient?.patient_name || "Unknown Patient";
+                  const name =
+                    p.patient_name || p.patient?.patient_name || "Unknown Patient";
                   return (
                     <Option key={p.id} value={p.id} label={name}>
-                      {name}
+                      <div className="flex items-center gap-[8px]">
+                        <UserOutlined className="text-[#007F5F]" />
+                        <span>{name}</span>
+                      </div>
                     </Option>
                   );
                 })}
-              </Select>
-
-              <Select
-                value={
-                  lovedOnesList.some((p) => String(p.id) === String(selectedPatient))
-                    ? selectedPatient
-                    : null
-                }
-                onChange={handlePatientChange}
-                className="w-[170px] rounded-[8px] min-w-[140px]"
-                placeholder="Select Loved One"
-                optionLabelProp="label"
-              >
-                {lovedOnesList.map((p) => {
-                  const name = p.patient_name || p.patient?.patient_name || "Unknown Loved One";
-                  return (
-                    <Option key={p.id} value={p.id} label={name}>
-                      {name}
-                    </Option>
-                  );
-                })}
-              </Select>
-            </>
+              </Select.OptGroup>
+              {lovedOnesList.length > 0 && (
+                <Select.OptGroup label="Loved Ones">
+                  {lovedOnesList.map((p) => {
+                    const name =
+                      p.patient_name ||
+                      p.patient?.patient_name ||
+                      "Unknown Loved One";
+                    return (
+                      <Option key={p.id} value={p.id} label={name}>
+                        <div className="flex items-center gap-[8px]">
+                          <HeartOutlined className="text-[#FF4D4F]" />
+                          <span>{name}</span>
+                        </div>
+                      </Option>
+                    );
+                  })}
+                </Select.OptGroup>
+              )}
+            </Select>
           )}
 
           {user.user_role === "sponsor" && (
@@ -883,6 +888,10 @@ export default function HeaderComponent() {
             type="primary"
             loading={loading}
             onClick={() => {
+              const termsDom = document.getElementById("accept_terms");
+              if (termsDom && termsDom.checked && !form.getFieldValue("accept_terms")) {
+                form.setFieldsValue({ accept_terms: true });
+              }
               form
                 .validateFields()
                 .then((values) => {
@@ -1512,10 +1521,16 @@ export default function HeaderComponent() {
               valuePropName="checked"
               rules={[
                 {
-                  validator: (_, value) =>
-                    value
-                      ? Promise.resolve()
-                      : Promise.reject("You must accept the terms to continue"),
+                  validator: (_, value) => {
+                    const domChecked = document.getElementById("accept_terms")?.checked;
+                    if (value || domChecked) {
+                      if (!value && domChecked) {
+                        form.setFieldsValue({ accept_terms: true });
+                      }
+                      return Promise.resolve();
+                    }
+                    return Promise.reject("You must accept the terms to continue");
+                  },
                 },
               ]}
             >

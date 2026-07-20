@@ -20,7 +20,7 @@ import dayjs from "dayjs";
 import { getData } from "country-list";
 import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { base_url } from "../../constants/constants";
-import axios from "axios";
+
 import { useNavigate } from "react-router-dom";
 
 const calculateAge = (dob) => {
@@ -111,7 +111,7 @@ export default function MyLovedOnes() {
           ? `${item.doc.user.first_name} ${item.doc.user.last_name}`
           : "—",
         appointment_type: item.appointment_type,
-        care_taker_notes: item.care_taker_notes,
+        care_taker_notes: [item.care_taker_notes, item.doctor_notes].filter(Boolean).join("\n") || "",
         treatment_performed: item.treatment_performed,
       }));
     },
@@ -419,7 +419,7 @@ export default function MyLovedOnes() {
           type: vitalsData.appointment_type || "N/A",
           provider: vitalsData.doc?.doctor_id || "N/A",
           status: vitalsData.appointment_status || "N/A",
-          comments: vitalsData.care_taker_notes || "",
+          comments: [vitalsData.care_taker_notes, vitalsData.doctor_notes].filter(Boolean).join("\n\n") || "",
         },
       ]
     : [];
@@ -432,7 +432,7 @@ export default function MyLovedOnes() {
             title: status,
             details: [
               vitalsData.treatment_performed || "No treatment info",
-              vitalsData.care_taker_notes || "",
+              [vitalsData.care_taker_notes, vitalsData.doctor_notes].filter(Boolean).join("\n") || "",
             ],
             date: new Date(dateStr).toLocaleDateString("en-US", {
               month: "short",
