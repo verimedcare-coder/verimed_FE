@@ -31,7 +31,6 @@ import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
 import { base_url, isAdminUser } from "../../constants/constants";
 
-
 export default function Overview() {
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -46,7 +45,7 @@ export default function Overview() {
   const [isPatientModalVisible, setIsPatientModalVisible] = useState(false);
   const [selectedPatientRow, setSelectedPatientRow] = useState(null);
   const [selectedPatientId, setSelectedPatientId] = useState(() =>
-    localStorage.getItem("selectedPatientId")
+    localStorage.getItem("selectedPatientId"),
   );
 
   useEffect(() => {
@@ -140,7 +139,11 @@ export default function Overview() {
       const res = await axios.post(endpoint, payload, { headers });
       const patients = res.data;
       const selectedPatient = patients.find(
-        (p) => p.id === Number(selectedPatientId || localStorage.getItem("selectedPatientId")),
+        (p) =>
+          p.id ===
+          Number(
+            selectedPatientId || localStorage.getItem("selectedPatientId"),
+          ),
       );
       setPatientData(selectedPatient);
     } catch (error) {
@@ -301,10 +304,7 @@ export default function Overview() {
       icon: respiratory,
       label: "Respiratory Rate",
       value: patientData?.respiratory_rate || "N/A",
-      color: getVitalColor(
-        "Respiratory Rate",
-        patientData?.respiratory_rate,
-      ),
+      color: getVitalColor("Respiratory Rate", patientData?.respiratory_rate),
     },
     {
       icon: weight,
@@ -446,9 +446,7 @@ export default function Overview() {
         <div>
           {text}
           <br />
-          <span className="text-[#888] text-[12px]">
-            {record.patientId}
-          </span>
+          <span className="text-[#888] text-[12px]">{record.patientId}</span>
         </div>
       ),
       width: 240,
@@ -737,11 +735,17 @@ export default function Overview() {
         else if (status === "Cancelled") color = "#EF1E1E";
         else if (status === "Rescheduled") color = "#B78520";
         const colorClass =
-          status === "Confirmed" ? "text-[#2F80ED]" :
-          status === "Pending" ? "text-[#F2994A]" :
-          status === "Completed" ? "text-[#007F5F]" :
-          status === "Cancelled" ? "text-[#EF1E1E]" :
-          status === "Rescheduled" ? "text-[#B78520]" : "text-gray-700";
+          status === "Confirmed"
+            ? "text-[#2F80ED]"
+            : status === "Pending"
+              ? "text-[#F2994A]"
+              : status === "Completed"
+                ? "text-[#007F5F]"
+                : status === "Cancelled"
+                  ? "text-[#EF1E1E]"
+                  : status === "Rescheduled"
+                    ? "text-[#B78520]"
+                    : "text-gray-700";
         return <span className={`font-semibold ${colorClass}`}>{status}</span>;
       },
     },
@@ -750,9 +754,7 @@ export default function Overview() {
       key: "action",
       width: 120,
       render: (_, record) => (
-        <div
-          className="flex justify-between items-center"
-        >
+        <div className="flex justify-between items-center">
           {/* Edit */}
           <Button
             type="link"
@@ -775,10 +777,7 @@ export default function Overview() {
             okButtonProps={{ danger: true }}
             onConfirm={() => deleteAppointment(record.id)}
           >
-            <Button
-              type="link"
-              className="text-[#EF1E1E] font-medium p-0"
-            >
+            <Button type="link" className="text-[#EF1E1E] font-medium p-0">
               <DeleteOutlined />
             </Button>
           </Popconfirm>
@@ -803,7 +802,9 @@ export default function Overview() {
 
   const handleCardClick = (appointment) => {
     setSelectedAppointmentId(appointment.id);
-    navigate(`/appointments`, { state: { selectedAppointmentId: appointment.id } });
+    navigate(`/appointments`, {
+      state: { selectedAppointmentId: appointment.id },
+    });
   };
 
   const formatMonthYear = (date) => {
@@ -847,10 +848,9 @@ export default function Overview() {
     fetchUsers();
   }, []);
 
-  const base_url1 =
-    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_BASE_URL) ||
-    process.env.REACT_APP_BASE_URL ||
-    (process.env.REACT_APP_API_BASE_URL ? process.env.REACT_APP_API_BASE_URL.replace(/\/verimed\/?$/i, "") : "");
+  const base_url1 = process.env.REACT_APP_API_BASE_URL
+    ? process.env.REACT_APP_API_BASE_URL.replace(/\/verimed\/?$/i, "")
+    : "";
 
   const getPhotoUrl = (url) => {
     if (!url) return patientdetails;
@@ -907,7 +907,8 @@ export default function Overview() {
   const { data: medicalReports = [] } = useQuery({
     queryKey: ["medicalHistory", cleanedPatientId],
     queryFn: async () => {
-      const data = await overviewService.getPatientAppointments(cleanedPatientId);
+      const data =
+        await overviewService.getPatientAppointments(cleanedPatientId);
       const reports = (Array.isArray(data) ? data : []).map((item, index) => ({
         key: index,
         appointment_date: item.appointment_date,
@@ -944,26 +945,40 @@ export default function Overview() {
 
         <div className="flex flex-col gap-[12px]">
           <div className="flex justify-between items-start">
-            <span className="text-[13px] font-medium text-[#64748B]">Appointment Type:</span>
-            <span className="text-[14px] font-semibold text-[#334155] text-right">{appointment?.appointment_type || "N/A"}</span>
-          </div>
-          
-          <div className="flex justify-between items-start">
-            <span className="text-[13px] font-medium text-[#64748B]">Preferred Date:</span>
+            <span className="text-[13px] font-medium text-[#64748B]">
+              Appointment Type:
+            </span>
             <span className="text-[14px] font-semibold text-[#334155] text-right">
-              {Array.isArray(appointment?.preferred_dates) ? appointment.preferred_dates.join(", ") : "N/A"}
+              {appointment?.appointment_type || "N/A"}
             </span>
           </div>
-          
+
           <div className="flex justify-between items-start">
-            <span className="text-[13px] font-medium text-[#64748B]">Preferred Time:</span>
+            <span className="text-[13px] font-medium text-[#64748B]">
+              Preferred Date:
+            </span>
             <span className="text-[14px] font-semibold text-[#334155] text-right">
-              {Array.isArray(appointment?.preferred_times) ? appointment.preferred_times.join(", ") : "N/A"}
+              {Array.isArray(appointment?.preferred_dates)
+                ? appointment.preferred_dates.join(", ")
+                : "N/A"}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start">
+            <span className="text-[13px] font-medium text-[#64748B]">
+              Preferred Time:
+            </span>
+            <span className="text-[14px] font-semibold text-[#334155] text-right">
+              {Array.isArray(appointment?.preferred_times)
+                ? appointment.preferred_times.join(", ")
+                : "N/A"}
             </span>
           </div>
 
           <div className="bg-[#F8FAFC] p-[12px] rounded-[8px] border-[1px] border-solid border-[#E2E8F0]">
-            <span className="text-[12px] font-bold text-[#475569] uppercase tracking-wider mb-[4px] block">Caretaker Notes</span>
+            <span className="text-[12px] font-bold text-[#475569] uppercase tracking-wider mb-[4px] block">
+              Caretaker Notes
+            </span>
             <p className="text-[13px] text-[#334155] m-0 line-clamp-2">
               {appointment?.care_taker_notes || "No notes available."}
             </p>
@@ -1038,9 +1053,7 @@ export default function Overview() {
   }, [careTakerData, token]);
 
   return (
-    <div
-      className="flex h-screen bg-[#F7F9FB]"
-    >
+    <div className="flex h-screen bg-[#F7F9FB]">
       {/* Sidebar */}
       <div className="w-[240px] shrink-0">
         <Sider />
@@ -1053,9 +1066,7 @@ export default function Overview() {
         </div>
 
         {/* Page Content */}
-        <div
-          className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden"
-        >
+        <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
           {/* Banner */}
           {user?.user_role === "sponsor" && <Banner />}
 
@@ -1107,9 +1118,7 @@ export default function Overview() {
                         />
                       </>
                     ) : (
-                      <p className="text-[#999]">
-                        Loading patient details...
-                      </p>
+                      <p className="text-[#999]">Loading patient details...</p>
                     )}
                   </div>
                 </div>
@@ -1118,19 +1127,27 @@ export default function Overview() {
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
                   <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
                     {vitals.map((item, i) => (
-                      <div key={i} className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0">
+                      <div
+                        key={i}
+                        className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0"
+                      >
                         <img
                           src={item.icon}
                           alt={item.label}
                           className="w-[24px] h-[24px]"
                         />
                         <div>
-                          <p className="text-[14px] font-semibold mb-[2px]">{item.label}</p>
-                          <div
-                            className="flex items-center gap-[5px]"
-                          >
-                            <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ background: item.color }}></div>
-                            <span className="text-[14px] text-[#2E2E2E] break-words">{item.value}</span>
+                          <p className="text-[14px] font-semibold mb-[2px]">
+                            {item.label}
+                          </p>
+                          <div className="flex items-center gap-[5px]">
+                            <div
+                              className="w-[8px] h-[8px] rounded-full shrink-0"
+                              style={{ background: item.color }}
+                            ></div>
+                            <span className="text-[14px] text-[#2E2E2E] break-words">
+                              {item.value}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1145,21 +1162,27 @@ export default function Overview() {
               {/* cards */}
               <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
                 {vitals.map((item, i) => (
-                  <div key={i} className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0">
+                  <div
+                    key={i}
+                    className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0"
+                  >
                     <img
                       src={item.icon}
                       alt={item.label}
                       className="w-[24px] h-[24px] shrink-0"
                     />
-                    <div
-                      className="flex flex-col min-w-0"
-                    >
-                      <p className="text-[14px] font-semibold mb-[2px]">{item.label}</p>
-                      <div
-                        className="flex items-center gap-[5px]"
-                      >
-                        <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ background: item.color }}></div>
-                        <span className="text-[14px] text-[#2E2E2E] break-words">{item.value}</span>
+                    <div className="flex flex-col min-w-0">
+                      <p className="text-[14px] font-semibold mb-[2px]">
+                        {item.label}
+                      </p>
+                      <div className="flex items-center gap-[5px]">
+                        <div
+                          className="w-[8px] h-[8px] rounded-full shrink-0"
+                          style={{ background: item.color }}
+                        ></div>
+                        <span className="text-[14px] text-[#2E2E2E] break-words">
+                          {item.value}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1170,21 +1193,15 @@ export default function Overview() {
 
           {/* Doctor overview stats */}
           {(user?.user_role === "doctor" || isAdmin) && (
-            <div
-              className="flex items-center justify-between gap-[12px] w-full"
-            >
+            <div className="flex items-center justify-between gap-[12px] w-full">
               {docStats.map((stat, idx) => (
                 <div
                   key={stat.id}
                   className="min-w-[160px] flex-none bg-white rounded-[8px] p-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] flex flex-col justify-between"
                 >
                   {/* ...card content... */}
-                  <div
-                    className="flex items-center justify-start gap-[10px]"
-                  >
-                    <div
-                      className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]"
-                    >
+                  <div className="flex items-center justify-start gap-[10px]">
+                    <div className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]">
                       <svg
                         width="18"
                         height="18"
@@ -1231,29 +1248,17 @@ export default function Overview() {
                         </defs>
                       </svg>
                     </div>
-                    <p
-                      className="text-[#6C7688] text-[14px] font-medium"
-                    >
+                    <p className="text-[#6C7688] text-[14px] font-medium">
                       {stat.name}
                     </p>
                   </div>
-                  <div
-                    className="flex items-center justify-between"
-                  >
-                    <p
-                      className="text-[#2E2E2E] text-[18px] font-extrabold"
-                    >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[#2E2E2E] text-[18px] font-extrabold">
                       {stat.count}
                     </p>
-                    <div
-                      className="flex flex-col items-end justify-center w-full"
-                    >
-                      <div
-                        className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]"
-                      >
-                        <p
-                          className="text-[white] text-[12px] font-medium"
-                        >
+                    <div className="flex flex-col items-end justify-center w-full">
+                      <div className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]">
+                        <p className="text-[white] text-[12px] font-medium">
                           {stat.diff}
                         </p>
                       </div>
@@ -1348,9 +1353,7 @@ export default function Overview() {
           {isAdmin && (
             <div className="bg-white rounded-[16px] p-[24px] w-full shadow-[0_2px_8px_rgba(0,0,0,0.05)] m-[20px]">
               {/* Header */}
-              <div
-                className="flex justify-between items-center mb-[18px] flex-wrap gap-[10px]"
-              >
+              <div className="flex justify-between items-center mb-[18px] flex-wrap gap-[10px]">
                 <p className="text-[18px] font-semibold text-[#1B1B1B]">
                   Appointment List
                 </p>
@@ -1507,12 +1510,8 @@ export default function Overview() {
           {/* Today's Schedule */}
           {user?.user_role === "care_taker" && (
             <div className="w-full">
-              <div
-                className="flex items-center justify-between"
-              >
-                <p
-                  className="text-[#1B1B1B] font-semibold text-[20px]"
-                >
+              <div className="flex items-center justify-between">
+                <p className="text-[#1B1B1B] font-semibold text-[20px]">
                   Today's Schedule
                 </p>
                 <button
@@ -1525,12 +1524,14 @@ export default function Overview() {
 
               {/* Card Container */}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(372px,1fr))] gap-[16px] mt-[16px]">
-                {caretakerAppoinments.slice(0, visibleCount).map((appointment) => (
-                  <CaretakerAppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                  />
-                ))}
+                {caretakerAppoinments
+                  .slice(0, visibleCount)
+                  .map((appointment) => (
+                    <CaretakerAppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                    />
+                  ))}
               </div>
 
               {/* Show More / Show Less Button */}
@@ -1538,7 +1539,11 @@ export default function Overview() {
                 <div className="text-center mt-[16px]">
                   {visibleCount < caretakerAppoinments.length ? (
                     <button
-                      onClick={() => setVisibleCount((prev) => Math.min(prev + 3, caretakerAppoinments.length))}
+                      onClick={() =>
+                        setVisibleCount((prev) =>
+                          Math.min(prev + 3, caretakerAppoinments.length),
+                        )
+                      }
                       className="bg-transparent text-[#004E89] border-[1px] border-solid border-[#004E89] py-[8px] px-[16px] rounded-[8px] cursor-pointer flex items-center justify-center gap-[8px] mx-auto"
                     >
                       Show More <DownOutlined />
@@ -1559,12 +1564,8 @@ export default function Overview() {
           {/* Today's Schedule Doctor */}
           {user?.user_role === "doctor" && (
             <div className="w-full">
-              <div
-                className="flex items-center justify-between"
-              >
-                <p
-                  className="text-[#1B1B1B] font-semibold text-[20px]"
-                >
+              <div className="flex items-center justify-between">
+                <p className="text-[#1B1B1B] font-semibold text-[20px]">
                   Today's Schedule
                 </p>
                 <button
@@ -1620,9 +1621,14 @@ export default function Overview() {
                           <h3 className="text-[18px] font-bold text-[#1E293B] m-0 leading-tight">
                             {name || "Unknown Patient"}
                           </h3>
-                          <p className="text-[#64748B] text-[13px] font-medium m-0 mb-[4px]">{disease || "General"}</p>
+                          <p className="text-[#64748B] text-[13px] font-medium m-0 mb-[4px]">
+                            {disease || "General"}
+                          </p>
                           <div className="inline-flex items-center justify-center bg-[#E6F4EA] text-[#007F5F] px-[8px] py-[2px] rounded-[4px]">
-                            <p className="text-[12px] font-semibold m-0 truncate max-w-[120px]" title={place}>
+                            <p
+                              className="text-[12px] font-semibold m-0 truncate max-w-[120px]"
+                              title={place}
+                            >
                               {place || "No Address"}
                             </p>
                           </div>
@@ -1632,8 +1638,17 @@ export default function Overview() {
                       <div className="flex items-center justify-between bg-[#F8FAFC] p-[12px] rounded-[8px] border-[1px] border-solid border-[#E2E8F0]">
                         <div className="flex items-center gap-[12px]">
                           <div className="bg-white p-[8px] rounded-[8px] shadow-sm">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M10 1.875C8.39303 1.875 6.82214 2.35152 5.486 3.24431C4.14985 4.1371 3.10844 5.40605 2.49348 6.8907C1.87852 8.37535 1.71762 10.009 2.03112 11.5851C2.34463 13.1612 3.11846 14.6089 4.25476 15.7452C5.39106 16.8815 6.8388 17.6554 8.4149 17.9689C9.99099 18.2824 11.6247 18.1215 13.1093 17.5065C14.594 16.8916 15.8629 15.8502 16.7557 14.514C17.6485 13.1779 18.125 11.607 18.125 10C18.1227 7.84581 17.266 5.78051 15.7427 4.25727C14.2195 2.73403 12.1542 1.87727 10 1.875ZM10 16.875C8.64026 16.875 7.31105 16.4718 6.18046 15.7164C5.04987 14.9609 4.16868 13.8872 3.64833 12.6309C3.12798 11.3747 2.99183 9.99237 3.2571 8.65875C3.52238 7.32513 4.17716 6.10013 5.13864 5.13864C6.10013 4.17716 7.32514 3.52237 8.65876 3.2571C9.99238 2.99183 11.3747 3.12798 12.631 3.64833C13.8872 4.16868 14.9609 5.04987 15.7164 6.18045C16.4718 7.31104 16.875 8.64025 16.875 10C16.8729 11.8227 16.1479 13.5702 14.8591 14.8591C13.5702 16.1479 11.8227 16.8729 10 16.875ZM15 10C15 10.1658 14.9342 10.3247 14.8169 10.4419C14.6997 10.5592 14.5408 10.625 14.375 10.625H10C9.83424 10.625 9.67527 10.5592 9.55806 10.4419C9.44085 10.3247 9.375 10.1658 9.375 10V5.625C9.375 5.45924 9.44085 5.30027 9.55806 5.18306C9.67527 5.06585 9.83424 5 10 5C10.1658 5 10.3247 5.06585 10.4419 5.18306C10.5592 5.30027 10.625 5.45924 10.625 5.625V9.375H14.375C14.5408 9.375 14.6997 9.44085 14.8169 9.55806C14.9342 9.67527 15 9.83424 15 10Z" fill="#007F5F"/>
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M10 1.875C8.39303 1.875 6.82214 2.35152 5.486 3.24431C4.14985 4.1371 3.10844 5.40605 2.49348 6.8907C1.87852 8.37535 1.71762 10.009 2.03112 11.5851C2.34463 13.1612 3.11846 14.6089 4.25476 15.7452C5.39106 16.8815 6.8388 17.6554 8.4149 17.9689C9.99099 18.2824 11.6247 18.1215 13.1093 17.5065C14.594 16.8916 15.8629 15.8502 16.7557 14.514C17.6485 13.1779 18.125 11.607 18.125 10C18.1227 7.84581 17.266 5.78051 15.7427 4.25727C14.2195 2.73403 12.1542 1.87727 10 1.875ZM10 16.875C8.64026 16.875 7.31105 16.4718 6.18046 15.7164C5.04987 14.9609 4.16868 13.8872 3.64833 12.6309C3.12798 11.3747 2.99183 9.99237 3.2571 8.65875C3.52238 7.32513 4.17716 6.10013 5.13864 5.13864C6.10013 4.17716 7.32514 3.52237 8.65876 3.2571C9.99238 2.99183 11.3747 3.12798 12.631 3.64833C13.8872 4.16868 14.9609 5.04987 15.7164 6.18045C16.4718 7.31104 16.875 8.64025 16.875 10C16.8729 11.8227 16.1479 13.5702 14.8591 14.8591C13.5702 16.1479 11.8227 16.8729 10 16.875ZM15 10C15 10.1658 14.9342 10.3247 14.8169 10.4419C14.6997 10.5592 14.5408 10.625 14.375 10.625H10C9.83424 10.625 9.67527 10.5592 9.55806 10.4419C9.44085 10.3247 9.375 10.1658 9.375 10V5.625C9.375 5.45924 9.44085 5.30027 9.55806 5.18306C9.67527 5.06585 9.83424 5 10 5C10.1658 5 10.3247 5.06585 10.4419 5.18306C10.5592 5.30027 10.625 5.45924 10.625 5.625V9.375H14.375C14.5408 9.375 14.6997 9.44085 14.8169 9.55806C14.9342 9.67527 15 9.83424 15 10Z"
+                                fill="#007F5F"
+                              />
                             </svg>
                           </div>
                           <div>
@@ -1650,8 +1665,17 @@ export default function Overview() {
 
                         <div className="flex items-center gap-[12px]">
                           <div className="bg-white p-[8px] rounded-[8px] shadow-sm">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M14.375 6.99766V6.5625C14.375 4.60312 11.4195 3.125 7.5 3.125C3.58047 3.125 0.625 4.60312 0.625 6.5625V9.6875C0.625 11.3195 2.67578 12.6164 5.625 13.0047V13.4375C5.625 15.3969 8.58047 16.875 12.5 16.875C16.4195 16.875 19.375 15.3969 19.375 13.4375V10.3125C19.375 8.69531 17.3891 7.39687 14.375 6.99766ZM18.125 10.3125C18.125 11.3453 15.7195 12.5 12.5 12.5C12.2086 12.5 11.9195 12.4898 11.6344 12.4711C13.3195 11.857 14.375 10.8594 14.375 9.6875V8.26094C16.7086 8.60859 18.125 9.55234 18.125 10.3125ZM5.625 11.7383V9.87969C6.2467 9.96069 6.87304 10.0009 7.5 10C8.12696 10.0009 8.7533 9.96069 9.375 9.87969V11.7383C8.75422 11.83 8.12751 11.8757 7.5 11.875C6.87249 11.8757 6.24578 11.83 5.625 11.7383ZM13.125 8.58828V9.6875C13.125 10.343 12.1555 11.0469 10.625 11.4742V9.64844C11.6336 9.40391 12.4875 9.03984 13.125 8.58828ZM7.5 4.375C10.7195 4.375 13.125 5.52969 13.125 6.5625C13.125 7.59531 10.7195 8.75 7.5 8.75C4.28047 8.75 1.875 7.59531 1.875 6.5625C1.875 5.52969 4.28047 4.375 7.5 4.375ZM1.875 9.6875V8.58828C2.5125 9.03984 3.36641 9.40391 4.375 9.64844V11.4742C2.84453 11.0469 1.875 10.343 1.875 9.6875ZM6.875 13.4375V13.1117C7.08047 13.1195 7.28828 13.125 7.5 13.125C7.80312 13.125 8.09922 13.1148 8.38984 13.0977C8.7127 13.2132 9.04157 13.3113 9.375 13.3914V15.2242C7.84453 14.7969 6.875 14.093 6.875 13.4375ZM10.625 15.4883V13.625C11.2465 13.7085 11.8729 13.7503 12.5 13.75C13.127 13.7509 13.7533 13.7107 14.375 13.6297V15.4883C13.1316 15.6706 11.8684 15.6706 10.625 15.4883ZM15.625 15.2242V13.3984C16.6336 13.1539 17.4875 12.7898 18.125 12.3383V13.4375C18.125 14.093 17.1555 14.7969 15.625 15.2242Z" fill="#007F5F"/>
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M14.375 6.99766V6.5625C14.375 4.60312 11.4195 3.125 7.5 3.125C3.58047 3.125 0.625 4.60312 0.625 6.5625V9.6875C0.625 11.3195 2.67578 12.6164 5.625 13.0047V13.4375C5.625 15.3969 8.58047 16.875 12.5 16.875C16.4195 16.875 19.375 15.3969 19.375 13.4375V10.3125C19.375 8.69531 17.3891 7.39687 14.375 6.99766ZM18.125 10.3125C18.125 11.3453 15.7195 12.5 12.5 12.5C12.2086 12.5 11.9195 12.4898 11.6344 12.4711C13.3195 11.857 14.375 10.8594 14.375 9.6875V8.26094C16.7086 8.60859 18.125 9.55234 18.125 10.3125ZM5.625 11.7383V9.87969C6.2467 9.96069 6.87304 10.0009 7.5 10C8.12696 10.0009 8.7533 9.96069 9.375 9.87969V11.7383C8.75422 11.83 8.12751 11.8757 7.5 11.875C6.87249 11.8757 6.24578 11.83 5.625 11.7383ZM13.125 8.58828V9.6875C13.125 10.343 12.1555 11.0469 10.625 11.4742V9.64844C11.6336 9.40391 12.4875 9.03984 13.125 8.58828ZM7.5 4.375C10.7195 4.375 13.125 5.52969 13.125 6.5625C13.125 7.59531 10.7195 8.75 7.5 8.75C4.28047 8.75 1.875 7.59531 1.875 6.5625C1.875 5.52969 4.28047 4.375 7.5 4.375ZM1.875 9.6875V8.58828C2.5125 9.03984 3.36641 9.40391 4.375 9.64844V11.4742C2.84453 11.0469 1.875 10.343 1.875 9.6875ZM6.875 13.4375V13.1117C7.08047 13.1195 7.28828 13.125 7.5 13.125C7.80312 13.125 8.09922 13.1148 8.38984 13.0977C8.7127 13.2132 9.04157 13.3113 9.375 13.3914V15.2242C7.84453 14.7969 6.875 14.093 6.875 13.4375ZM10.625 15.4883V13.625C11.2465 13.7085 11.8729 13.7503 12.5 13.75C13.127 13.7509 13.7533 13.7107 14.375 13.6297V15.4883C13.1316 15.6706 11.8684 15.6706 10.625 15.4883ZM15.625 15.2242V13.3984C16.6336 13.1539 17.4875 12.7898 18.125 12.3383V13.4375C18.125 14.093 17.1555 14.7969 15.625 15.2242Z"
+                                fill="#007F5F"
+                              />
                             </svg>
                           </div>
                           <div>
@@ -1660,7 +1684,9 @@ export default function Overview() {
                             </p>
                             <p className="text-[#64748B] text-[12px] font-medium m-0 mt-[2px]">
                               {isApiItem
-                                ? appt?.subscription_plan || appt?.subscription || "—"
+                                ? appt?.subscription_plan ||
+                                  appt?.subscription ||
+                                  "—"
                                 : appt?.subscription}
                             </p>
                           </div>
@@ -1695,7 +1721,11 @@ export default function Overview() {
                 <div className="text-center mt-[16px]">
                   {visibleCount < doctorAppointments.length ? (
                     <button
-                      onClick={() => setVisibleCount((prev) => Math.min(prev + 3, doctorAppointments.length))}
+                      onClick={() =>
+                        setVisibleCount((prev) =>
+                          Math.min(prev + 3, doctorAppointments.length),
+                        )
+                      }
                       className="bg-transparent text-[#004E89] border-[1px] border-solid border-[#004E89] py-[8px] px-[16px] rounded-[8px] cursor-pointer flex items-center justify-center gap-[8px] mx-auto"
                     >
                       Show More <DownOutlined />
@@ -1715,19 +1745,16 @@ export default function Overview() {
 
           {/* Medical Reports & Daily Reports */}
           {user?.user_role === "doctor" && (
-            <div
-              className="flex items-start justify-between w-full gap-[12px]"
-            >
+            <div className="flex items-start justify-between w-full gap-[12px]">
               <div className="p-[20px] rounded-[16px] w-[60%] bg-[#004E890A] border-[1px] border-solid border-[#004E89]">
-                <div
-                  className="flex items-center justify-between"
-                >
-                  <p
-                    className="text-[#2E2E2E] text-[16px] font-medium"
-                  >
+                <div className="flex items-center justify-between">
+                  <p className="text-[#2E2E2E] text-[16px] font-medium">
                     Medical Reports (Doctor Reports)
                   </p>
-                  <Primarybtn name="View Full Reports" onClick={() => navigate("/my_reports")} />
+                  <Primarybtn
+                    name="View Full Reports"
+                    onClick={() => navigate("/my_reports")}
+                  />
                 </div>
                 <div>
                   {/* {[
@@ -1777,14 +1804,10 @@ export default function Overview() {
                 </div>
               </div>
               <div className="w-[40%] bg-white p-[20px] rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                <p
-                  className="text-[#007F5F] text-[16px] font-medium"
-                >
+                <p className="text-[#007F5F] text-[16px] font-medium">
                   Urgent Alerts
                 </p>
-                <div
-                  className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10"
-                />
+                <div className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10" />
 
                 {/* {[
                   {
@@ -1841,20 +1864,12 @@ export default function Overview() {
           {user?.user_role === "sponsor" && (
             <>
               {/* Main Container */}
-              <div
-                className="flex justify-between gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]"
-              >
+              <div className="flex justify-between gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]">
                 {/* Left - Care Team Details */}
-                <div
-                  className="bg-white border-[1px] border-solid border-[#E5E7EB] rounded-[10px] p-[16px] flex-1 font-['Inter',sans-serif]"
-                >
+                <div className="bg-white border-[1px] border-solid border-[#E5E7EB] rounded-[10px] p-[16px] flex-1 font-['Inter',sans-serif]">
                   {/* Header */}
-                  <div
-                    className="flex justify-between items-center mb-[16px]"
-                  >
-                    <h3
-                      className="text-[16px] font-medium m-0 text-[#2E2E2E]"
-                    >
+                  <div className="flex justify-between items-center mb-[16px]">
+                    <h3 className="text-[16px] font-medium m-0 text-[#2E2E2E]">
                       Care Team Details
                     </h3>
                     <SecondaryBtn name="view reports" onClick={() => {}} />
@@ -1870,23 +1885,17 @@ export default function Overview() {
                       className="w-[60px] h-[60px] rounded-[12px] shrink-0 object-cover"
                     />
 
-                    <div
-                      className="flex-1 flex flex-col gap-[14px]"
-                    >
+                    <div className="flex-1 flex flex-col gap-[14px]">
                       {/* Row 1 */}
                       <div className="grid grid-cols-3 gap-[10px_20px]">
                         <div>
-                          <div className="text-[13px] text-[#6B7280]">
-                            Name
-                          </div>
+                          <div className="text-[13px] text-[#6B7280]">Name</div>
                           <div className="text-[14px] font-medium">
                             {careTeam.name}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[13px] text-[#6B7280]">
-                            Role
-                          </div>
+                          <div className="text-[13px] text-[#6B7280]">Role</div>
                           <div className="text-[14px] font-medium">
                             {careTeam.role}
                           </div>
@@ -1944,17 +1953,11 @@ export default function Overview() {
 
                 <div className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]">
                   {/* Header */}
-                  <div
-                    className="flex justify-between items-center"
-                  >
-                    <p
-                      className="text-[16px] font-medium text-[#1B1B1B]"
-                    >
+                  <div className="flex justify-between items-center">
+                    <p className="text-[16px] font-medium text-[#1B1B1B]">
                       Upcoming Appointments
                     </p>
-                    <span
-                      className="text-[14px] text-[#B38C1D] cursor-pointer"
-                    >
+                    <span className="text-[14px] text-[#B38C1D] cursor-pointer">
                       View All
                     </span>
                   </div>
@@ -1962,12 +1965,8 @@ export default function Overview() {
                   <div className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]" />
 
                   {/* Calendar Row */}
-                  <div
-                    className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center"
-                  >
-                    <span
-                      className="flex items-center gap-[8px]"
-                    >
+                  <div className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center">
+                    <span className="flex items-center gap-[8px]">
                       <button
                         onClick={handlePrevMonth}
                         className="border-none bg-transparent cursor-pointer text-[16px]"
@@ -2043,31 +2042,23 @@ export default function Overview() {
                             className={`flex gap-[10px] items-center rounded-[8px] p-[10px] cursor-pointer transition-colors duration-200 ${isSelected ? "bg-[#004C91] text-white" : "bg-[#F3F4F6] text-black"}`}
                           >
                             {/* Date Box */}
-                            <div
-                              className="bg-[#FFFFFF] text-[#000] rounded-[6px] w-[45px] text-center py-[5px] px-[0px]"
-                            >
+                            <div className="bg-[#FFFFFF] text-[#000] rounded-[6px] w-[45px] text-center py-[5px] px-[0px]">
                               <div className="text-[13px]">
                                 {appt.date.toLocaleDateString("en-US", {
                                   weekday: "short",
                                 })}
                               </div>
-                              <div
-                                className="text-[16px] font-semibold"
-                              >
+                              <div className="text-[16px] font-semibold">
                                 {appt.date.getDate()}
                               </div>
                             </div>
 
                             {/* Info */}
                             <div className="grow">
-                              <div
-                                className="text-[14px] font-medium"
-                              >
+                              <div className="text-[14px] font-medium">
                                 {appt.doctor}
                               </div>
-                              <div className="text-[13px]">
-                                {appt.time}
-                              </div>
+                              <div className="text-[13px]">{appt.time}</div>
                             </div>
                           </div>
                         );
@@ -2080,7 +2071,11 @@ export default function Overview() {
                 <SectionHeader title="Medical History">
                   <Primarybtn
                     name="Request Appointment"
-                    onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
+                    onClick={() =>
+                      navigate("/appointments", {
+                        state: { openBookingModal: true },
+                      })
+                    }
                   />
                 </SectionHeader>
 
@@ -2100,92 +2095,60 @@ export default function Overview() {
           {user?.user_role === "patient" && (
             <>
               <div className="w-full">
-                <div
-                  className="w-full flex flex-row items-center justify-between"
-                >
-                  <p
-                    className="text-left capitalize text-[#2E2E2E] text-[16px] font-medium"
-                  >
+                <div className="w-full flex flex-row items-center justify-between">
+                  <p className="text-left capitalize text-[#2E2E2E] text-[16px] font-medium">
                     Care Taker Details
                   </p>
                   <SecondaryBtn name="Send Message" onClick={() => {}} />
                 </div>
-                <div
-                  className="p-[20px] rounded-[16px] m-[20px] border-[1px] border-solid border-[#1B1B1B1A]"
-                >
-                  <div
-                    className="flex flex-row items-center justify-between w-full"
-                  >
-                    <div
-                      className="flex flex-row items-center justify-center gap-[20px]"
-                    >
+                <div className="p-[20px] rounded-[16px] m-[20px] border-[1px] border-solid border-[#1B1B1B1A]">
+                  <div className="flex flex-row items-center justify-between w-full">
+                    <div className="flex flex-row items-center justify-center gap-[20px]">
                       <img
                         src={patientdetails}
                         alt="profile"
                         className="w-[64px] h-[64px] rounded-[12px] shrink-0 object-cover"
                       />
                       <div>
-                        <p
-                          className="text-[#2E2E2E] font-medium opacity-60"
-                        >
+                        <p className="text-[#2E2E2E] font-medium opacity-60">
                           Name
                         </p>
-                        <p
-                          className="text-[#2E2E2E] text-[18px] font-bold"
-                        >
+                        <p className="text-[#2E2E2E] text-[18px] font-bold">
                           {careTeam.name || "N/A"}
                         </p>
                       </div>
                     </div>
                     <div>
-                      <p
-                        className="text-[#2E2E2E] font-medium opacity-60"
-                      >
+                      <p className="text-[#2E2E2E] font-medium opacity-60">
                         Role
                       </p>
-                      <p
-                        className="text-[#2E2E2E] text-[18px] font-bold"
-                      >
+                      <p className="text-[#2E2E2E] text-[18px] font-bold">
                         {careTeam.role || "N/A"}
                       </p>
                     </div>
                     <div>
-                      <p
-                        className="text-[#2E2E2E] font-medium opacity-60"
-                      >
+                      <p className="text-[#2E2E2E] font-medium opacity-60">
                         Contact Number
                       </p>
-                      <p
-                        className="text-[#2E2E2E] text-[18px] font-bold"
-                      >
+                      <p className="text-[#2E2E2E] text-[18px] font-bold">
                         {careTeam.contact || "N/A"}
                       </p>
                     </div>
                     <div>
-                      <p
-                        className="text-[#2E2E2E] font-medium opacity-60"
-                      >
+                      <p className="text-[#2E2E2E] font-medium opacity-60">
                         Assigned Since
                       </p>
-                      <p
-                        className="text-[#2E2E2E] text-[18px] font-bold"
-                      >
+                      <p className="text-[#2E2E2E] text-[18px] font-bold">
                         {/* {careTeam.contact || "N/A"} */}-
                       </p>
                     </div>
                   </div>
-                  <div
-                    className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10"
-                  />
+                  <div className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10" />
                   <div>
-                    <p
-                      className="text-[#2E2E2E] font-medium opacity-60"
-                    >
+                    <p className="text-[#2E2E2E] font-medium opacity-60">
                       Role
                     </p>
-                    <p
-                      className="text-[#2E2E2E] text-[18px] font-bold"
-                    >
+                    <p className="text-[#2E2E2E] text-[18px] font-bold">
                       {careTeam.specialization || "N/A"}{" "}
                     </p>
                   </div>
@@ -2197,23 +2160,15 @@ export default function Overview() {
           {/* My Reports - Patient */}
           {user?.user_role === "patient" && (
             <div className="w-full">
-              <div
-                className="p-[20px] rounded-[16px] bg-[#004E890A] border-[1px] border-solid border-[#004E89]"
-              >
-                <div
-                  className="flex items-center justify-between"
-                >
-                  <p
-                    className="text-[#2E2E2E] text-[16px] font-medium"
-                  >
+              <div className="p-[20px] rounded-[16px] bg-[#004E890A] border-[1px] border-solid border-[#004E89]">
+                <div className="flex items-center justify-between">
+                  <p className="text-[#2E2E2E] text-[16px] font-medium">
                     My Reports
                   </p>
                   <Primarybtn name="View Full Reports" onClick={() => {}} />
                 </div>
 
-                <div
-                  className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10"
-                />
+                <div className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10" />
 
                 {/* <div>
                             <p className="text-[#2E2E2E] text-[16px] font-semibold">
@@ -2293,108 +2248,84 @@ export default function Overview() {
 
           {/* Appointment Details */}
           {user?.user_role === "patient" && (
-            <div
-              className="flex justify-center gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]"
-            >
+            <div className="flex justify-center gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]">
               {/* Left Section */}
               <div className="bg-white rounded-[12px] p-[20px] flex flex-col gap-[20px] w-[60%]">
                 <SectionHeader title="Appointment Details" />
                 <div className="relative ml-[20px] flex flex-col gap-[20px]">
-                  <div className="absolute left-[5px] top-0 bottom-0 w-[2px] bg-[#2E2E2E] opacity-10"></div> {/* vertical line */}
+                  <div className="absolute left-[5px] top-0 bottom-0 w-[2px] bg-[#2E2E2E] opacity-10"></div>{" "}
+                  {/* vertical line */}
                   {appointmentList.map((item, index) => (
-                    <div key={index} className="flex items-start gap-[15px] relative">
+                    <div
+                      key={index}
+                      className="flex items-start gap-[15px] relative"
+                    >
                       <div className="w-[12px] h-[12px] rounded-full bg-[#004E89] mt-[5px] shrink-0 z-[1]"></div>
                       <div className="bg-[#004E890A] border-[1px] border-solid border-[#E6E8EB] rounded-[10px] p-[15px] flex-1 gap-[16px]">
-                        <div
-                          className="flex justify-between items-center mb-[-10]"
-                        >
-                          <p className="text-[12px] font-semibold mb-[8px] text-[#2E2E2E]">{item.date} </p>
+                        <div className="flex justify-between items-center mb-[-10]">
+                          <p className="text-[12px] font-semibold mb-[8px] text-[#2E2E2E]">
+                            {item.date}{" "}
+                          </p>
                           <p>
                             {item.badge && (
-                              <span className="bg-white text-[#2E2E2E] text-[12px] font-medium py-[2px] px-[8px] rounded-[6px] border-[1px] border-solid border-[#1B1B1B33] ml-[10px]">{item.badge}</span>
+                              <span className="bg-white text-[#2E2E2E] text-[12px] font-medium py-[2px] px-[8px] rounded-[6px] border-[1px] border-solid border-[#1B1B1B33] ml-[10px]">
+                                {item.badge}
+                              </span>
                             )}
                           </p>
                         </div>
                         {item.type && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Type:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.type}
                             </span>
                           </p>
                         )}
                         {item.provider && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Assigned Provider:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.provider}
                             </span>
                           </p>
                         )}
                         {item.status && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Status:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.status}
                             </span>
                           </p>
                         )}
                         {item.checkin && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Check-in Status:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.checkin}
                             </span>
                           </p>
                         )}
                         {item.vitals && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Vitals Recorded:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.vitals}
                             </span>
                           </p>
                         )}
                         {item.comments && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Comments:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.comments}
                             </span>
                           </p>
                         )}
                         {item.next && (
-                          <p
-                            className="text-[14px] font-medium text-[#2E2E2E]"
-                          >
+                          <p className="text-[14px] font-medium text-[#2E2E2E]">
                             Next Appointment:{" "}
-                            <span
-                              className="text-[14px] font-medium text-[#06152B99]"
-                            >
+                            <span className="text-[14px] font-medium text-[#06152B99]">
                               {item.next}
                             </span>
                           </p>
@@ -2406,36 +2337,22 @@ export default function Overview() {
               </div>
 
               {/* Right Section */}
-              <div
-                className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]"
-              >
+              <div className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]">
                 {/* Header */}
-                <div
-                  className="flex justify-between items-center"
-                >
-                  <p
-                    className="text-[16px] font-medium text-[#1B1B1B]"
-                  >
+                <div className="flex justify-between items-center">
+                  <p className="text-[16px] font-medium text-[#1B1B1B]">
                     Upcoming Appointments
                   </p>
-                  <span
-                    className="text-[14px] text-[#B38C1D] cursor-pointer"
-                  >
+                  <span className="text-[14px] text-[#B38C1D] cursor-pointer">
                     View All
                   </span>
                 </div>
 
-                <div
-                  className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]"
-                />
+                <div className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]" />
 
                 {/* Month Row */}
-                <div
-                  className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center"
-                >
-                  <span
-                    className="flex items-center gap-[8px]"
-                  >
+                <div className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center">
+                  <span className="flex items-center gap-[8px]">
                     <button
                       onClick={handlePrevMonth}
                       className="border-none bg-transparent cursor-pointer text-[16px]"
@@ -2465,9 +2382,7 @@ export default function Overview() {
 
                 {/* Calendar */}
                 {showCalendar && (
-                  <div
-                    className="grid grid-cols-7 gap-[4px] mt-[5px] text-center text-[12px]"
-                  >
+                  <div className="grid grid-cols-7 gap-[4px] mt-[5px] text-center text-[12px]">
                     {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
                       <div key={d} className="font-semibold">
                         {d}
@@ -2543,7 +2458,11 @@ export default function Overview() {
               <SectionHeader title="Medical History">
                 <Primarybtn
                   name="Request Appointment"
-                  onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
+                  onClick={() =>
+                    navigate("/appointments", {
+                      state: { openBookingModal: true },
+                    })
+                  }
                 />
                 <SecondaryBtn name="update membership" />
               </SectionHeader>
@@ -2561,69 +2480,46 @@ export default function Overview() {
 
           {/* Upcoming Appoinment */}
           {user?.user_role === "care_taker" && (
-            <div
-              className="grid grid-cols-[2fr_1fr] gap-[8px] w-full"
-            >
-              <div
-                className="bg-[#004E890A] w-auto border-[1px] border-solid border-[#004E89] rounded-[12px] p-[20px] h-full"
-              >
+            <div className="grid grid-cols-[2fr_1fr] gap-[8px] w-full">
+              <div className="bg-[#004E890A] w-auto border-[1px] border-solid border-[#004E89] rounded-[12px] p-[20px] h-full">
                 <SectionHeader title="Recent Reports">
-                  <Primarybtn name="View Full History" onClick={() => navigate("/my_reports")} />
+                  <Primarybtn
+                    name="View Full History"
+                    onClick={() => navigate("/my_reports")}
+                  />
                 </SectionHeader>
 
                 <div>
-                  <p
-                    className="m-0 py-[8px] px-0 border-b-[1px] border-solid border-[#D0D5DD]"
-                  >
+                  <p className="m-0 py-[8px] px-0 border-b-[1px] border-solid border-[#D0D5DD]">
                     Aug 15, 2025: Vitals stable. Patient doing well.
                   </p>
-                  <p
-                    className="m-0 py-[8px] px-0 border-b-[1px] border-solid border-[#D0D5DD]"
-                  >
+                  <p className="m-0 py-[8px] px-0 border-b-[1px] border-solid border-[#D0D5DD]">
                     Aug 14, 2025: High BP noted. Escalated to physician.
                   </p>
-                  <p
-                    className="m-0 py-[8px] px-[0px]"
-                  >
+                  <p className="m-0 py-[8px] px-[0px]">
                     Aug 10, 2025: Virtual consult with Dr. Paul completed.
                   </p>
                 </div>
               </div>
 
               {/* right */}
-              <div
-                className="p-[20px] flex flex-col"
-              >
-                <div
-                  className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]"
-                >
+              <div className="p-[20px] flex flex-col">
+                <div className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]">
                   {/* Header */}
-                  <div
-                    className="flex justify-between items-center"
-                  >
-                    <p
-                      className="text-[16px] font-medium text-[#1B1B1B]"
-                    >
+                  <div className="flex justify-between items-center">
+                    <p className="text-[16px] font-medium text-[#1B1B1B]">
                       Upcoming Appointments
                     </p>
-                    <span
-                      className="text-[14px] text-[#B38C1D] cursor-pointer"
-                    >
+                    <span className="text-[14px] text-[#B38C1D] cursor-pointer">
                       View All
                     </span>
                   </div>
 
-                  <div
-                    className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]"
-                  />
+                  <div className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]" />
 
                   {/* Month Row */}
-                  <div
-                    className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center"
-                  >
-                    <span
-                      className="flex items-center gap-[8px]"
-                    >
+                  <div className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center">
+                    <span className="flex items-center gap-[8px]">
                       <button
                         onClick={handlePrevMonth}
                         className="border-none bg-transparent cursor-pointer text-[16px]"
@@ -2653,9 +2549,7 @@ export default function Overview() {
 
                   {/* Calendar */}
                   {showCalendar && (
-                    <div
-                      className="grid grid-cols-7 gap-[4px] mt-[-15px] text-center text-[12px] p-[10px] rounded-br-[8px] rounded-bl-[8px] bg-[#007F5F14]"
-                    >
+                    <div className="grid grid-cols-7 gap-[4px] mt-[-15px] text-center text-[12px] p-[10px] rounded-br-[8px] rounded-bl-[8px] bg-[#007F5F14]">
                       {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
                         <div key={d} className="font-semibold">
                           {d}
@@ -2708,23 +2602,17 @@ export default function Overview() {
                                   weekday: "short",
                                 })}
                               </div>
-                              <div
-                                className="text-[16px] font-semibold"
-                              >
+                              <div className="text-[16px] font-semibold">
                                 {appt.date.getDate()}
                               </div>
                             </div>
 
                             {/* Appointment Info */}
                             <div className="grow">
-                              <div
-                                className="text-[14px] font-medium"
-                              >
+                              <div className="text-[14px] font-medium">
                                 {appt.doctor}
                               </div>
-                              <div className="text-[13px]">
-                                {appt.time}
-                              </div>
+                              <div className="text-[13px]">{appt.time}</div>
                             </div>
                           </div>
                         );
@@ -2741,13 +2629,9 @@ export default function Overview() {
 
 function SectionHeader({ title, children }) {
   return (
-    <div
-      className="flex justify-between items-center flex-wrap gap-[10px] min-w-0"
-    >
+    <div className="flex justify-between items-center flex-wrap gap-[10px] min-w-0">
       <p className="text-[16px] font-semibold text-[#1B1B1B]">{title}</p>
-      <div className="flex gap-[10px] flex-wrap">
-        {children}
-      </div>
+      <div className="flex gap-[10px] flex-wrap">{children}</div>
     </div>
   );
 }
@@ -2756,14 +2640,10 @@ function SectionHeader({ title, children }) {
 function InfoItem({ label, value }) {
   return (
     <div className="min-w-0">
-      <p
-        className="text-[#6B7280] text-[14px] font-medium mb-[3px] break-words"
-      >
+      <p className="text-[#6B7280] text-[14px] font-medium mb-[3px] break-words">
         {label}
       </p>
-      <p
-        className="text-[16px] font-semibold text-[#2E2E2E] break-words"
-      >
+      <p className="text-[16px] font-semibold text-[#2E2E2E] break-words">
         {value}
       </p>
     </div>

@@ -1,8 +1,12 @@
-export const base_url =
-  (typeof import.meta !== "undefined" &&
-    import.meta.env &&
-    import.meta.env.VITE_API_BASE_URL) ||
-  process.env.REACT_APP_API_BASE_URL;
+const normalizeBaseUrl = (value) => {
+  if (typeof value !== "string") return "";
+  return value
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\/+$/, "");
+};
+
+export const base_url = normalizeBaseUrl(process.env.REACT_APP_API_BASE_URL);
 
 // Special case: user with id 100 is always considered an admin regardless of role.
 export const isAdminUser = (user) =>

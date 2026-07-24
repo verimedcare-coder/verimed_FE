@@ -59,7 +59,10 @@ const linkedPatients = [
   },
 ];
 const NOT_KNOWN_OPTIONS = [
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 const BLOOD_GROUP_OPTIONS = [
   { label: "A+", value: "A+" },
@@ -70,7 +73,10 @@ const BLOOD_GROUP_OPTIONS = [
   { label: "AB−", value: "AB−" },
   { label: "O+", value: "O+" },
   { label: "O−", value: "O−" },
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 const GENDER_OPTIONS = [
   { label: "Male", value: "male" },
@@ -80,7 +86,10 @@ const GENDER_OPTIONS = [
 const YES_NO_NOT_KNOWN_OPTIONS = [
   { label: "Yes", value: "Yes" },
   { label: "No", value: "No" },
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 
 export default function UserManagement() {
@@ -235,7 +244,7 @@ export default function UserManagement() {
         if (values.photo) {
           formData.append("photo", values.photo);
         }
-        await apiClient.post('/user_create/', formData, {
+        await apiClient.post("/user_create/", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -259,7 +268,7 @@ export default function UserManagement() {
         if (values.photo) {
           pFormData.append("patient_photo", values.photo);
         }
-        await apiClient.post('/patientprofile_create_update/', pFormData, {
+        await apiClient.post("/patientprofile_create_update/", pFormData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -297,7 +306,7 @@ export default function UserManagement() {
       if (values.photo) {
         formData.append("photo", values.photo);
       }
-      await apiClient.post('/user_create/', formData, {
+      await apiClient.post("/user_create/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -330,7 +339,7 @@ export default function UserManagement() {
 
       switch (activeTab) {
         case "sponsors":
-          endpoint = '/user_update/';
+          endpoint = "/user_update/";
           keyName = "user_update_data";
           updateData = {
             updateid: selectedSponsor?.id,
@@ -343,7 +352,7 @@ export default function UserManagement() {
           break;
 
         case "doctors":
-          endpoint = '/doctorprofile_update/';
+          endpoint = "/doctorprofile_update/";
           keyName = "doctorprofile_update_data";
           updateData = {
             doc_profile_updateid: selectedDoctor?.doctorProfile?.id || "",
@@ -364,7 +373,7 @@ export default function UserManagement() {
           break;
 
         case "patients": {
-          endpoint = '/patientprofile_create_update/';
+          endpoint = "/patientprofile_create_update/";
           keyName = "patientprofile_data";
           const formattedDOB =
             editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
@@ -375,8 +384,14 @@ export default function UserManagement() {
             patient_profile_updateid: selectedPatient?.patientProfile?.id,
             updateid: selectedPatient?.patientProfile?.id,
             patientprofileid: selectedPatient?.patientProfile?.id,
-            reason_enrollment: selectedPatient?.patientProfile?.reason_enrollment || editedData.reason_enrollment || "Patient",
-            reason: selectedPatient?.patientProfile?.reason_enrollment || editedData.reason_enrollment || "Patient",
+            reason_enrollment:
+              selectedPatient?.patientProfile?.reason_enrollment ||
+              editedData.reason_enrollment ||
+              "Patient",
+            reason:
+              selectedPatient?.patientProfile?.reason_enrollment ||
+              editedData.reason_enrollment ||
+              "Patient",
             sponsorid: editedData.sponsorid || "",
             doctorid: editedData.doctorid || "",
             caretakerid: editedData.caretakerid || "",
@@ -390,7 +405,8 @@ export default function UserManagement() {
             heart_rate: editedData.heart_rate || editedData.heartRate || "",
             oxygen: editedData.oxygen || "",
             temperature: editedData.temperature || "",
-            respiratory_rate: editedData.respiratory_rate || editedData.respiratoryRate || "",
+            respiratory_rate:
+              editedData.respiratory_rate || editedData.respiratoryRate || "",
             patient_home_address: editedData.patient_home_address || "",
             primary_language: editedData.primary_language || "",
             religion: editedData.religion || "",
@@ -480,7 +496,7 @@ export default function UserManagement() {
         }
 
         case "caretakers":
-          endpoint = '/caretakerprofile_update/';
+          endpoint = "/caretakerprofile_update/";
           keyName = "caretakerprofile_update_data";
           updateData = {
             caretaker_profile_updateid:
@@ -501,10 +517,17 @@ export default function UserManagement() {
 
       formData.append(keyName, JSON.stringify(updateData));
       if (activeTab === "patients") {
-        formData.append("patientprofile_update_data", JSON.stringify(updateData));
+        formData.append(
+          "patientprofile_update_data",
+          JSON.stringify(updateData),
+        );
       }
 
-      if (editedData.photo && typeof editedData.photo === "object" && editedData.photo.name) {
+      if (
+        editedData.photo &&
+        typeof editedData.photo === "object" &&
+        editedData.photo.name
+      ) {
         formData.append("photo", editedData.photo);
         console.log("📸 Photo being uploaded:", editedData.photo.name);
       }
@@ -571,7 +594,7 @@ export default function UserManagement() {
       return;
     }
     try {
-      const endpoint = '/user_update/';
+      const endpoint = "/user_update/";
       const updateData = { updateid: userId, is_active_state: newStatus };
       const formdata = new FormData();
       formdata.append("user_update_data", JSON.stringify(updateData));
@@ -618,20 +641,48 @@ export default function UserManagement() {
       default:
         return;
     }
-    if (!userId) return;
+
+    if (!userId) {
+      notification.error({
+        message: "DELETE FAILED",
+        description: "Unable to identify user ID.",
+        placement: "topRight",
+      });
+      return;
+    }
+
     try {
+      const payload = { deleteids: [userId] };
+      await apiClient.delete("/user_delete/", {
+        data: payload,
+      });
+
       queryClient.setQueryData(["userManagementLists", token], (oldData) => {
         if (!oldData) return oldData;
         return {
-          allUsers: oldData.allUsers?.filter((item) => item.id !== userId) || [],
-          sponsors: oldData.sponsors?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
-          caretakers: oldData.caretakers?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
-          patients: oldData.patients?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
-          doctors: oldData.doctors?.filter((item) => item.id !== userId && item.user?.id !== userId) || [],
+          allUsers:
+            oldData.allUsers?.filter((item) => item.id !== userId) || [],
+          sponsors:
+            oldData.sponsors?.filter(
+              (item) => item.id !== userId && item.user?.id !== userId,
+            ) || [],
+          caretakers:
+            oldData.caretakers?.filter(
+              (item) => item.id !== userId && item.user?.id !== userId,
+            ) || [],
+          patients:
+            oldData.patients?.filter(
+              (item) => item.id !== userId && item.user?.id !== userId,
+            ) || [],
+          doctors:
+            oldData.doctors?.filter(
+              (item) => item.id !== userId && item.user?.id !== userId,
+            ) || [],
         };
       });
 
       setDrawerVisible(false);
+      fetchAllUsersData();
       notification.success({
         message: "ACCOUNT DELETED",
         description: `The ${activeTab.slice(0, -1)} account has been removed successfully.`,
@@ -641,7 +692,10 @@ export default function UserManagement() {
       console.error("Delete failed:", error);
       notification.error({
         message: "DELETE FAILED",
-        description: "Unable to delete account.",
+        description:
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Unable to delete account.",
         placement: "topRight",
       });
     }
@@ -845,10 +899,10 @@ export default function UserManagement() {
 
   // ─── Reusable avatar uploader ───────────────────────────────────────────────
   const AvatarUploader = ({ currentSrc, inputId }) => (
-    <div
-      className="flex items-center gap-[16px] mb-[8px]"
-    >
-      <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Profile Photo</p>
+    <div className="flex items-center gap-[16px] mb-[8px]">
+      <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+        Profile Photo
+      </p>
 
       <div className="relative w-[72px] h-[72px]">
         <Avatar
@@ -1154,7 +1208,9 @@ export default function UserManagement() {
           {/* ── Fields ── */}
           <div className="flex-1 grid grid-cols-[1fr_1fr] gap-[16px]">
             <div>
-              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">First Name</label>
+              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                First Name
+              </label>
               <Input
                 value={editedData.first_name}
                 onChange={(e) =>
@@ -1163,7 +1219,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Last Name</label>
+              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Last Name
+              </label>
               <Input
                 value={editedData.last_name}
                 onChange={(e) =>
@@ -1172,7 +1230,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Country Code</label>
+              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Country Code
+              </label>
               <Select
                 value={editedData.country_code || "CM"}
                 onChange={(val) =>
@@ -1192,7 +1252,9 @@ export default function UserManagement() {
               </Select>
             </div>
             <div>
-              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Phone Number</label>
+              <label className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Phone Number
+              </label>
               <Input
                 value={editedData.phone}
                 onChange={(e) =>
@@ -1213,21 +1275,27 @@ export default function UserManagement() {
             inputId="doctor-photo-upload"
           />
 
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Doctor Name</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Doctor Name
+          </p>
           <Input
             value={editedData.name}
             onChange={(e) =>
               setEditedData({ ...editedData, name: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Speciality</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Speciality
+          </p>
           <Input
             value={editedData.speciality}
             onChange={(e) =>
               setEditedData({ ...editedData, speciality: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Country Code</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Country Code
+          </p>
           <Select
             value={editedData.doc_country_code || "CM"}
             onChange={(val) =>
@@ -1245,21 +1313,27 @@ export default function UserManagement() {
             <Select.Option value="SG">+65 (Singapore)</Select.Option>
             <Select.Option value="MY">+60 (Malaysia)</Select.Option>
           </Select>
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Phone</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Phone
+          </p>
           <Input
             value={editedData.doc_phone}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_phone: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Address</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Address
+          </p>
           <Input
             value={editedData.doc_address}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_address: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Gender</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Gender
+          </p>
           <Select
             value={editedData.doc_gender}
             onChange={(value) =>
@@ -1271,7 +1345,9 @@ export default function UserManagement() {
               { label: "Other", value: "Other" },
             ]}
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Experience (Years)</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Experience (Years)
+          </p>
           <Input
             type="number"
             value={editedData.doc_exprience}
@@ -1279,42 +1355,54 @@ export default function UserManagement() {
               setEditedData({ ...editedData, doc_exprience: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">License No</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            License No
+          </p>
           <Input
             value={editedData.doc_licence_no}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_licence_no: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">City</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            City
+          </p>
           <Input
             value={editedData.doc_city}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_city: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">State</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            State
+          </p>
           <Input
             value={editedData.doc_state}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_state: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Country</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Country
+          </p>
           <Input
             value={editedData.doc_country}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_country: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Pincode</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Pincode
+          </p>
           <Input
             value={editedData.doc_pincode}
             onChange={(e) =>
               setEditedData({ ...editedData, doc_pincode: e.target.value })
             }
           />
-          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Joining Date</p>
+          <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+            Joining Date
+          </p>
           <Input
             type="date"
             value={editedData.joining_date}
@@ -1336,7 +1424,9 @@ export default function UserManagement() {
 
           <div className="grid grid-cols-[1fr_1fr] gap-[16px]">
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Caretaker Name</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Caretaker Name
+              </p>
               <Input
                 value={editedData.name}
                 onChange={(e) =>
@@ -1346,7 +1436,9 @@ export default function UserManagement() {
             </div>
 
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Caretaker Address</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Caretaker Address
+              </p>
               <Input
                 rows={2}
                 value={editedData.address}
@@ -1356,7 +1448,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Caretaker Gender</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Caretaker Gender
+              </p>
               <Select
                 value={editedData.gender}
                 className="w-full"
@@ -1370,7 +1464,9 @@ export default function UserManagement() {
               </Select>
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Experience (in years)</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Experience (in years)
+              </p>
               <Input
                 type="number"
                 min={0}
@@ -1381,7 +1477,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Year of Graduation</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Year of Graduation
+              </p>
               <Input
                 value={editedData.yr_graduation}
                 onChange={(e) =>
@@ -1393,7 +1491,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Credentials</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Credentials
+              </p>
               <Input.TextArea
                 rows={2}
                 value={editedData.credentials}
@@ -1403,7 +1503,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Skillset</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Skillset
+              </p>
               <Input.TextArea
                 rows={3}
                 value={editedData.skillset}
@@ -1425,7 +1527,9 @@ export default function UserManagement() {
           />
           <div className="grid grid-cols-[1fr_1fr] gap-[16px]">
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Sponsor ID</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Sponsor ID
+              </p>
               <Input
                 value={editedData.sponsorid || ""}
                 onChange={(e) =>
@@ -1434,12 +1538,17 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">DOB</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                DOB
+              </p>
               <Input
                 type="date"
                 value={
-                  editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
-                    ? new Date(editedData.patient_dob).toISOString().split("T")[0]
+                  editedData.patient_dob &&
+                  !isNaN(Date.parse(editedData.patient_dob))
+                    ? new Date(editedData.patient_dob)
+                        .toISOString()
+                        .split("T")[0]
                     : ""
                 }
                 onChange={(e) =>
@@ -1448,7 +1557,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Gender</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Gender
+              </p>
               <Select
                 value={editedData.patient_gender}
                 onChange={(val) =>
@@ -1458,7 +1569,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Blood Group</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Blood Group
+              </p>
               <Select
                 className="w-full"
                 value={editedData.blood_group || undefined}
@@ -1470,7 +1583,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Height</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Height
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.height || undefined}
@@ -1483,7 +1598,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Weight</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Weight
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.weight || undefined}
@@ -1496,7 +1613,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Blood Pressure</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Blood Pressure
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.blood_pressure || editedData.bp || undefined}
@@ -1509,10 +1628,14 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Heart Rate</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Heart Rate
+              </p>
               <AutoComplete
                 className="w-full"
-                value={editedData.heart_rate || editedData.heartRate || undefined}
+                value={
+                  editedData.heart_rate || editedData.heartRate || undefined
+                }
                 placeholder="Enter Heart Rate or select Not Known"
                 onChange={(val) =>
                   setEditedData({ ...editedData, heart_rate: val })
@@ -1522,7 +1645,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Blood Sugar</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Blood Sugar
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.blood_sugar || editedData.sugar || undefined}
@@ -1535,7 +1660,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Oxygen</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Oxygen
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.oxygen || undefined}
@@ -1548,7 +1675,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Temperature</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Temperature
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.temperature || undefined}
@@ -1561,10 +1690,16 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Respiratory Rate</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Respiratory Rate
+              </p>
               <AutoComplete
                 className="w-full"
-                value={editedData.respiratory_rate || editedData.respiratoryRate || undefined}
+                value={
+                  editedData.respiratory_rate ||
+                  editedData.respiratoryRate ||
+                  undefined
+                }
                 placeholder="Enter Respiratory Rate or select Not Known"
                 onChange={(val) =>
                   setEditedData({ ...editedData, respiratory_rate: val })
@@ -1574,25 +1709,37 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Home Address</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Home Address
+              </p>
               <Input
                 value={editedData.patient_home_address || ""}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, patient_home_address: e.target.value })
+                  setEditedData({
+                    ...editedData,
+                    patient_home_address: e.target.value,
+                  })
                 }
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Diagnosis</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Diagnosis
+              </p>
               <Input
                 value={editedData.medical_his_diagnosis || ""}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, medical_his_diagnosis: e.target.value })
+                  setEditedData({
+                    ...editedData,
+                    medical_his_diagnosis: e.target.value,
+                  })
                 }
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Cancer History</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Cancer History
+              </p>
               <Select
                 className="w-full"
                 value={editedData.medical_his_cancer || undefined}
@@ -1604,17 +1751,24 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Current Symptoms</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Current Symptoms
+              </p>
               <Input
                 value={editedData.medical_his_curr_symp || ""}
                 placeholder="Enter current symptoms"
                 onChange={(e) =>
-                  setEditedData({ ...editedData, medical_his_curr_symp: e.target.value })
+                  setEditedData({
+                    ...editedData,
+                    medical_his_curr_symp: e.target.value,
+                  })
                 }
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Last Doctor / Hospital Visit</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Last Doctor / Hospital Visit
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.last_doctor_visit || undefined}
@@ -1627,7 +1781,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Do you have a doctor you see regularly?</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Do you have a doctor you see regularly?
+              </p>
               <Select
                 className="w-full"
                 value={editedData.has_regular_doctor || undefined}
@@ -1639,7 +1795,9 @@ export default function UserManagement() {
               />
             </div>
             <div>
-              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Regular Doctor's Name & Contact Info</p>
+              <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                Regular Doctor's Name & Contact Info
+              </p>
               <AutoComplete
                 className="w-full"
                 value={editedData.regular_doctor_name || undefined}
@@ -1712,9 +1870,7 @@ export default function UserManagement() {
   ];
 
   return (
-    <div
-      className="flex h-screen bg-[#F7F9FB]"
-    >
+    <div className="flex h-screen bg-[#F7F9FB]">
       <div className="w-[240px] shrink-0">
         <Sider />
       </div>
@@ -1732,20 +1888,14 @@ export default function UserManagement() {
 
         <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
           {/* Stats cards */}
-          <div
-            className="flex items-center justify-between gap-[12px] w-full"
-          >
+          <div className="flex items-center justify-between gap-[12px] w-full">
             {adminStats.map((stat) => (
               <div
                 key={stat.id}
                 className="min-w-[160px] flex-none bg-white rounded-[8px] p-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] flex flex-col justify-between"
               >
-                <div
-                  className="flex items-center justify-start gap-[10px]"
-                >
-                  <div
-                    className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]"
-                  >
+                <div className="flex items-center justify-start gap-[10px]">
+                  <div className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]">
                     <svg
                       width="18"
                       height="18"
@@ -1792,29 +1942,17 @@ export default function UserManagement() {
                       </defs>
                     </svg>
                   </div>
-                  <p
-                    className="text-[#6C7688] text-[14px] font-medium"
-                  >
+                  <p className="text-[#6C7688] text-[14px] font-medium">
                     {stat.name}
                   </p>
                 </div>
-                <div
-                  className="flex items-center justify-between"
-                >
-                  <p
-                    className="text-[#2E2E2E] text-[18px] font-extrabold"
-                  >
+                <div className="flex items-center justify-between">
+                  <p className="text-[#2E2E2E] text-[18px] font-extrabold">
                     {stat.count}
                   </p>
-                  <div
-                    className="flex flex-col items-end justify-center w-full"
-                  >
-                    <div
-                      className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]"
-                    >
-                      <p
-                        className="text-[white] text-[12px] font-medium"
-                      >
+                  <div className="flex flex-col items-end justify-center w-full">
+                    <div className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]">
+                      <p className="text-[white] text-[12px] font-medium">
                         {stat.diff}
                       </p>
                     </div>
@@ -1828,9 +1966,7 @@ export default function UserManagement() {
           </div>
 
           {/* Tabs + Table */}
-          <div
-            className="w-full bg-transparent rounded-[8px] p-[16px]"
-          >
+          <div className="w-full bg-transparent rounded-[8px] p-[16px]">
             <Tabs
               activeKey={activeTab}
               onChange={(key) => {
@@ -1841,9 +1977,7 @@ export default function UserManagement() {
             />
 
             <div className="bg-white rounded-[12px] p-[20px] flex flex-col gap-[16px] min-w-0">
-              <div
-                className="mb-[16px] flex justify-between"
-              >
+              <div className="mb-[16px] flex justify-between">
                 <Input
                   placeholder="Search"
                   value={searchText}
@@ -1891,9 +2025,7 @@ export default function UserManagement() {
               bodyStyle={{ padding: 24 }}
             >
               {renderDrawerContent()}
-              <div
-                className="flex justify-end mt-[24px] gap-[20px]"
-              >
+              <div className="flex justify-end mt-[24px] gap-[20px]">
                 <div className="flex items-center gap-[12px]">
                   <span className="font-medium">Status:</span>
                   <Radio.Group
@@ -1904,7 +2036,9 @@ export default function UserManagement() {
                     <Radio.Button value={true}>Active</Radio.Button>
                     <Radio.Button value={false}>Inactive</Radio.Button>
                   </Radio.Group>
-                  {(currentUserRole === "admin" || currentUser?.username?.toLowerCase().includes("foy") || currentUser?.first_name?.toLowerCase().includes("foy")) && (
+                  {(currentUserRole === "admin" ||
+                    currentUser?.username?.toLowerCase().includes("foy") ||
+                    currentUser?.first_name?.toLowerCase().includes("foy")) && (
                     <Popconfirm
                       title="Delete Account"
                       description="Are you sure you want to delete this account?"
@@ -1913,7 +2047,9 @@ export default function UserManagement() {
                       cancelText="No"
                       okButtonProps={{ danger: true }}
                     >
-                      <Button danger className="ml-[12px]">Delete Account</Button>
+                      <Button danger className="ml-[12px]">
+                        Delete Account
+                      </Button>
                     </Popconfirm>
                   )}
                 </div>

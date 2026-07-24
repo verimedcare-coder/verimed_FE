@@ -1,10 +1,9 @@
 import axios from "axios";
+import { base_url } from "../constants/constants";
 import { getToken, removeToken } from "../utils/storage";
 
 const apiClient = axios.create({
-  baseURL:
-    (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-    process.env.REACT_APP_API_BASE_URL,
+  baseURL: base_url,
 });
 
 apiClient.interceptors.request.use(
@@ -17,7 +16,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 apiClient.interceptors.response.use(
@@ -34,7 +33,7 @@ apiClient.interceptors.response.use(
     }
     console.error("API Error:", error.response || error.message);
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

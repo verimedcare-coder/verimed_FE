@@ -863,7 +863,10 @@ export default function Overview() {
     fetchUsers();
   }, []);
 
-  const base_url1 = "https://verimedramja.pythonanywhere.com";
+  const base_url1 = process.env.REACT_APP_API_BASE_URL?.toString()
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\/+$/, "");
 
   const getPhotoUrl = (url) => {
     if (!url) return patientdetails;
