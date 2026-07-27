@@ -73,11 +73,12 @@ const AppRoutes = () => {
         <Route path="/user_management" element={<UserManagement />} />
 
         {/* Admin Only Protected Routes */}
-        <Route element={<RoleRoute requireAdmin />}>
-        </Route>
+        <Route element={<RoleRoute requireAdmin />}></Route>
       </Route>
     </Routes>
   );
 };
 
 export default AppRoutes;
+
+// last update: 27/07/2026, 09:46PM
