@@ -774,9 +774,13 @@ export default function Appointments() {
     // Format date as YYYY-MM-DD string
     const formatDate = (dateObj) => {
       if (!dateObj) return null;
-      if (typeof dateObj === "string") return dateObj;
-      if (dateObj.format) return dateObj.format("YYYY-MM-DD");
+      if (typeof dateObj === "string") return dateObj === "Invalid Date" ? null : dateObj;
+      if (dateObj.format) {
+        const f = dateObj.format("YYYY-MM-DD");
+        return f === "Invalid Date" ? null : f;
+      }
       const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+      if (isNaN(d.getTime())) return null;
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
@@ -786,9 +790,13 @@ export default function Appointments() {
     // Format time as HH:MM:SS string (24-hour format)
     const formatTime = (timeObj) => {
       if (!timeObj) return null;
-      if (typeof timeObj === "string") return timeObj;
-      if (timeObj.format) return timeObj.format("HH:mm:ss");
+      if (typeof timeObj === "string") return timeObj === "Invalid Date" ? null : timeObj;
+      if (timeObj.format) {
+        const f = timeObj.format("HH:mm:ss");
+        return f === "Invalid Date" ? null : f;
+      }
       const t = timeObj.toDate ? timeObj.toDate() : new Date(timeObj);
+      if (isNaN(t.getTime())) return null;
       const hours = String(t.getHours()).padStart(2, "0");
       const minutes = String(t.getMinutes()).padStart(2, "0");
       return `${hours}:${minutes}:00`;
@@ -851,7 +859,7 @@ export default function Appointments() {
       update_appoinmentid: selectedAppointment?.id, // e.g. 34
       sponsor: finalSponsorId,
       dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
-      doc: safe(selectedAppointment?.fullData?.doc?.id || selectedAppointment?.fullData?.doc), 
+      doc: safe(values?.doctorId) || safe(selectedAppointment?.fullData?.doc?.id || selectedAppointment?.fullData?.doc), 
       patient: finalPatientId,
       caretaker: safe(values?.caretakerId) || finalCaretakerId,
       appointment_date: formatDate(values?.appointment_date), // user-provided date as YYYY-MM-DD
@@ -889,7 +897,11 @@ export default function Appointments() {
         "bookappoinment_data",
         JSON.stringify(bookappoinment_data),
       );
-      // formData.append("lab_reports_ids", null);
+      if (values.labReport && values.labReport.length > 0) {
+        values.labReport.forEach((fileObj) => {
+          formData.append("lab_reports", fileObj.originFileObj);
+        });
+      }
       await apiClient.patch(endpoint, formData);
       message.success("Appointment updated successfully!");
       Modal.success({
@@ -1116,21 +1128,29 @@ export default function Appointments() {
                         onFinish={assignAppointment}
                       >
                         <div className="grid grid-cols-[repeat(3,1fr)] gap-[16px]">
-                          <Form.Item
-                            name="caretakerId"
-                            label={<span className="font-medium text-[#334155]">Assigned Caretaker</span>}
-                            rules={[{ required: true, message: "Please select a caretaker" }]}
-                          >
-                            <Select placeholder="Select caretaker" className="w-full">
-                              {caretakers &&
-                                caretakers.length > 0 &&
-                                caretakers.map((caretaker) => (
-                                  <Option key={caretaker.id} value={caretaker.id}>
-                                    {caretaker.user?.first_name} {caretaker.user?.last_name}
-                                  </Option>
-                                ))}
-                            </Select>
-                          </Form.Item>
+                          {(userData?.user_role === "doctor" || isAdminUser(userData)) && (
+                            <Form.Item
+                              name={isAdminUser(userData) ? "doctorId" : "caretakerId"}
+                              label={<span className="font-medium text-[#334155]">{isAdminUser(userData) ? "Assigned Doctor" : "Assigned Caretaker"}</span>}
+                              rules={[{ required: true, message: `Please select a ${isAdminUser(userData) ? "doctor" : "caretaker"}` }]}
+                            >
+                              <Select placeholder={`Select ${isAdminUser(userData) ? "doctor" : "caretaker"}`} className="w-full">
+                                {isAdminUser(userData) ? (
+                                  doctors?.map((doc) => (
+                                    <Option key={doc.id} value={doc.id}>
+                                      {doc.user?.first_name} {doc.user?.last_name}
+                                    </Option>
+                                  ))
+                                ) : (
+                                  caretakers?.map((caretaker) => (
+                                    <Option key={caretaker.id} value={caretaker.id}>
+                                      {caretaker.user?.first_name} {caretaker.user?.last_name}
+                                    </Option>
+                                  ))
+                                )}
+                              </Select>
+                            </Form.Item>
+                          )}
 
                           <Form.Item
                             name="appointment_date"
@@ -1165,14 +1185,24 @@ export default function Appointments() {
                           <Input.TextArea rows={2} placeholder="Add internal care team notes or status updates here without editing sponsor instructions..." className="rounded-[6px]" />
                         </Form.Item>
                         
-                        {(userData?.user_role === "doctor" || isAdminUser(userData)) && (
-                          <Form.Item
-                            name="doctor_notes"
-                            label={<span className="font-medium text-[#334155]">Doctor's Notes (Visible to Patient and Sponsor)</span>}
+                        <Form.Item
+                          name="labReport"
+                          label={<span className="font-medium text-[#334155]">Upload Documents</span>}
+                          valuePropName="fileList"
+                          getValueFromEvent={(e) => e.fileList}
+                        >
+                          <Upload
+                            name="labReport"
+                            beforeUpload={() => false}
+                            onChange={handleFileChange}
+                            maxCount={1}
+                            className="w-full"
                           >
-                            <Input.TextArea rows={3} placeholder="Add clinical notes, recommendations, or instructions for the patient and sponsor..." className="rounded-[6px]" />
-                          </Form.Item>
-                        )}
+                            <Button icon={<UploadOutlined />} block className="w-full rounded-[6px]">
+                              Select File
+                            </Button>
+                          </Upload>
+                        </Form.Item>
 
                         <div className="flex justify-end gap-[12px] mt-[16px]">
                           <Button onClick={handleCloseModal} className="rounded-[6px] py-[0px] px-[20px] font-medium">

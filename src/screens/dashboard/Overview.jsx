@@ -1193,18 +1193,17 @@ export default function Overview() {
 
           {/* Doctor overview stats */}
           {(user?.user_role === "doctor" || isAdmin) && (
-            <div className="flex items-center justify-between gap-[12px] w-full">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-[16px] w-full">
               {docStats.map((stat, idx) => (
                 <div
                   key={stat.id}
-                  className="min-w-[160px] flex-none bg-white rounded-[8px] p-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] flex flex-col justify-between"
+                  className="bg-white rounded-[12px] p-[16px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border-[1px] border-solid border-[#F1F5F9] flex flex-col gap-[16px]"
                 >
-                  {/* ...card content... */}
-                  <div className="flex items-center justify-start gap-[10px]">
-                    <div className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]">
+                  <div className="flex items-center justify-start gap-[12px]">
+                    <div className="h-[36px] w-[36px] rounded-[8px] flex items-center justify-center bg-[#E6F4EA]">
                       <svg
-                        width="18"
-                        height="18"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1213,30 +1212,35 @@ export default function Overview() {
                           <path
                             d="M11.5 21H6C5.46957 21 4.96086 20.7893 4.58579 20.4142C4.21071 20.0391 4 19.5304 4 19V7C4 6.46957 4.21071 5.96086 4.58579 5.58579C4.96086 5.21071 5.46957 5 6 5H18C18.5304 5 19.0391 5.21071 19.4142 5.58579C19.7893 5.96086 20 6.46957 20 7V11"
                             stroke="#007F5F"
+                            strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M16 3V7"
                             stroke="#007F5F"
+                            strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M8 3V7"
                             stroke="#007F5F"
+                            strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M4 11H20"
                             stroke="#007F5F"
+                            strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
                           <path
                             d="M18.0001 22.0001L21.3501 18.7161C21.5556 18.5168 21.719 18.2783 21.8307 18.0147C21.9425 17.7512 22.0003 17.4679 22.0007 17.1817C22.0012 16.8954 21.9443 16.612 21.8334 16.3481C21.7225 16.0841 21.5599 15.8451 21.3551 15.6451C20.9373 15.2365 20.3763 15.0071 19.7918 15.006C19.2074 15.0049 18.6455 15.2321 18.2261 15.6391L18.0021 15.8591L17.7791 15.6391C17.3613 15.2307 16.8006 15.0016 16.2163 15.0005C15.6321 14.9994 15.0705 15.2264 14.6511 15.6331C14.4456 15.8324 14.2821 16.0708 14.1703 16.3343C14.0585 16.5978 14.0006 16.8811 14 17.1673C13.9994 17.4536 14.0562 17.7371 14.167 18.001C14.2778 18.265 14.4404 18.504 14.6451 18.7041L18.0001 22.0001Z"
                             stroke="#007F5F"
+                            strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
@@ -1248,21 +1252,21 @@ export default function Overview() {
                         </defs>
                       </svg>
                     </div>
-                    <p className="text-[#6C7688] text-[14px] font-medium">
+                    <p className="text-[#475569] text-[14px] font-semibold m-0 leading-tight">
                       {stat.name}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[#2E2E2E] text-[18px] font-extrabold">
+                  <div className="flex items-end justify-between">
+                    <p className="text-[#0F172A] text-[28px] font-bold m-0 leading-none">
                       {stat.count}
                     </p>
-                    <div className="flex flex-col items-end justify-center w-full">
-                      <div className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]">
-                        <p className="text-[white] text-[12px] font-medium">
-                          {stat.diff}
+                    <div className="flex flex-col items-end">
+                      <div className="bg-[#ECFDF5] px-[8px] py-[4px] rounded-[6px] mb-[4px]">
+                        <p className="text-[#059669] text-[12px] font-bold m-0 leading-none flex items-center gap-[2px]">
+                          <UpOutlined className="text-[10px]" /> {stat.diff}
                         </p>
                       </div>
-                      <p className="text-[#6C7688] text-[13px]">
+                      <p className="text-[#94A3B8] text-[11px] font-medium m-0 leading-none">
                         {stat.duration}
                       </p>
                     </div>
