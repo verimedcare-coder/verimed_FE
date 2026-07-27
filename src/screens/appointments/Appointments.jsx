@@ -45,7 +45,11 @@ import {
 } from "antd";
 import Primarybtn from "../../components/common/PrimaryBtn";
 import SecondaryBtn from "../../components/common/SecondaryBtn";
-import { base_url, isAdminUser, REQUEST_SERVICES_LIST } from "../../constants/constants";
+import {
+  base_url,
+  isAdminUser,
+  REQUEST_SERVICES_LIST,
+} from "../../constants/constants";
 import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import * as yup from "yup";
@@ -53,7 +57,9 @@ import * as yup from "yup";
 const { Option } = Select;
 
 const bookingValidationSchema = yup.object().shape({
-  appointmentType: yup.string().required("Please select a service / department"),
+  appointmentType: yup
+    .string()
+    .required("Please select a service / department"),
   patientId: yup.mixed().required("Please select a patient"),
   preferred_dates: yup
     .array()
@@ -108,9 +114,10 @@ export default function Appointments() {
   const handleOpenBookingModal = () => {
     form.resetFields();
     setSelectedDates([]);
-    form.setFieldsValue({ preferred_dates: [] });
+    form.setFieldsValue({ preferred_dates: [], depId: undefined });
     if (userData?.user_role === "sponsor") {
-      const storedSponsorId = Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
+      const storedSponsorId =
+        Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
       if (storedSponsorId) {
         form.setFieldsValue({ sponsorId: storedSponsorId });
       }
@@ -119,7 +126,7 @@ export default function Appointments() {
   };
 
   const [selectedPatientId, setSelectedPatientId] = useState(() =>
-    localStorage.getItem("selectedPatientId")
+    localStorage.getItem("selectedPatientId"),
   );
 
   useEffect(() => {
@@ -187,46 +194,73 @@ export default function Appointments() {
 
     // 1. Direct exact match by string ID or Name
     let service = REQUEST_SERVICES_LIST.find(
-      (s) => s.id === targetVal || s.name === targetVal || String(s.id) === String(targetVal)
+      (s) =>
+        s.id === targetVal ||
+        s.name === targetVal ||
+        String(s.id) === String(targetVal),
     );
     if (service) return service;
 
     // 2. Look up department object from API deptList by ID or dep_name
     const dept = deptList?.find(
-      (d) => d.id === targetVal || String(d.id) === String(targetVal) || d.dep_name === targetVal
+      (d) =>
+        d.id === targetVal ||
+        String(d.id) === String(targetVal) ||
+        d.dep_name === targetVal,
     );
-    const nameToMatch = dept?.dep_name || (typeof targetVal === "string" ? targetVal : "");
+    const nameToMatch =
+      dept?.dep_name || (typeof targetVal === "string" ? targetVal : "");
 
     if (nameToMatch) {
       const cleanName = nameToMatch.toLowerCase().trim();
       // Case-insensitive & substring match
       service = REQUEST_SERVICES_LIST.find((s) => {
         const sName = s.name.toLowerCase().trim();
-        return sName === cleanName || sName.includes(cleanName) || cleanName.includes(sName);
+        return (
+          sName === cleanName ||
+          sName.includes(cleanName) ||
+          cleanName.includes(sName)
+        );
       });
       if (service) return service;
 
       // Robust keyword mapping for all 10 services so numeric ID or different backend spelling always matches exactly
       if (cleanName.includes("comprehensive") || cleanName.includes("intake")) {
-        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Comprehensive"));
+        return REQUEST_SERVICES_LIST.find((s) =>
+          s.id.includes("Comprehensive"),
+        );
       }
-      if (cleanName.includes("home") && (cleanName.includes("visit") || cleanName.includes("follow"))) {
+      if (
+        cleanName.includes("home") &&
+        (cleanName.includes("visit") || cleanName.includes("follow"))
+      ) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("In Home"));
       }
       if (cleanName.includes("virtual")) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Virtual"));
       }
       if (cleanName.includes("nurse") && cleanName.includes("wellness")) {
-        return REQUEST_SERVICES_LIST.find((s) => s.id === "Nurse Wellness Check");
+        return REQUEST_SERVICES_LIST.find(
+          (s) => s.id === "Nurse Wellness Check",
+        );
       }
-      if (cleanName.includes("rehydration") || cleanName.includes("fluid") || cleanName.includes("iv")) {
+      if (
+        cleanName.includes("rehydration") ||
+        cleanName.includes("fluid") ||
+        cleanName.includes("iv")
+      ) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Rehydration"));
       }
       if (cleanName.includes("infusion")) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Infusion"));
       }
-      if (cleanName.includes("navigation") || cleanName.includes("care management")) {
-        return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Care Management"));
+      if (
+        cleanName.includes("navigation") ||
+        cleanName.includes("care management")
+      ) {
+        return REQUEST_SERVICES_LIST.find((s) =>
+          s.id.includes("Care Management"),
+        );
       }
       if (cleanName.includes("wellness coaching")) {
         return REQUEST_SERVICES_LIST.find((s) => s.id === "Wellness Coaching");
@@ -234,7 +268,10 @@ export default function Appointments() {
       if (cleanName.includes("diabetes") || cleanName.includes("chronic")) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Diabetes"));
       }
-      if (cleanName.includes("live-in") || cleanName.includes("family wellness nurse")) {
+      if (
+        cleanName.includes("live-in") ||
+        cleanName.includes("family wellness nurse")
+      ) {
         return REQUEST_SERVICES_LIST.find((s) => s.id.includes("Live-in"));
       }
     }
@@ -253,26 +290,61 @@ export default function Appointments() {
     formData.append("lab_report_ids", labReportIds);
   };
 
+  const resolveDepartmentId = (selectedValue) => {
+    if (
+      selectedValue === undefined ||
+      selectedValue === null ||
+      selectedValue === ""
+    ) {
+      return null;
+    }
+
+    const matchedDept = deptList?.find((dept) => {
+      const deptId = dept?.id;
+      const depName = dept?.dep_name;
+      const depIdValue = dept?.dep_ID;
+
+      return (
+        String(deptId) === String(selectedValue) ||
+        String(depName) === String(selectedValue) ||
+        String(depIdValue) === String(selectedValue)
+      );
+    });
+
+    if (matchedDept?.id !== undefined && matchedDept?.id !== null) {
+      const numericId = Number(matchedDept.id);
+      return Number.isNaN(numericId) ? null : numericId;
+    }
+
+    const numericValue = Number(selectedValue);
+    return Number.isNaN(numericValue) ? null : numericValue;
+  };
+
   const bookAppointment = async (values) => {
     try {
       await bookingValidationSchema.validate(
         {
           appointmentType: values.appointmentType,
-          patientId: values.patientId || selectedPatientId || localStorage.getItem("selectedPatientId"),
+          patientId:
+            values.patientId ||
+            selectedPatientId ||
+            localStorage.getItem("selectedPatientId"),
           preferred_dates: selectedDates,
           preferred_times: values.preferred_times,
         },
-        { abortEarly: false }
+        { abortEarly: false },
       );
     } catch (validationError) {
       message.error(
-        validationError.errors ? validationError.errors[0] : "Please check all required fields and try again."
+        validationError.errors
+          ? validationError.errors[0]
+          : "Please check all required fields and try again.",
       );
       return;
     }
     setLoading(true);
     try {
-      const endpoint = '/verimed_bookappoinment_create_update/';
+      const endpoint = "/verimed_bookappoinment_create_update/";
       const headers = { Authorization: `Token ${token}` };
 
       let storedPatientData = {};
@@ -285,7 +357,9 @@ export default function Appointments() {
       }
 
       let finalPatientId =
-        Number(selectedPatientId || localStorage.getItem("selectedPatientId")) ||
+        Number(
+          selectedPatientId || localStorage.getItem("selectedPatientId"),
+        ) ||
         storedPatientData?.id ||
         patientId ||
         null;
@@ -316,12 +390,17 @@ export default function Appointments() {
       if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
         try {
           if (!finalPatientId) {
-            const pRes = await apiClient.get('/patientprofile_list/');
+            const pRes = await apiClient.get("/patientprofile_list/");
             if (Array.isArray(pRes.data) && pRes.data.length > 0) {
-              const matchedP = pRes.data.find(p => p.user?.id === userData?.id) || pRes.data[0];
+              const matchedP =
+                pRes.data.find((p) => p.user?.id === userData?.id) ||
+                pRes.data[0];
               finalPatientId = matchedP?.id || null;
               if (!finalSponsorId && matchedP?.sponsor) {
-                finalSponsorId = typeof matchedP.sponsor === "object" ? matchedP.sponsor.id : matchedP.sponsor;
+                finalSponsorId =
+                  typeof matchedP.sponsor === "object"
+                    ? matchedP.sponsor.id
+                    : matchedP.sponsor;
               }
               if (!finalCaretakerId && matchedP?.caretakerid) {
                 finalCaretakerId = matchedP.caretakerid;
@@ -329,14 +408,16 @@ export default function Appointments() {
             }
           }
           if (!finalSponsorId) {
-            const sRes = await apiClient.get('/sponsorprofile_list/');
+            const sRes = await apiClient.get("/sponsorprofile_list/");
             if (Array.isArray(sRes.data) && sRes.data.length > 0) {
-              const matchedS = sRes.data.find(s => s.user?.id === userData?.id) || sRes.data[0];
+              const matchedS =
+                sRes.data.find((s) => s.user?.id === userData?.id) ||
+                sRes.data[0];
               finalSponsorId = matchedS?.id || null;
             }
           }
           if (!finalCaretakerId) {
-            const cRes = await apiClient.get('/caretakerprofile_list/');
+            const cRes = await apiClient.get("/caretakerprofile_list/");
             if (Array.isArray(cRes.data) && cRes.data.length > 0) {
               finalCaretakerId = cRes.data[0]?.id || null;
             }
@@ -354,10 +435,30 @@ export default function Appointments() {
       );
 
       const selectedServiceObj = resolveServiceInfo(values.appointmentType);
-      const computedAmount = values.amount || selectedServiceObj?.priceLabel || null;
+      const normalizedAmount = (() => {
+        const rawValue = values.amount ?? selectedServiceObj?.priceUsd ?? null;
+        if (rawValue === null || rawValue === undefined || rawValue === "") {
+          return null;
+        }
+
+        if (typeof rawValue === "number") {
+          return Number(rawValue).toFixed(2);
+        }
+
+        if (typeof rawValue === "string") {
+          const cleaned = rawValue.replace(/[^0-9.\-]/g, "");
+          if (cleaned === "") return null;
+          return Number(cleaned).toFixed(2);
+        }
+
+        return Number(rawValue).toFixed(2);
+      })();
+      const selectedDepId = resolveDepartmentId(
+        values.depId ?? values.appointmentType,
+      );
 
       const bookappoinment_data = {
-        dep: values.depId || values.appointmentType,
+        dep: selectedDepId,
         patient: values.patientId || finalPatientId,
         sponsor: values.sponsorId || finalSponsorId,
         caretaker: finalCaretakerId,
@@ -368,7 +469,7 @@ export default function Appointments() {
         appointment_type: values.appointmentType || null,
         treatment_performed: values.treatment || null,
         care_taker_notes: values.notes || null,
-        amount: computedAmount,
+        amount: normalizedAmount,
         subscription_plan: values.subscription_plan || null,
         appointment_history: values.appointment_history || null,
         time_line: values.time_line || null,
@@ -397,8 +498,18 @@ export default function Appointments() {
         : "";
       setBookedDateTime({ date: formattedDate, time: formattedTime });
 
-      if (userData?.user_role === "sponsor" || selectedServiceObj || values.appointmentType) {
-        setPendingBookingValues({ endpoint, formData, headers, values, bookappoinment_data });
+      if (
+        userData?.user_role === "sponsor" ||
+        selectedServiceObj ||
+        values.appointmentType
+      ) {
+        setPendingBookingValues({
+          endpoint,
+          formData,
+          headers,
+          values,
+          bookappoinment_data,
+        });
         setIsCheckoutModalOpen(true);
         return;
       }
@@ -410,7 +521,9 @@ export default function Appointments() {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.log(error);
-      message.error("Failed to book appointment. Please check your inputs and try again.");
+      message.error(
+        "Failed to book appointment. Please check your inputs and try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -420,7 +533,10 @@ export default function Appointments() {
     if (!pendingBookingValues) return;
     setCheckoutLoading(true);
     try {
-      await apiClient.post(pendingBookingValues.endpoint, pendingBookingValues.formData);
+      await apiClient.post(
+        pendingBookingValues.endpoint,
+        pendingBookingValues.formData,
+      );
       setIsCheckoutModalOpen(false);
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
@@ -573,12 +689,13 @@ export default function Appointments() {
     if (appt) {
       setSelectedAppointment(appt);
       assignForm.setFieldsValue({
-        caretakerId: appt.fullData?.caretaker?.id || appt.fullData?.caretaker || undefined,
+        caretakerId:
+          appt.fullData?.caretaker?.id || appt.fullData?.caretaker || undefined,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
         appointment_time: appt.time
           ? dayjs(
               Array.isArray(appt.time) ? appt.time[0] : appt.time,
-              "HH:mm:ss"
+              "HH:mm:ss",
             )
           : undefined,
         care_taker_notes:
@@ -598,7 +715,7 @@ export default function Appointments() {
       mappedAppointments.length > 0
     ) {
       const target = mappedAppointments.find(
-        (a) => a.id === location.state.openAppointmentId
+        (a) => a.id === location.state.openAppointmentId,
       );
       if (target) {
         setInitialOpenHandled(true);
@@ -640,23 +757,16 @@ export default function Appointments() {
           <Card
             key={appt.id}
             hoverable={
-              (userData?.user_role === "care_taker" ||
-                isAdminUser(userData)) &&
+              (userData?.user_role === "care_taker" || isAdminUser(userData)) &&
               appt.status === "upcoming"
             }
             onClick={() => handleDetailsCardClick(appt)}
             size="small"
             className={`bg-[#F9FAFB] border border-solid border-[#E5E7EB] rounded-[8px] ${userData?.user_role === "care_taker" || isAdminUser(userData) ? "cursor-pointer" : "cursor-default"}`}
           >
-            <div
-              className="flex justify-between items-center"
-            >
-              <div
-                className="flex items-center gap-[12px]"
-              >
-                <div
-                  className="bg-[#004C91] text-[#fff] w-[50px] rounded-[6px] text-center py-[5px] px-[0px] font-medium h-[40px] flex flex-col items-center justify-center leading-[1.2]"
-                >
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-[12px]">
+                <div className="bg-[#004C91] text-[#fff] w-[50px] rounded-[6px] text-center py-[5px] px-[0px] font-medium h-[40px] flex flex-col items-center justify-center leading-[1.2]">
                   {appt.date ? (
                     <>
                       <div className="text-[13px]">
@@ -672,36 +782,24 @@ export default function Appointments() {
                     <CalendarOutlined className="text-[18px]" />
                   )}
                 </div>
-                <div
-                  className="w-[1px] bg-[#E5E7EB] h-[48px] self-stretch"
-                />
-                <div
-                  className="flex flex-col gap-[4px]"
-                >
-                  <div
-                    className="flex items-center gap-[6px] text-[14px] font-medium"
-                  >
+                <div className="w-[1px] bg-[#E5E7EB] h-[48px] self-stretch" />
+                <div className="flex flex-col gap-[4px]">
+                  <div className="flex items-center gap-[6px] text-[14px] font-medium">
                     <BookOutlined className="text-[#6B7280]" />
                     {appt.depName}
                   </div>
-                  <div
-                    className="flex items-center gap-[6px] text-[13px] text-[#6B7280]"
-                  >
+                  <div className="flex items-center gap-[6px] text-[13px] text-[#6B7280]">
                     <UserOutlined className="text-[#6B7280]" />
                     {appt.name}
                   </div>
                 </div>
               </div>
-              <div
-                className="flex flex-col items-center"
-              >
+              <div className="flex flex-col items-center">
                 <div className="text-[13px] text-[#6B7280]">
                   Issue: {appt.issue}
                 </div>
                 {appt.docs && (
-                  <span
-                    className="text-[13px] text-[#004C91] cursor-pointer flex items-center gap-[4px] flex-row underline"
-                  >
+                  <span className="text-[13px] text-[#004C91] cursor-pointer flex items-center gap-[4px] flex-row underline">
                     <FileTextOutlined />
                     {appt.documents.map((doc) => (
                       <a
@@ -720,9 +818,7 @@ export default function Appointments() {
               {(userData?.user_role === "care_taker" ||
                 isAdminUser(userData)) &&
                 appt.status === "upcoming" && (
-                  <div
-                    className="flex items-center gap-[12px] ml-[12px]"
-                  >
+                  <div className="flex items-center gap-[12px] ml-[12px]">
                     <Button
                       size="small"
                       icon={<EditOutlined />}
@@ -783,7 +879,8 @@ export default function Appointments() {
     // Format date as YYYY-MM-DD string
     const formatDate = (dateObj) => {
       if (!dateObj) return null;
-      if (typeof dateObj === "string") return dateObj === "Invalid Date" ? null : dateObj;
+      if (typeof dateObj === "string")
+        return dateObj === "Invalid Date" ? null : dateObj;
       if (dateObj.format) {
         const f = dateObj.format("YYYY-MM-DD");
         return f === "Invalid Date" ? null : f;
@@ -799,7 +896,8 @@ export default function Appointments() {
     // Format time as HH:MM:SS string (24-hour format)
     const formatTime = (timeObj) => {
       if (!timeObj) return null;
-      if (typeof timeObj === "string") return timeObj === "Invalid Date" ? null : timeObj;
+      if (typeof timeObj === "string")
+        return timeObj === "Invalid Date" ? null : timeObj;
       if (timeObj.format) {
         const f = timeObj.format("HH:mm:ss");
         return f === "Invalid Date" ? null : f;
@@ -842,25 +940,28 @@ export default function Appointments() {
     if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
       try {
         if (!finalPatientId) {
-          const pRes = await apiClient.get('/patientprofile_list/');
+          const pRes = await apiClient.get("/patientprofile_list/");
           if (Array.isArray(pRes.data) && pRes.data.length > 0) {
             finalPatientId = pRes.data[0]?.id || null;
           }
         }
         if (!finalSponsorId) {
-          const sRes = await apiClient.get('/sponsorprofile_list/');
+          const sRes = await apiClient.get("/sponsorprofile_list/");
           if (Array.isArray(sRes.data) && sRes.data.length > 0) {
             finalSponsorId = sRes.data[0]?.id || null;
           }
         }
         if (!finalCaretakerId) {
-          const cRes = await apiClient.get('/caretakerprofile_list/');
+          const cRes = await apiClient.get("/caretakerprofile_list/");
           if (Array.isArray(cRes.data) && cRes.data.length > 0) {
             finalCaretakerId = cRes.data[0]?.id || null;
           }
         }
       } catch (err) {
-        console.log("Error auto-fetching fallback profile IDs in assignAppointment:", err);
+        console.log(
+          "Error auto-fetching fallback profile IDs in assignAppointment:",
+          err,
+        );
       }
     }
 
@@ -868,7 +969,12 @@ export default function Appointments() {
       update_appoinmentid: selectedAppointment?.id, // e.g. 34
       sponsor: finalSponsorId,
       dep: selectedAppointment?.fullData?.dep?.id, // e.g. 1
-      doc: safe(values?.doctorId) || safe(selectedAppointment?.fullData?.doc?.id || selectedAppointment?.fullData?.doc), 
+      doc:
+        safe(values?.doctorId) ||
+        safe(
+          selectedAppointment?.fullData?.doc?.id ||
+            selectedAppointment?.fullData?.doc,
+        ),
       patient: finalPatientId,
       caretaker: safe(values?.caretakerId) || finalCaretakerId,
       appointment_date: formatDate(values?.appointment_date), // user-provided date as YYYY-MM-DD
@@ -878,7 +984,9 @@ export default function Appointments() {
       care_taker_notes: values?.care_taker_notes
         ? `${selectedAppointment?.fullData?.care_taker_notes || ""}\n[Care Team Log]: ${values.care_taker_notes}`.trim()
         : safe(selectedAppointment?.fullData?.care_taker_notes),
-      doctor_notes: values?.doctor_notes || safe(selectedAppointment?.fullData?.doctor_notes),
+      doctor_notes:
+        values?.doctor_notes ||
+        safe(selectedAppointment?.fullData?.doctor_notes),
       amount: safe(selectedAppointment?.fullData?.amount),
       subscription_plan: safe(selectedAppointment?.fullData?.subscription_plan),
       height: safe(selectedAppointment?.fullData?.height),
@@ -900,7 +1008,7 @@ export default function Appointments() {
         selectedAppointment?.fullData?.service_purchased ?? true,
     };
     try {
-      const endpoint = '/verimed_bookappoinment_create_update/';
+      const endpoint = "/verimed_bookappoinment_create_update/";
       const formData = new FormData();
       formData.append(
         "bookappoinment_data",
@@ -953,14 +1061,10 @@ export default function Appointments() {
           <Header />
         </div>
         <div className="grid grid-cols-[2fr_1fr] gap-[20px] w-full">
-          <div
-            className="p-[20px] flex flex-col gap-[20px]"
-          >
+          <div className="p-[20px] flex flex-col gap-[20px]">
             <Banner hideButtons={true} />
             <div className="bg-white rounded-[10px] p-[20px] font-sans shadow-[0_1px_3px_rgba(0,0,0,0.08)] mt-[20px] w-full min-w-0">
-              <div
-                className="flex justify-between items-center mb-[15px]"
-              >
+              <div className="flex justify-between items-center mb-[15px]">
                 <Tabs defaultActiveKey="upcoming" onChange={handleTabChange}>
                   <Tabs.TabPane tab="Upcoming" key="upcoming" />
                   <Tabs.TabPane tab="Past" key="past" />
@@ -987,7 +1091,11 @@ export default function Appointments() {
                 onCancel={handleCloseModal}
                 footer={null}
                 centered
-                bodyStyle={{ padding: "28px", maxHeight: "85vh", overflowY: "auto" }}
+                bodyStyle={{
+                  padding: "28px",
+                  maxHeight: "85vh",
+                  overflowY: "auto",
+                }}
                 closeIcon={<CloseOutlined className="text-[18px]" />}
               >
                 {selectedAppointment ? (
@@ -1012,7 +1120,13 @@ export default function Appointments() {
                         <div className="text-[13px] flex items-center gap-[6px] opacity-90">
                           <CalendarOutlined />
                           {selectedAppointment.date
-                            ? new Date(selectedAppointment.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                            ? new Date(
+                                selectedAppointment.date,
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
                             : "No Date"}
                           {" | "}
                           <ClockCircleOutlined />
@@ -1026,53 +1140,126 @@ export default function Appointments() {
                     {/* Patient & Sponsor Grid */}
                     <div className="grid grid-cols-[1fr_1fr] gap-[20px] mb-[24px]">
                       {/* Patient Card */}
-                      <div
-                        className="bg-[#F8FAFC] border-[1px] border-solid border-[#E2E8F0] rounded-[10px] py-[16px] px-[20px]"
-                      >
+                      <div className="bg-[#F8FAFC] border-[1px] border-solid border-[#E2E8F0] rounded-[10px] py-[16px] px-[20px]">
                         <div className="flex items-center gap-[8px] pb-[10px] mb-[12px] border-b border-solid border-[#E2E8F0]">
                           <div className="bg-[#E6F0FA] text-[#004C91] w-[28px] h-[28px] rounded-full flex items-center justify-center text-[14px]">
                             <UserOutlined />
                           </div>
-                          <b className="text-[15px] text-[#1E293B]">Patient Details</b>
+                          <b className="text-[15px] text-[#1E293B]">
+                            Patient Details
+                          </b>
                         </div>
                         <div className="flex flex-col gap-[8px] text-[13px] text-[#475569]">
-                          <div><span className="text-[#64748B]">Name:</span> <strong className="text-[#1E293B]">{selectedAppointment.fullData?.patient?.patient_name || selectedAppointment.name || "N/A"}</strong></div>
-                          <div><span className="text-[#64748B]">Age:</span> <strong className="text-[#1E293B]">{selectedAppointment.fullData?.patient?.age || "N/A"}</strong></div>
-                          <div><span className="text-[#64748B]">Phone:</span> <strong className="text-[#1E293B]">{trimPhoneNumber(selectedAppointment.fullData?.patient?.phone) || "N/A"}</strong></div>
-                          <div><span className="text-[#64748B]">Email:</span> <strong className="text-[#1E293B]">{selectedAppointment.fullData?.patient?.email || "N/A"}</strong></div>
-                          {selectedAppointment.fullData?.patient?.emer_con_name && (
+                          <div>
+                            <span className="text-[#64748B]">Name:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {selectedAppointment.fullData?.patient
+                                ?.patient_name ||
+                                selectedAppointment.name ||
+                                "N/A"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[#64748B]">Age:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {selectedAppointment.fullData?.patient?.age ||
+                                "N/A"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[#64748B]">Phone:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {trimPhoneNumber(
+                                selectedAppointment.fullData?.patient?.phone,
+                              ) || "N/A"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[#64748B]">Email:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {selectedAppointment.fullData?.patient?.email ||
+                                "N/A"}
+                            </strong>
+                          </div>
+                          {selectedAppointment.fullData?.patient
+                            ?.emer_con_name && (
                             <div className="mt-[4px] p-[8px] bg-[#FFF] rounded-[6px] border-[1px] border-solid border-[#E2E8F0]">
-                              <div className="text-[11px] text-[#DC2626] font-semibold uppercase">Emergency Contact</div>
-                              <div className="text-[12px] text-[#1E293B] font-medium">{selectedAppointment.fullData?.patient?.emer_con_name} ({selectedAppointment.fullData?.patient?.emer_con_relation || "Relative"})</div>
-                              <div className="text-[12px] text-[#64748B]">{trimPhoneNumber(selectedAppointment.fullData?.patient?.emer_con_phone)}</div>
+                              <div className="text-[11px] text-[#DC2626] font-semibold uppercase">
+                                Emergency Contact
+                              </div>
+                              <div className="text-[12px] text-[#1E293B] font-medium">
+                                {
+                                  selectedAppointment.fullData?.patient
+                                    ?.emer_con_name
+                                }{" "}
+                                (
+                                {selectedAppointment.fullData?.patient
+                                  ?.emer_con_relation || "Relative"}
+                                )
+                              </div>
+                              <div className="text-[12px] text-[#64748B]">
+                                {trimPhoneNumber(
+                                  selectedAppointment.fullData?.patient
+                                    ?.emer_con_phone,
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
                       </div>
 
                       {/* Sponsor Card */}
-                      <div
-                        className="bg-[#F8FAFC] border-[1px] border-solid border-[#E2E8F0] rounded-[10px] py-[16px] px-[20px]"
-                      >
+                      <div className="bg-[#F8FAFC] border-[1px] border-solid border-[#E2E8F0] rounded-[10px] py-[16px] px-[20px]">
                         <div className="flex items-center gap-[8px] pb-[10px] mb-[12px] border-b border-solid border-[#E2E8F0]">
                           <div className="bg-[#E6F0FA] text-[#004C91] w-[28px] h-[28px] rounded-full flex items-center justify-center text-[14px]">
                             <SafetyCertificateOutlined />
                           </div>
-                          <b className="text-[15px] text-[#1E293B]">Sponsor Details</b>
+                          <b className="text-[15px] text-[#1E293B]">
+                            Sponsor Details
+                          </b>
                         </div>
                         <div className="flex flex-col gap-[8px] text-[13px] text-[#475569]">
-                          <div><span className="text-[#64748B]">Name:</span> <strong className="text-[#1E293B]">{selectedAppointment.fullData?.sponsor?.user?.first_name} {selectedAppointment.fullData?.sponsor?.user?.last_name || "N/A"}</strong></div>
-                          <div><span className="text-[#64748B]">Email:</span> <strong className="text-[#1E293B]">{selectedAppointment.fullData?.sponsor?.user?.email || "N/A"}</strong></div>
-                          <div><span className="text-[#64748B]">Phone:</span> <strong className="text-[#1E293B]">{trimPhoneNumber(selectedAppointment.fullData?.sponsor?.user?.phone) || "N/A"}</strong></div>
+                          <div>
+                            <span className="text-[#64748B]">Name:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {
+                                selectedAppointment.fullData?.sponsor?.user
+                                  ?.first_name
+                              }{" "}
+                              {selectedAppointment.fullData?.sponsor?.user
+                                ?.last_name || "N/A"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[#64748B]">Email:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {selectedAppointment.fullData?.sponsor?.user
+                                ?.email || "N/A"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-[#64748B]">Phone:</span>{" "}
+                            <strong className="text-[#1E293B]">
+                              {trimPhoneNumber(
+                                selectedAppointment.fullData?.sponsor?.user
+                                  ?.phone,
+                              ) || "N/A"}
+                            </strong>
+                          </div>
                           <div className="mt-[4px]">
-                            <span className="text-[#64748B]">Issue / Reason:</span>
+                            <span className="text-[#64748B]">
+                              Issue / Reason:
+                            </span>
                             <div className="bg-[#FFF] py-[8px] px-[10px] rounded-[6px] border-[1px] border-solid border-[#E2E8F0] mt-[4px] text-[#1E293B] font-medium">
-                              {selectedAppointment.issue || "General Consultation"}
+                              {selectedAppointment.issue ||
+                                "General Consultation"}
                             </div>
                           </div>
                           {selectedAppointment.documents?.length > 0 && (
                             <div className="mt-[4px]">
-                              <span className="text-[#64748B] text-[12px]">Attached Documents:</span>
+                              <span className="text-[#64748B] text-[12px]">
+                                Attached Documents:
+                              </span>
                               <div className="flex flex-wrap gap-[6px] mt-[4px]">
                                 {selectedAppointment.documents.map((doc) => (
                                   <a
@@ -1093,24 +1280,31 @@ export default function Appointments() {
                       </div>
                     </div>
                     {/* Read-only Sponsor Notes (#D) */}
-                    {(selectedAppointment.fullData?.care_taker_notes || selectedAppointment.care_taker_notes) && (
+                    {(selectedAppointment.fullData?.care_taker_notes ||
+                      selectedAppointment.care_taker_notes) && (
                       <div className="bg-[#FEF3C7] p-[16px] rounded-[10px] border-[1px] border-solid border-[#F59E0B] mt-[16px]">
                         <div className="flex items-center gap-[8px] mb-[8px]">
                           <MessageOutlined className="text-[#D97706] text-[16px]" />
-                          <b className="text-[14px] text-[#92400E]">Sponsor Notes & Special Instructions (Read-Only for Care Team)</b>
+                          <b className="text-[14px] text-[#92400E]">
+                            Sponsor Notes & Special Instructions (Read-Only for
+                            Care Team)
+                          </b>
                         </div>
                         <div className="text-[13px] text-[#78350F] bg-[#FFFBEB] p-[12px] rounded-[8px] border-[1px] border-solid border-[#FCD34D] whitespace-pre-wrap leading-[1.5]">
-                          {selectedAppointment.fullData?.care_taker_notes || selectedAppointment.care_taker_notes}
+                          {selectedAppointment.fullData?.care_taker_notes ||
+                            selectedAppointment.care_taker_notes}
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Read-only Doctor Notes */}
                     {selectedAppointment.fullData?.doctor_notes && (
                       <div className="bg-[#E6F0FA] p-[16px] rounded-[10px] border-[1px] border-solid border-[#004C91] mt-[16px]">
                         <div className="flex items-center gap-[8px] mb-[8px]">
                           <MessageOutlined className="text-[#004C91] text-[16px]" />
-                          <b className="text-[14px] text-[#004C91]">Doctor's Notes & Recommendations</b>
+                          <b className="text-[14px] text-[#004C91]">
+                            Doctor's Notes & Recommendations
+                          </b>
                         </div>
                         <div className="text-[13px] text-[#003B73] bg-[#F8FAFC] p-[12px] rounded-[8px] border-[1px] border-solid border-[#93C5FD] whitespace-pre-wrap leading-[1.5]">
                           {selectedAppointment.fullData?.doctor_notes}
@@ -1123,7 +1317,8 @@ export default function Appointments() {
                       <div className="flex items-center gap-[8px] mb-[16px] pb-[12px] border-b border-solid border-[#F1F5F9]">
                         <EditOutlined className="text-[#004C91] text-[16px]" />
                         <h3 className="font-semibold text-[16px] text-[#0F172A] m-0">
-                          {userData?.user_role === "care_taker" || isAdminUser(userData)
+                          {userData?.user_role === "care_taker" ||
+                          isAdminUser(userData)
                             ? "Reschedule / Assign Appointment"
                             : "Appointment Action"}
                         </h3>
@@ -1135,34 +1330,65 @@ export default function Appointments() {
                         onFinish={assignAppointment}
                       >
                         <div className="grid grid-cols-[repeat(3,1fr)] gap-[16px]">
-                          {(userData?.user_role === "doctor" || isAdminUser(userData)) && (
+                          {(userData?.user_role === "doctor" ||
+                            isAdminUser(userData)) && (
                             <Form.Item
-                              name={isAdminUser(userData) ? "doctorId" : "caretakerId"}
-                              label={<span className="font-medium text-[#334155]">{isAdminUser(userData) ? "Assigned Doctor" : "Assigned Caretaker"}</span>}
-                              rules={[{ required: true, message: `Please select a ${isAdminUser(userData) ? "doctor" : "caretaker"}` }]}
+                              name={
+                                isAdminUser(userData)
+                                  ? "doctorId"
+                                  : "caretakerId"
+                              }
+                              label={
+                                <span className="font-medium text-[#334155]">
+                                  {isAdminUser(userData)
+                                    ? "Assigned Doctor"
+                                    : "Assigned Caretaker"}
+                                </span>
+                              }
+                              rules={[
+                                {
+                                  required: true,
+                                  message: `Please select a ${isAdminUser(userData) ? "doctor" : "caretaker"}`,
+                                },
+                              ]}
                             >
-                              <Select placeholder={`Select ${isAdminUser(userData) ? "doctor" : "caretaker"}`} className="w-full">
-                                {isAdminUser(userData) ? (
-                                  doctors?.map((doc) => (
-                                    <Option key={doc.id} value={doc.id}>
-                                      {doc.user?.first_name} {doc.user?.last_name}
-                                    </Option>
-                                  ))
-                                ) : (
-                                  caretakers?.map((caretaker) => (
-                                    <Option key={caretaker.id} value={caretaker.id}>
-                                      {caretaker.user?.first_name} {caretaker.user?.last_name}
-                                    </Option>
-                                  ))
-                                )}
+                              <Select
+                                placeholder={`Select ${isAdminUser(userData) ? "doctor" : "caretaker"}`}
+                                className="w-full"
+                              >
+                                {isAdminUser(userData)
+                                  ? doctors?.map((doc) => (
+                                      <Option key={doc.id} value={doc.id}>
+                                        {doc.user?.first_name}{" "}
+                                        {doc.user?.last_name}
+                                      </Option>
+                                    ))
+                                  : caretakers?.map((caretaker) => (
+                                      <Option
+                                        key={caretaker.id}
+                                        value={caretaker.id}
+                                      >
+                                        {caretaker.user?.first_name}{" "}
+                                        {caretaker.user?.last_name}
+                                      </Option>
+                                    ))}
                               </Select>
                             </Form.Item>
                           )}
 
                           <Form.Item
                             name="appointment_date"
-                            label={<span className="font-medium text-[#334155]">New Date</span>}
-                            rules={[{ required: true, message: "Please select a date" }]}
+                            label={
+                              <span className="font-medium text-[#334155]">
+                                New Date
+                              </span>
+                            }
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please select a date",
+                              },
+                            ]}
                           >
                             <DatePicker
                               format="YYYY-MM-DD"
@@ -1173,8 +1399,17 @@ export default function Appointments() {
 
                           <Form.Item
                             name="appointment_time"
-                            label={<span className="font-medium text-[#334155]">New Time</span>}
-                            rules={[{ required: true, message: "Please select a time" }]}
+                            label={
+                              <span className="font-medium text-[#334155]">
+                                New Time
+                              </span>
+                            }
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please select a time",
+                              },
+                            ]}
                           >
                             <TimePicker
                               format="hh:mm A"
@@ -1187,14 +1422,27 @@ export default function Appointments() {
 
                         <Form.Item
                           name="care_taker_notes"
-                          label={<span className="font-medium text-[#334155]">Internal Care Team Action Log (Separate from Sponsor Notes)</span>}
+                          label={
+                            <span className="font-medium text-[#334155]">
+                              Internal Care Team Action Log (Separate from
+                              Sponsor Notes)
+                            </span>
+                          }
                         >
-                          <Input.TextArea rows={2} placeholder="Add internal care team notes or status updates here without editing sponsor instructions..." className="rounded-[6px]" />
+                          <Input.TextArea
+                            rows={2}
+                            placeholder="Add internal care team notes or status updates here without editing sponsor instructions..."
+                            className="rounded-[6px]"
+                          />
                         </Form.Item>
-                        
+
                         <Form.Item
                           name="labReport"
-                          label={<span className="font-medium text-[#334155]">Upload Documents</span>}
+                          label={
+                            <span className="font-medium text-[#334155]">
+                              Upload Documents
+                            </span>
+                          }
                           valuePropName="fileList"
                           getValueFromEvent={(e) => e.fileList}
                         >
@@ -1205,14 +1453,21 @@ export default function Appointments() {
                             maxCount={1}
                             className="w-full"
                           >
-                            <Button icon={<UploadOutlined />} block className="w-full rounded-[6px]">
+                            <Button
+                              icon={<UploadOutlined />}
+                              block
+                              className="w-full rounded-[6px]"
+                            >
                               Select File
                             </Button>
                           </Upload>
                         </Form.Item>
 
                         <div className="flex justify-end gap-[12px] mt-[16px]">
-                          <Button onClick={handleCloseModal} className="rounded-[6px] py-[0px] px-[20px] font-medium">
+                          <Button
+                            onClick={handleCloseModal}
+                            className="rounded-[6px] py-[0px] px-[20px] font-medium"
+                          >
                             Cancel
                           </Button>
                           <Button
@@ -1234,29 +1489,17 @@ export default function Appointments() {
           </div>
 
           {/* Right Section */}
-          <div
-            className="p-[20px] flex flex-col"
-          >
-            <div
-              className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-sans"
-            >
-              <div
-                className="flex justify-between items-center"
-              >
-                <p
-                  className="text-[16px] font-medium text-[#1B1B1B]"
-                >
+          <div className="p-[20px] flex flex-col">
+            <div className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-sans">
+              <div className="flex justify-between items-center">
+                <p className="text-[16px] font-medium text-[#1B1B1B]">
                   Upcoming Appointments
                 </p>
               </div>
               <div className="mb-[8px] border-t border-solid border-[#E5E7EB]" />
 
-              <div
-                className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center"
-              >
-                <span
-                  className="flex items-center gap-[8px]"
-                >
+              <div className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center">
+                <span className="flex items-center gap-[8px]">
                   <button
                     onClick={handlePrevMonth}
                     className="border-none bg-transparent cursor-pointer text-[16px]"
@@ -1332,9 +1575,7 @@ export default function Appointments() {
                       // onClick={() => handleCardClick(appt)}
                       className={`flex gap-[10px] items-center rounded-[8px] p-[10px] ${isSelected ? "bg-[#004C91] text-white" : "bg-[#F3F4F6] text-black"}`}
                     >
-                      <div
-                        className="date-box bg-[#FFFFFF] text-[#000] rounded-[6px] w-[45px] text-center py-[5px] px-[0px]"
-                      >
+                      <div className="date-box bg-[#FFFFFF] text-[#000] rounded-[6px] w-[45px] text-center py-[5px] px-[0px]">
                         {appt.status === "upcoming" ? (
                           appt.date ? (
                             <>
@@ -1343,16 +1584,12 @@ export default function Appointments() {
                                   weekday: "short",
                                 })}
                               </div>
-                              <div
-                                className="text-[16px] font-semibold"
-                              >
+                              <div className="text-[16px] font-semibold">
                                 {appt.date.getDate()}
                               </div>
                             </>
                           ) : (
-                            <div
-                              className="bg-[#004C91] text-[#fff] rounded-[6px] w-[45px] h-[45px] flex items-center justify-center"
-                            >
+                            <div className="bg-[#004C91] text-[#fff] rounded-[6px] w-[45px] h-[45px] flex items-center justify-center">
                               <CalendarOutlined />
                             </div>
                           )
@@ -1365,9 +1602,7 @@ export default function Appointments() {
                                   weekday: "short",
                                 })}
                               </div>
-                              <div
-                                className="text-[16px] font-semibold"
-                              >
+                              <div className="text-[16px] font-semibold">
                                 {appt.date.getDate()}
                               </div>
                             </>
@@ -1400,14 +1635,10 @@ export default function Appointments() {
         centered
         title={
           <div>
-            <h2
-              className="text-[#1B1B1B] text-[18px] font-semibold mb-[15px]"
-            >
+            <h2 className="text-[#1B1B1B] text-[18px] font-semibold mb-[15px]">
               Request a New Medical Appointment
             </h2>
-            <div
-              className="w-auto bg-[#E5E7EB] h-[1px] m-0"
-            />
+            <div className="w-auto bg-[#E5E7EB] h-[1px] m-0" />
           </div>
         }
       >
@@ -1420,15 +1651,15 @@ export default function Appointments() {
           <Form.Item
             name="appointmentType"
             label={
-              <span className="font-semibold text-[16px]">
-                Request Service
-              </span>
+              <span className="font-semibold text-[16px]">Request Service</span>
             }
             rules={[yupRule(bookingValidationSchema, "appointmentType")]}
           >
             <Select
               placeholder="Select Service"
               onChange={(val) => {
+                const resolvedDepId = resolveDepartmentId(val);
+                form.setFieldsValue({ depId: resolvedDepId });
                 const service = resolveServiceInfo(val);
                 if (service) {
                   form.setFieldsValue({ amount: service.priceLabel });
@@ -1445,32 +1676,44 @@ export default function Appointments() {
                   </div>
                 </Option>
               ))}
-              {deptList?.filter(
-                (dept) => !REQUEST_SERVICES_LIST.some((s) => s.id === dept.id || s.name === dept.dep_name)
-              )?.map((dept) => (
-                <Option key={dept.id} value={dept.id}>
-                  {dept.dep_name}
-                </Option>
-              ))}
+              {deptList
+                ?.filter(
+                  (dept) =>
+                    !REQUEST_SERVICES_LIST.some(
+                      (s) => s.id === dept.id || s.name === dept.dep_name,
+                    ),
+                )
+                ?.map((dept) => (
+                  <Option key={dept.id} value={dept.id}>
+                    {dept.dep_name}
+                  </Option>
+                ))}
             </Select>
           </Form.Item>
-          {/* <Form.Item name="depId" hidden>
+          <Form.Item name="depId" hidden>
             <Input type="hidden" />
-          </Form.Item> */}
+          </Form.Item>
 
           <Form.Item
             name="sponsorId"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Sponsor
               </span>
             }
           >
-            <Select placeholder="Select Sponsor" allowClear disabled={userData?.user_role === "sponsor"}>
+            <Select
+              placeholder="Select Sponsor"
+              allowClear
+              disabled={userData?.user_role === "sponsor"}
+            >
               {(userData?.user_role === "sponsor"
-                ? sponsors?.filter((s) => s.id === (Number(localStorage.getItem("sponsorProfileId")) || sponsorId) || s.user?.id === userData?.id)
+                ? sponsors?.filter(
+                    (s) =>
+                      s.id ===
+                        (Number(localStorage.getItem("sponsorProfileId")) ||
+                          sponsorId) || s.user?.id === userData?.id,
+                  )
                 : sponsors
               )?.map((sponsor) => (
                 <Option key={sponsor.id} value={sponsor.id}>
@@ -1484,9 +1727,7 @@ export default function Appointments() {
           <Form.Item
             name="patientId"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Patient
               </span>
             }
@@ -1495,9 +1736,16 @@ export default function Appointments() {
             <Select placeholder="Select Patient" allowClear>
               {(userData?.user_role === "sponsor"
                 ? patients?.filter((p) => {
-                    const sId = typeof p.sponsor === "object" ? p.sponsor?.id : p.sponsor;
-                    const spId = Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
-                    return sId === spId || p.sponsorid === spId || p.user?.id === userData?.id;
+                    const sId =
+                      typeof p.sponsor === "object" ? p.sponsor?.id : p.sponsor;
+                    const spId =
+                      Number(localStorage.getItem("sponsorProfileId")) ||
+                      sponsorId;
+                    return (
+                      sId === spId ||
+                      p.sponsorid === spId ||
+                      p.user?.id === userData?.id
+                    );
                   })
                 : patients
               )?.map((patient) => (
@@ -1511,9 +1759,7 @@ export default function Appointments() {
           <Form.Item
             name="preferred_dates"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Preferred Date(s)
               </span>
             }
@@ -1522,7 +1768,11 @@ export default function Appointments() {
             <div>
               <DatePicker
                 onChange={handleDateSelect}
-                status={form.getFieldError("preferred_dates")?.length > 0 ? "error" : ""}
+                status={
+                  form.getFieldError("preferred_dates")?.length > 0
+                    ? "error"
+                    : ""
+                }
               />
               <div className="mt-[8px]">
                 {selectedDates.map((d) => (
@@ -1530,7 +1780,9 @@ export default function Appointments() {
                     key={d}
                     closable
                     onClose={() => {
-                      const newDates = selectedDates.filter((date) => date !== d);
+                      const newDates = selectedDates.filter(
+                        (date) => date !== d,
+                      );
                       setSelectedDates(newDates);
                       form.setFieldsValue({ preferred_dates: newDates });
                       form.validateFields(["preferred_dates"]);
@@ -1546,9 +1798,7 @@ export default function Appointments() {
           <Form.Item
             name="preferred_times"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Preferred Time(s)
               </span>
             }
@@ -1580,9 +1830,7 @@ export default function Appointments() {
           <Form.Item
             name="treatment"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Pre Existing Conditions
               </span>
             }
@@ -1593,9 +1841,7 @@ export default function Appointments() {
           <Form.Item
             name="labReport"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Lab Report
               </span>
             }
@@ -1618,9 +1864,7 @@ export default function Appointments() {
           <Form.Item
             name="notes"
             label={
-              <span
-                className="font-semibold text-[15px] text-[#1B1B1B]"
-              >
+              <span className="font-semibold text-[15px] text-[#1B1B1B]">
                 Sponsor Notes
               </span>
             }
@@ -1653,17 +1897,13 @@ export default function Appointments() {
               alt="Success"
               className="w-[60px] h-[60px] mb-[16px]"
             />
-            <h2
-              className="text-[#007F5F] text-[20px] font-bold m-0 capitalize leading-[1.5]"
-            >
+            <h2 className="text-[#007F5F] text-[20px] font-bold m-0 capitalize leading-[1.5]">
               Your Appointment Request Sent Successfully <br />
             </h2>
           </div>
         }
       >
-        <p
-          className="text-[16px] font-medium text-[#2E2E2E] text-center"
-        >
+        <p className="text-[16px] font-medium text-[#2E2E2E] text-center">
           Our Practice Manager will review your request and get back to you
           shortly.
         </p>
@@ -1676,30 +1916,39 @@ export default function Appointments() {
         onSuccess={handleConfirmCheckout}
         title="Consultation Service"
         summaryTitle="Appointment & Clinical Review"
-        itemName={
-          (() => {
-            const resolved = resolveServiceInfo(pendingBookingValues?.values?.appointmentType);
-            if (resolved) return resolved.name;
-            const dept = deptList?.find(
-              (d) => d.id === pendingBookingValues?.values?.appointmentType || String(d.id) === String(pendingBookingValues?.values?.appointmentType)
-            );
-            return dept?.dep_name || pendingBookingValues?.values?.appointmentType || "Physician Consultation";
-          })()
-        }
+        itemName={(() => {
+          const resolved = resolveServiceInfo(
+            pendingBookingValues?.values?.appointmentType,
+          );
+          if (resolved) return resolved.name;
+          const dept = deptList?.find(
+            (d) =>
+              d.id === pendingBookingValues?.values?.appointmentType ||
+              String(d.id) ===
+                String(pendingBookingValues?.values?.appointmentType),
+          );
+          return (
+            dept?.dep_name ||
+            pendingBookingValues?.values?.appointmentType ||
+            "Physician Consultation"
+          );
+        })()}
         subItemName={
           pendingBookingValues?.values?.patientId
             ? patients?.find(
-                (p) => p.id === pendingBookingValues.values.patientId || p.id === Number(pendingBookingValues.values.patientId)
+                (p) =>
+                  p.id === pendingBookingValues.values.patientId ||
+                  p.id === Number(pendingBookingValues.values.patientId),
               )?.patient_name || "Loved One Patient"
             : "Loved One Patient"
         }
-        amount={
-          (() => {
-            const resolved = resolveServiceInfo(pendingBookingValues?.values?.appointmentType);
-            if (resolved) return resolved.stripeAmount;
-            return "75,000 CFA ($150.00 USD)";
-          })()
-        }
+        amount={(() => {
+          const resolved = resolveServiceInfo(
+            pendingBookingValues?.values?.appointmentType,
+          );
+          if (resolved) return resolved.stripeAmount;
+          return "75,000 CFA ($150.00 USD)";
+        })()}
         buttonText="Complete & Confirm Booking"
         userData={userData}
       />
