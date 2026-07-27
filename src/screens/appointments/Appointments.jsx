@@ -242,6 +242,17 @@ export default function Appointments() {
     return null;
   };
 
+  const appendLabReportFields = (formData, labReportFiles = []) => {
+    if (!Array.isArray(labReportFiles) || labReportFiles.length === 0) return;
+
+    labReportFiles.forEach((fileObj) => {
+      formData.append("lab_reports", fileObj.originFileObj);
+    });
+
+    const labReportIds = Array(labReportFiles.length).fill("null").join(",");
+    formData.append("lab_report_ids", labReportIds);
+  };
+
   const bookAppointment = async (values) => {
     try {
       await bookingValidationSchema.validate(
@@ -373,9 +384,7 @@ export default function Appointments() {
       );
 
       if (values.labReport && values.labReport.length > 0) {
-        values.labReport.forEach((fileObj) => {
-          formData.append("lab_reports", fileObj.originFileObj);
-        });
+        appendLabReportFields(formData, values.labReport);
       }
 
       const formattedDate = values.date
@@ -898,9 +907,7 @@ export default function Appointments() {
         JSON.stringify(bookappoinment_data),
       );
       if (values.labReport && values.labReport.length > 0) {
-        values.labReport.forEach((fileObj) => {
-          formData.append("lab_reports", fileObj.originFileObj);
-        });
+        appendLabReportFields(formData, values.labReport);
       }
       await apiClient.patch(endpoint, formData);
       message.success("Appointment updated successfully!");
