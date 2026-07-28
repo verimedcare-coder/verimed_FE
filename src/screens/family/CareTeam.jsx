@@ -36,7 +36,55 @@ export default function CareTeam() {
     window.location.href = "/";
   }
 
-  const profileId = user?.profile_id || 4;
+  const [selectedPatientId, setSelectedPatientId] = React.useState(() =>
+    localStorage.getItem("selectedPatientId")
+  );
+
+  React.useEffect(() => {
+    const handlePatientChange = () => {
+      setSelectedPatientId(localStorage.getItem("selectedPatientId"));
+    };
+    window.addEventListener("patientChanged", handlePatientChange);
+    window.addEventListener("storage", handlePatientChange);
+    return () => {
+      window.removeEventListener("patientChanged", handlePatientChange);
+      window.removeEventListener("storage", handlePatientChange);
+    };
+  }, []);
+
+  const [fallbackPatientId, setFallbackPatientId] = React.useState(null);
+
+  React.useEffect(() => {
+    if (user?.user_role === "sponsor" && !selectedPatientId) {
+      const fetchPatients = async () => {
+        try {
+          const storedSponsorId = localStorage.getItem("sponsorProfileId");
+          if (!storedSponsorId) return;
+          const res = await fetch(`${base_url}/sponsorid_patientprofile_list/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Token ${token}`,
+            },
+            body: JSON.stringify({ sponsorid: Number(storedSponsorId) }),
+          });
+          const patients = await res.json();
+          if (patients && patients.length > 0) {
+            setFallbackPatientId(patients[0].id);
+          }
+        } catch (error) {
+          console.error("Error fetching fallback patient for Care Team:", error);
+        }
+      };
+      fetchPatients();
+    }
+  }, [user, selectedPatientId, token]);
+
+  const profileId = 
+    user?.user_role === "sponsor" 
+      ? Number(selectedPatientId || fallbackPatientId) 
+      : user?.profile_id;
+
   const { data: appointments = [] } = useQuery({
     queryKey: ["patientAppointments", profileId],
     queryFn: async () => {

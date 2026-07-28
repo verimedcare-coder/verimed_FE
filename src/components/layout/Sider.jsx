@@ -27,6 +27,7 @@ import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
 import { isAdminUser, base_url } from "../../constants/constants";
+import axios from "axios";
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -65,6 +66,7 @@ const menuConfig = {
       path: "/appointments",
     },
     { label: "Care Team", icon: <TeamOutlined />, path: "/care_team" },
+    { label: "My Reports", icon: <CalendarOutlined />, path: "/my_reports" },
     // { label: "Messages", icon: <MessageOutlined />, path: "/messages" },
     {
       label: "Billing & Membership",
@@ -100,6 +102,7 @@ const menuConfig = {
       icon: <UserOutlined />,
       path: "/my_patients",
     },
+    { label: "My Reports", icon: <CalendarOutlined />, path: "/my_reports" },
     // {
     //   label: "Daily Reports",
     //   icon: <CalendarOutlined />,
@@ -166,9 +169,30 @@ export default function CustomSider() {
     const phoneVal = storedPhone.includes("-")
       ? storedPhone.split("-")[1]
       : storedPhone;
-    const countryVal =
+    
+    let countryVal =
       user.countrycode ||
       (storedPhone.includes("-") ? storedPhone.split("-")[0] : "IN");
+
+    const prefixMap = {
+      "+91": "IN",
+      "91": "IN",
+      "+1": "US",
+      "1": "US",
+      "+44": "GB",
+      "44": "GB",
+      "+237": "CM",
+      "237": "CM",
+    };
+
+    if (prefixMap[countryVal]) {
+      countryVal = prefixMap[countryVal];
+    }
+    
+    const validCodes = ["IN", "US", "GB", "CA", "CM"];
+    if (!validCodes.includes(countryVal)) {
+      countryVal = "IN";
+    }
 
     form.setFieldsValue({
       first_name: user.first_name,
@@ -271,9 +295,8 @@ export default function CustomSider() {
       }
 
       setIsModalOpen(false);
-      setTimeout(() => {
-        window.location.reload();
-      }, 600);
+      window.dispatchEvent(new Event("userUpdated"));
+      window.dispatchEvent(new Event("storage"));
     } catch (err) {
       notification.error({
         message: "Update failed",

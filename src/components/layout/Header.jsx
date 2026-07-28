@@ -35,7 +35,17 @@ import { useNavigate } from "react-router-dom";
 import { base_url } from "../../constants/constants";
 import dayjs from "dayjs";
 import { getData } from "country-list";
+import * as Yup from "yup";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
+const enrollSchema = Yup.object().shape({
+  patientName: Yup.string().required("Patient Name is required"),
+  patientPhone: Yup.string().required("Phone Number is required"),
+  country_code: Yup.string().required("Country Code is required"),
+  patient_dob: Yup.date().nullable().required("Date of Birth is required"),
+  patient_gender: Yup.string().required("Gender is required"),
+});
 const { Header } = Layout;
 const { Option } = Select;
 
@@ -514,6 +524,17 @@ export default function HeaderComponent() {
   };
 
   const handleUpdateClick = async (formValues = {}) => {
+    try {
+      await enrollSchema.validate(editedData, { abortEarly: false });
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        error.inner.forEach((err) => {
+          toast.error(err.message, { position: "top-right", autoClose: 3000 });
+        });
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -598,7 +619,7 @@ export default function HeaderComponent() {
         medical_his_major_surgeries:
           editedData.medical_his_major_surgeries || "",
         medical_his_curr_symp: editedData.medical_his_curr_symp || "",
-        last_doctor_visit: editedData.last_doctor_visit || "",
+        last_doctor_visit: editedData.last_doctor_visit || null,
         has_regular_doctor: editedData.has_regular_doctor || "",
         regular_doctor_name: editedData.regular_doctor_name || "",
 
@@ -750,6 +771,7 @@ export default function HeaderComponent() {
 
   return (
     <>
+      <ToastContainer />
       <Header
         className="flex justify-between items-center py-[12px] px-[24px] bg-white border-b-[1px] border-solid border-[#E5E7EB] shadow-[0_2px_8px_rgba(0,0,0,0.02)] h-auto min-h-[68px] leading-normal gap-[16px] flex-nowrap"
       >

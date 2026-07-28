@@ -41,6 +41,7 @@ export default function Overview() {
   const scrollRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(3);
   const [patientData, setPatientData] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isPatientModalVisible, setIsPatientModalVisible] = useState(false);
@@ -122,44 +123,27 @@ export default function Overview() {
 
   const sponsorId = localStorage.getItem("sponsorProfileId");
 
-  const fetchPatientDetails = async () => {
-    try {
-      const storedSponsorId =
-        localStorage.getItem("sponsorProfileId") || sponsorId;
-      if (
-        !storedSponsorId ||
-        storedSponsorId === "null" ||
-        storedSponsorId === "undefined" ||
-        storedSponsorId === "0"
-      ) {
-        return;
-      }
-      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorid: Number(storedSponsorId) };
-      const res = await axios.post(endpoint, payload, { headers });
-      const patients = res.data;
-      const selectedPatient = patients.find(
-        (p) =>
-          p.id ===
-          Number(
-            selectedPatientId || localStorage.getItem("selectedPatientId"),
-          ),
-      );
-      setPatientData(selectedPatient);
-    } catch (error) {
-      console.error("Error fetching patient details:", error);
-      message.error("Failed to load patient details");
-    } finally {
-      // Completed fetching patient details
-    }
-  };
+  const { data: patientsList = [], refetch: refetchPatients } = useQuery({
+    queryKey: ["sponsorPatients", sponsorId],
+    queryFn: async () => {
+      if (!sponsorId || sponsorId === "null" || sponsorId === "undefined" || sponsorId === "0") return [];
+      const res = await overviewService.getSponsorPatients(sponsorId);
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!sponsorId && (user?.user_role === "sponsor" || user?.user_role === "patient"),
+  });
 
   useEffect(() => {
-    if (user?.user_role === "sponsor" || user?.user_role === "patient") {
-      fetchPatientDetails();
+    if (patientsList.length > 0) {
+      const currentSelectedId = Number(
+        selectedPatientId || localStorage.getItem("selectedPatientId")
+      );
+      const selectedPatient = patientsList.find((p) => p.id === currentSelectedId) || patientsList[0] || null;
+      setPatientData(selectedPatient);
+    } else {
+      setPatientData(null);
     }
-  }, [user, selectedPatientId]);
+  }, [patientsList, selectedPatientId]);
 
   useEffect(() => {
     const fetchLoggedInDoctor = async () => {
@@ -1037,6 +1021,72 @@ export default function Overview() {
     fetchCareTakerPatients();
   }, [careTakerData, token]);
 
+  const patientTableColumns = [
+    {
+      title: "Profile",
+      key: "photo",
+      render: (_, record) => (
+        <img
+          src={getPhotoUrl(record?.photo_view_url)}
+          alt="profile"
+          className="w-[40px] h-[40px] rounded-[8px] object-cover"
+        />
+      ),
+      width: 80,
+    },
+    {
+      title: "Name & ID",
+      key: "name",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold text-[#1B1B1B]">{record.patient_name || "Unknown"}</div>
+          <div className="text-[12px] text-[#6B7280]">ID: {record.id}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Condition / Diagnosis",
+      dataIndex: "medical_his_diagnosis",
+      key: "condition",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Care Taker",
+      key: "caretaker",
+      render: (_, record) => {
+        if (typeof record.caretaker === 'object' && record.caretaker !== null) {
+          return record.caretaker.first_name || record.caretaker_name || "N/A";
+        }
+        return record.caretaker || record.caretaker_name || "N/A";
+      },
+    },
+    {
+      title: "Role",
+      dataIndex: "reason_enrollment",
+      key: "role",
+      render: (text) => {
+        if (text === "Self") return <span style={{ color: "#007F5F", fontWeight: 500 }}>Patient (Self)</span>;
+        if (text === "Loved One") return <span style={{ color: "#2F80ED", fontWeight: 500 }}>Loved One</span>;
+        return <span style={{ color: "gray", fontWeight: 500 }}>{text || "Patient"}</span>;
+      },
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Button 
+          type="primary" 
+          size="small" 
+          onClick={() => navigate("/view_patient_details", { state: { appointmentData: record } })}
+          style={{ background: "#007F5F", borderColor: "#007F5F", border: "none" }}
+        >
+          View
+        </Button>
+      ),
+      width: 100,
+    }
+  ];
+
   return (
     <div
       style={{ display: "flex", height: "100vh", backgroundColor: "#F7F9FB" }}
@@ -1047,7 +1097,7 @@ export default function Overview() {
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ flexShrink: 0 }}>
           <Header />
         </div>
@@ -1080,84 +1130,15 @@ export default function Overview() {
                   <SecondaryBtn name="Download" onClick={handleDownloadExcel} />
                 </SectionHeader>
 
-                {/* Profile */}
-                <div style={profileBox}>
-                  <img
-                    src={getPhotoUrl(patientData?.photo_view_url)}
-                    alt="profile"
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: "12px",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                    }}
+                <div style={{ width: '100%', overflowX: 'auto', marginTop: '16px' }}>
+                  <Table 
+                    dataSource={patientsList} 
+                    columns={patientTableColumns} 
+                    pagination={{ pageSize: 5 }} 
+                    rowKey="id"
+                    scroll={{ x: 'max-content' }}
+                    style={{ minWidth: '100%' }}
                   />
-
-                  <div style={infoGrid}>
-                    {patientData ? (
-                      <>
-                        <InfoItem
-                          label="Name"
-                          value={`${
-                            patientData && patientData?.patient_name
-                          } (${patientData?.id})`}
-                        />
-                        <InfoItem
-                          label="Condition"
-                          value={
-                            patientData && patientData?.medical_his_diagnosis
-                          }
-                        />
-                        {/* <InfoItem
-                          label="Assigned Doctor"
-                          value={`${
-                            vitalsData?.doc?.user?.first_name || "N/A"
-                          } ${vitalsData?.doc?.user?.last_name || ""}`}
-                        /> */}
-                        <InfoItem
-                          label="Care Taker"
-                          value={patientData?.caretaker || "N/A"}
-                        />
-                      </>
-                    ) : (
-                      <p style={{ color: "#999" }}>
-                        Loading patient details...
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Vitals */}
-                <div style={vitalsGrid}>
-                  <div style={vitalsGrid}>
-                    {vitals.length > 0 ? (
-                      vitals.map((item, i) => (
-                        <div key={i} style={vitalCard}>
-                          <img
-                            src={item.icon}
-                            alt={item.label}
-                            style={{ width: 24, height: 24 }}
-                          />
-                          <div>
-                            <p style={vitalLabel}>{item.label}</p>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 5,
-                              }}
-                            >
-                              <div style={dotStyle(item.color)}></div>
-                              <span style={vitalValue}>{item.value}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p style={{ color: "#999" }}>Loading vitals...</p>
-                    )}
-                  </div>
                 </div>
               </div>
             )}

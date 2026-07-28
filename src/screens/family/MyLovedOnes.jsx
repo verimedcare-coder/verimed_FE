@@ -22,6 +22,17 @@ import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/ico
 import { base_url } from "../../constants/constants";
 
 import { useNavigate } from "react-router-dom";
+import * as Yup from "yup";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const enrollSchema = Yup.object().shape({
+  name: Yup.string().required("Patient Name is required"),
+  phone: Yup.string().required("Phone Number is required"),
+  country_code: Yup.string().required("Country Code is required"),
+  patient_dob: Yup.date().nullable().required("Date of Birth is required"),
+  patient_gender: Yup.string().required("Gender is required"),
+});
 
 const calculateAge = (dob) => {
   if (!dob) return "N/A";
@@ -220,7 +231,7 @@ export default function MyLovedOnes() {
       medical_his_cancer: patientData.medical_his_cancer || "",
       medical_his_major_surgeries: patientData.medical_his_major_surgeries || "",
       medical_his_curr_symp: patientData.medical_his_curr_symp || "",
-      last_doctor_visit: patientData.last_doctor_visit || "",
+      last_doctor_visit: patientData.last_doctor_visit || null,
       has_regular_doctor: patientData.has_regular_doctor || "",
       regular_doctor_name: patientData.regular_doctor_name || "",
       allergies_drug: patientData.allergies_drug || "",
@@ -231,6 +242,17 @@ export default function MyLovedOnes() {
   };
 
   const handleEditSubmit = async (values) => {
+    try {
+      await enrollSchema.validate(values, { abortEarly: false });
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        error.inner.forEach((err) => {
+          toast.error(err.message, { position: "top-right", autoClose: 3000 });
+        });
+        return;
+      }
+    }
+    
     setEditLoading(true);
     try {
       const storedSponsorId =
@@ -241,7 +263,7 @@ export default function MyLovedOnes() {
       const formattedDOB =
         values.patient_dob && dayjs.isDayjs(values.patient_dob)
           ? values.patient_dob.format("YYYY-MM-DD")
-          : values.patient_dob || "";
+          : values.patient_dob || null;
       const patientprofile_data = {
         id: Number(patientData.id),
         patient_profile_updateid: Number(patientData.id),
@@ -278,7 +300,7 @@ export default function MyLovedOnes() {
         medical_his_cancer: values.medical_his_cancer || "",
         medical_his_major_surgeries: values.medical_his_major_surgeries || "",
         medical_his_curr_symp: values.medical_his_curr_symp || "",
-        last_doctor_visit: values.last_doctor_visit || "",
+        last_doctor_visit: values.last_doctor_visit || null,
         has_regular_doctor: values.has_regular_doctor || "",
         regular_doctor_name: values.regular_doctor_name || "",
         allergies_drug: values.allergies_drug || "",
@@ -289,7 +311,6 @@ export default function MyLovedOnes() {
         sponsor: Number(storedSponsorId),
       };
       const formData = new FormData();
-      formData.append("patientprofile_update_data", JSON.stringify(patientprofile_data));
       formData.append("patientprofile_data", JSON.stringify(patientprofile_data));
       if (values.photo && values.photo.length > 0) {
         const fileObj = values.photo[0].originFileObj || values.photo[0];
@@ -448,6 +469,7 @@ export default function MyLovedOnes() {
     <div
       className="flex h-screen bg-[#F7F9FB]"
     >
+      <ToastContainer />
       {/* Sidebar */}
       <div className="w-[240px] shrink-0">
         <Sider />

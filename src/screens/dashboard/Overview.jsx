@@ -40,6 +40,7 @@ export default function Overview() {
   const scrollRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(3);
   const [patientData, setPatientData] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isPatientModalVisible, setIsPatientModalVisible] = useState(false);
@@ -121,44 +122,27 @@ export default function Overview() {
 
   const sponsorId = localStorage.getItem("sponsorProfileId");
 
-  const fetchPatientDetails = async () => {
-    try {
-      const storedSponsorId =
-        localStorage.getItem("sponsorProfileId") || sponsorId;
-      if (
-        !storedSponsorId ||
-        storedSponsorId === "null" ||
-        storedSponsorId === "undefined" ||
-        storedSponsorId === "0"
-      ) {
-        return;
-      }
-      const endpoint = `${base_url}/sponsorid_patientprofile_list/`;
-      const headers = { Authorization: `Token ${token}` };
-      const payload = { sponsorid: Number(storedSponsorId) };
-      const res = await axios.post(endpoint, payload, { headers });
-      const patients = res.data;
-      const selectedPatient = patients.find(
-        (p) =>
-          p.id ===
-          Number(
-            selectedPatientId || localStorage.getItem("selectedPatientId"),
-          ),
-      );
-      setPatientData(selectedPatient);
-    } catch (error) {
-      console.error("Error fetching patient details:", error);
-      message.error("Failed to load patient details");
-    } finally {
-      // Completed fetching patient details
-    }
-  };
+  const { data: patientsList = [], refetch: refetchPatients } = useQuery({
+    queryKey: ["sponsorPatients", sponsorId],
+    queryFn: async () => {
+      if (!sponsorId || sponsorId === "null" || sponsorId === "undefined" || sponsorId === "0") return [];
+      const res = await overviewService.getSponsorPatients(sponsorId);
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!sponsorId && (user?.user_role === "sponsor" || user?.user_role === "patient"),
+  });
 
   useEffect(() => {
-    if (user?.user_role === "sponsor" || user?.user_role === "patient") {
-      fetchPatientDetails();
+    if (patientsList.length > 0) {
+      const currentSelectedId = Number(
+        selectedPatientId || localStorage.getItem("selectedPatientId")
+      );
+      const selectedPatient = patientsList.find((p) => p.id === currentSelectedId) || patientsList[0] || null;
+      setPatientData(selectedPatient);
+    } else {
+      setPatientData(null);
     }
-  }, [user, selectedPatientId]);
+  }, [patientsList, selectedPatientId]);
 
   useEffect(() => {
     const fetchLoggedInDoctor = async () => {
@@ -1052,6 +1036,72 @@ export default function Overview() {
     fetchCareTakerPatients();
   }, [careTakerData, token]);
 
+  const patientTableColumns = [
+    {
+      title: "Profile",
+      key: "photo",
+      render: (_, record) => (
+        <img
+          src={getPhotoUrl(record?.photo_view_url)}
+          alt="profile"
+          className="w-[40px] h-[40px] rounded-[8px] object-cover"
+        />
+      ),
+      width: 80,
+    },
+    {
+      title: "Name & ID",
+      key: "name",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold text-[#1B1B1B]">{record.patient_name || "Unknown"}</div>
+          <div className="text-[12px] text-[#6B7280]">ID: {record.id}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Condition / Diagnosis",
+      dataIndex: "medical_his_diagnosis",
+      key: "condition",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Care Taker",
+      key: "caretaker",
+      render: (_, record) => {
+        if (typeof record.caretaker === 'object' && record.caretaker !== null) {
+          return record.caretaker.first_name || record.caretaker_name || "N/A";
+        }
+        return record.caretaker || record.caretaker_name || "N/A";
+      },
+    },
+    {
+      title: "Role",
+      dataIndex: "reason_enrollment",
+      key: "role",
+      render: (text) => {
+        if (text === "Self") return <span className="text-[#007F5F] font-medium">Patient (Self)</span>;
+        if (text === "Loved One") return <span className="text-[#2F80ED] font-medium">Loved One</span>;
+        return <span className="text-gray-500 font-medium">{text || "Patient"}</span>;
+      },
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Button 
+          type="primary" 
+          size="small" 
+          onClick={() => navigate("/view_patient_details", { state: { appointmentData: record } })}
+          style={{ background: "#007F5F", borderColor: "#007F5F" }}
+        >
+          View
+        </Button>
+      ),
+      width: 100,
+    }
+  ];
+
   return (
     <div className="flex h-screen bg-[#F7F9FB]">
       {/* Sidebar */}
@@ -1060,7 +1110,7 @@ export default function Overview() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="shrink-0">
           <Header />
         </div>
@@ -1083,76 +1133,15 @@ export default function Overview() {
                   <SecondaryBtn name="Download" onClick={handleDownloadExcel} />
                 </SectionHeader>
 
-                {/* Profile */}
-                <div className="flex items-center gap-[20px] border-[1px] border-solid border-[#E6E8EB] rounded-[10px] p-[15px] min-w-0 flex-wrap">
-                  <img
-                    src={getPhotoUrl(patientData?.photo_view_url)}
-                    alt="profile"
-                    className="w-[64px] h-[64px] rounded-[12px] shrink-0 object-cover"
+                <div className="w-full overflow-x-auto mt-4">
+                  <Table 
+                    dataSource={patientsList} 
+                    columns={patientTableColumns} 
+                    pagination={{ pageSize: 5 }} 
+                    rowKey="id"
+                    scroll={{ x: 'max-content' }}
+                    className="min-w-full"
                   />
-
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-[10px_20px] min-w-0 flex-1">
-                    {patientData ? (
-                      <>
-                        <InfoItem
-                          label="Name"
-                          value={`${
-                            patientData && patientData?.patient_name
-                          } (${patientData?.id})`}
-                        />
-                        <InfoItem
-                          label="Condition"
-                          value={
-                            patientData && patientData?.medical_his_diagnosis
-                          }
-                        />
-                        {/* <InfoItem
-                          label="Assigned Doctor"
-                          value={`${
-                            vitalsData?.doc?.user?.first_name || "N/A"
-                          } ${vitalsData?.doc?.user?.last_name || ""}`}
-                        /> */}
-                        <InfoItem
-                          label="Care Taker"
-                          value={patientData?.caretaker || "N/A"}
-                        />
-                      </>
-                    ) : (
-                      <p className="text-[#999]">Loading patient details...</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Vitals */}
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
-                    {vitals.map((item, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-[10px] border-[1px] border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0"
-                      >
-                        <img
-                          src={item.icon}
-                          alt={item.label}
-                          className="w-[24px] h-[24px]"
-                        />
-                        <div>
-                          <p className="text-[14px] font-semibold mb-[2px]">
-                            {item.label}
-                          </p>
-                          <div className="flex items-center gap-[5px]">
-                            <div
-                              className="w-[8px] h-[8px] rounded-full shrink-0"
-                              style={{ background: item.color }}
-                            ></div>
-                            <span className="text-[14px] text-[#2E2E2E] break-words">
-                              {item.value}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}

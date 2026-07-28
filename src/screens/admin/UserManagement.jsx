@@ -430,7 +430,7 @@ export default function UserManagement() {
             medical_his_major_surgeries:
               editedData.medical_his_major_surgeries || "",
             medical_his_curr_symp: editedData.medical_his_curr_symp || "",
-            last_doctor_visit: editedData.last_doctor_visit || "",
+            last_doctor_visit: editedData.last_doctor_visit || null,
             has_regular_doctor: editedData.has_regular_doctor || "",
             regular_doctor_name: editedData.regular_doctor_name || "",
             medication_name: editedData.medication_name || "",
@@ -518,7 +518,7 @@ export default function UserManagement() {
       formData.append(keyName, JSON.stringify(updateData));
       if (activeTab === "patients") {
         formData.append(
-          "patientprofile_update_data",
+          "patientprofile_data",
           JSON.stringify(updateData),
         );
       }
