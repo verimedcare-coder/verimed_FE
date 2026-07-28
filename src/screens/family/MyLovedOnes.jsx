@@ -124,6 +124,7 @@ export default function MyLovedOnes() {
         appointment_type: item.appointment_type,
         care_taker_notes: [item.care_taker_notes, item.doctor_notes].filter(Boolean).join("\n") || "",
         treatment_performed: item.treatment_performed,
+        documents: item.documents || [],
       }));
     },
     enabled: !isNaN(cleanedPatientId) && cleanedPatientId > 0 && !!token,
@@ -159,6 +160,31 @@ export default function MyLovedOnes() {
       dataIndex: "care_taker_notes",
       key: "care_taker_notes",
       ellipsis: true,
+    },
+    {
+      title: "Uploaded Files",
+      key: "documents",
+      width: 150,
+      render: (_, record) => {
+        if (!record.documents || record.documents.length === 0) {
+          return <span className="text-gray-400">No files</span>;
+        }
+        return (
+          <div className="flex flex-col gap-2">
+            {record.documents.map((doc, i) => (
+              <a
+                key={i}
+                href={doc.view_link || doc.download_link || doc.file}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#004C91] underline text-[13px] flex items-center gap-[4px]"
+              >
+                View File
+              </a>
+            ))}
+          </div>
+        );
+      },
     },
   ];
 

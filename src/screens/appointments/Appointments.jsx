@@ -688,16 +688,24 @@ export default function Appointments() {
   const handleDetailsCardClick = (appt) => {
     if (appt) {
       setSelectedAppointment(appt);
+      
+      let parsedTime = undefined;
+      if (appt.time) {
+        const tStr = Array.isArray(appt.time) ? appt.time[0] : appt.time;
+        let d = dayjs(tStr, "HH:mm:ss");
+        if (!d.isValid()) {
+          d = dayjs(tStr, "HH:mm");
+        }
+        if (d.isValid()) {
+          parsedTime = d;
+        }
+      }
+
       assignForm.setFieldsValue({
         caretakerId:
           appt.fullData?.caretaker?.id || appt.fullData?.caretaker || undefined,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
-        appointment_time: appt.time
-          ? dayjs(
-              Array.isArray(appt.time) ? appt.time[0] : appt.time,
-              "HH:mm:ss",
-            )
-          : undefined,
+        appointment_time: parsedTime,
         care_taker_notes:
           appt.fullData?.care_taker_notes || appt.care_taker_notes || "",
         doctor_notes: appt.fullData?.doctor_notes || "",
@@ -1007,6 +1015,8 @@ export default function Appointments() {
       service_purchased:
         selectedAppointment?.fullData?.service_purchased ?? true,
     };
+    
+    setLoading(true);
     try {
       const endpoint = "/verimed_bookappoinment_create_update/";
       const formData = new FormData();
@@ -1040,7 +1050,7 @@ export default function Appointments() {
         centered: true,
       });
     } finally {
-      // Completed updating appointment
+      setLoading(false);
     }
   };
 
@@ -1334,13 +1344,13 @@ export default function Appointments() {
                             isAdminUser(userData)) && (
                             <Form.Item
                               name={
-                                isAdminUser(userData)
+                                isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
                                   ? "doctorId"
                                   : "caretakerId"
                               }
                               label={
                                 <span className="font-medium text-[#334155]">
-                                  {isAdminUser(userData)
+                                  {isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
                                     ? "Assigned Doctor"
                                     : "Assigned Caretaker"}
                                 </span>
@@ -1348,15 +1358,15 @@ export default function Appointments() {
                               rules={[
                                 {
                                   required: true,
-                                  message: `Please select a ${isAdminUser(userData) ? "doctor" : "caretaker"}`,
+                                  message: `Please select a ${isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check" ? "doctor" : "caretaker"}`,
                                 },
                               ]}
                             >
                               <Select
-                                placeholder={`Select ${isAdminUser(userData) ? "doctor" : "caretaker"}`}
+                                placeholder={`Select ${isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check" ? "doctor" : "caretaker"}`}
                                 className="w-full"
                               >
-                                {isAdminUser(userData)
+                                {isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
                                   ? doctors?.map((doc) => (
                                       <Option key={doc.id} value={doc.id}>
                                         {doc.user?.first_name}{" "}
@@ -1473,6 +1483,7 @@ export default function Appointments() {
                           <Button
                             type="primary"
                             htmlType="submit"
+                            loading={loading}
                             className="bg-[linear-gradient(135deg,#004C91_0%,#0066C0_100%)] border border-solid border-[#004C91] rounded-[6px] px-[24px] font-medium shadow-[0_2px_6px_rgba(0,76,145,0.25)]"
                           >
                             Update Appointment
