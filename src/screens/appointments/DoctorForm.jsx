@@ -20,6 +20,7 @@ import { UploadOutlined } from "@ant-design/icons";
 
 import { base_url } from "../../constants/constants";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const { Option } = Select;
 
@@ -27,9 +28,7 @@ function SectionHeader({ title, children }) {
   return (
     <div className="flex justify-between items-center flex-wrap gap-[10px] min-w-0">
       <p className="text-[16px] font-semibold text-[#1B1B1B]">{title}</p>
-      <div className="flex gap-[10px] flex-wrap">
-        {children}
-      </div>
+      <div className="flex gap-[10px] flex-wrap">{children}</div>
     </div>
   );
 }
@@ -61,9 +60,7 @@ export default function DoctorForm(doc_data) {
       };
 
       let finalCaretakerId =
-        appointmentData?.caretaker?.id ||
-        appointmentData?.caretakerid ||
-        null;
+        appointmentData?.caretaker?.id || appointmentData?.caretakerid || null;
       let finalDoctorId =
         appointmentData?.doc?.id || appointmentData?.docid || null;
       let finalPatientId =
@@ -239,11 +236,16 @@ export default function DoctorForm(doc_data) {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-[16px] lg:p-[24px]">
           <div className="w-full flex flex-col gap-[20px] box-border">
-            
             {/* Back Button */}
             <div className="flex items-center">
               <button
-                onClick={() => appointmentData ? navigate("/view_patient_details", { state: { appointmentData } }) : navigate(-1)}
+                onClick={() =>
+                  appointmentData
+                    ? navigate("/view_patient_details", {
+                        state: { appointmentData },
+                      })
+                    : navigate(-1)
+                }
                 className="flex items-center gap-[8px] text-[#004E89] font-semibold text-[14px] bg-white border border-[#E5E7EB] rounded-[10px] px-[16px] py-[10px] cursor-pointer hover:bg-[#F0F7FF] transition-colors shadow-sm"
               >
                 ← Back to Patient
@@ -255,23 +257,50 @@ export default function DoctorForm(doc_data) {
               <div className="h-[6px] bg-gradient-to-r from-[#004E89] to-[#007F5F]"></div>
               <div className="p-[20px] flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
                 <img
-                  src={appointmentData ? appointmentData?.patient?.photo_view_url : patientdetails}
+                  src={
+                    appointmentData
+                      ? appointmentData?.patient?.photo_view_url
+                      : patientdetails
+                  }
                   alt="Profile"
-                  onError={(e) => { e.target.onerror = null; e.target.src = patientdetails; }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = patientdetails;
+                  }}
                   className="w-[70px] h-[70px] rounded-[12px] shrink-0 object-cover border-[3px] border-[#F3F4F6] shadow-sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-[22px] font-bold text-[#111827] m-0 mb-[4px] truncate">{careTeam.name || "Patient"}</h2>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:'12px', marginTop:'12px'}}>
+                  <h2 className="text-[22px] font-bold text-[#111827] m-0 mb-[4px] truncate">
+                    {careTeam.name || "Patient"}
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(140px, 1fr))",
+                      gap: "12px",
+                      marginTop: "12px",
+                    }}
+                  >
                     {[
                       { label: "Condition", value: careTeam.Condition },
-                      { label: "Assigned Doctor", value: careTeam.AssignedDoctor },
-                      { label: "Assigned Since", value: careTeam.AssignedSince },
+                      {
+                        label: "Assigned Doctor",
+                        value: careTeam.AssignedDoctor,
+                      },
+                      {
+                        label: "Assigned Since",
+                        value: careTeam.AssignedSince,
+                      },
                       { label: "Sponsor", value: careTeam.SponsorInfo },
                     ].map((item, idx) => (
                       <div key={idx}>
-                        <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wide m-0">{item.label}</p>
-                        <p className="text-[13px] font-bold text-[#111827] m-0 truncate">{item.value || "N/A"}</p>
+                        <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wide m-0">
+                          {item.label}
+                        </p>
+                        <p className="text-[13px] font-bold text-[#111827] m-0 truncate">
+                          {item.value || "N/A"}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -291,14 +320,24 @@ export default function DoctorForm(doc_data) {
                 onFinish={onFinish}
                 className="w-full"
                 initialValues={{
-                  patientName: doc_data.patient_name || appointmentData?.patient?.patient_name,
-                  bloodGroup: doc_data.bloodGroup || appointmentData?.patient?.blood_group,
+                  patientName:
+                    doc_data.patient_name ||
+                    appointmentData?.patient?.patient_name,
+                  bloodGroup:
+                    doc_data.bloodGroup ||
+                    appointmentData?.patient?.blood_group,
                   bp: doc_data.bp || appointmentData?.patient?.blood_pressure,
-                  heartRate: doc_data.heart_rate || appointmentData?.patient?.heartRate,
-                  sugar: doc_data.sugar || appointmentData?.patient?.blood_sugar,
+                  heartRate:
+                    doc_data.heart_rate || appointmentData?.patient?.heartRate,
+                  sugar:
+                    doc_data.sugar || appointmentData?.patient?.blood_sugar,
                   oxygen: doc_data.oxygen || appointmentData?.patient?.oxygen,
-                  temperature: doc_data.temperature || appointmentData?.patient?.temperature,
-                  respiratoryRate: doc_data.respiratory_rate || appointmentData?.patient?.respiratory_rate,
+                  temperature:
+                    doc_data.temperature ||
+                    appointmentData?.patient?.temperature,
+                  respiratoryRate:
+                    doc_data.respiratory_rate ||
+                    appointmentData?.patient?.respiratory_rate,
                   weight: doc_data.weight || appointmentData?.patient?.weight,
                   doctorNotes: doc_data.doctor_notes,
                   initialVisit: doc_data.initialVisit,
@@ -306,7 +345,15 @@ export default function DoctorForm(doc_data) {
                 }}
               >
                 {/* Basic Info */}
-                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'16px', marginBottom:'8px'}}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: "16px",
+                    marginBottom: "8px",
+                  }}
+                >
                   <Form.Item label="Patient Name" name="patientName">
                     <Input placeholder="Patient Name" />
                   </Form.Item>
@@ -317,9 +364,22 @@ export default function DoctorForm(doc_data) {
 
                 {/* Vitals Section */}
                 <div className="bg-[#F8FAFC] rounded-[12px] border border-[#E5E7EB] p-[16px] mb-[20px]">
-                  <h4 className="text-[14px] font-bold text-[#374151] m-0 mb-[16px]">Vitals</h4>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:'16px'}}>
-                    <Form.Item label="Blood Group" name="bloodGroup" className="m-0">
+                  <h4 className="text-[14px] font-bold text-[#374151] m-0 mb-[16px]">
+                    Vitals
+                  </h4>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(160px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    <Form.Item
+                      label="Blood Group"
+                      name="bloodGroup"
+                      className="m-0"
+                    >
                       <Select placeholder="Select Blood Group">
                         <Option value="A+">A+</Option>
                         <Option value="A-">A-</Option>
@@ -334,22 +394,42 @@ export default function DoctorForm(doc_data) {
                     <Form.Item label="Blood Pressure" name="bp" className="m-0">
                       <Input placeholder="120/80" />
                     </Form.Item>
-                    <Form.Item label="Heart Rate (bpm)" name="heartRate" className="m-0">
+                    <Form.Item
+                      label="Heart Rate (bpm)"
+                      name="heartRate"
+                      className="m-0"
+                    >
                       <Input placeholder="72" />
                     </Form.Item>
-                    <Form.Item label="Blood Sugar (mg/dL)" name="sugar" className="m-0">
+                    <Form.Item
+                      label="Blood Sugar (mg/dL)"
+                      name="sugar"
+                      className="m-0"
+                    >
                       <Input placeholder="95" />
                     </Form.Item>
                     <Form.Item label="Oxygen (%)" name="oxygen" className="m-0">
                       <Input placeholder="98" />
                     </Form.Item>
-                    <Form.Item label="Temperature (°C)" name="temperature" className="m-0">
+                    <Form.Item
+                      label="Temperature (°C)"
+                      name="temperature"
+                      className="m-0"
+                    >
                       <Input placeholder="36.8" />
                     </Form.Item>
-                    <Form.Item label="Respiratory Rate" name="respiratoryRate" className="m-0">
+                    <Form.Item
+                      label="Respiratory Rate"
+                      name="respiratoryRate"
+                      className="m-0"
+                    >
                       <Input placeholder="16" />
                     </Form.Item>
-                    <Form.Item label="Weight (kg)" name="weight" className="m-0">
+                    <Form.Item
+                      label="Weight (kg)"
+                      name="weight"
+                      className="m-0"
+                    >
                       <Input placeholder="70" />
                     </Form.Item>
                   </div>
@@ -357,28 +437,100 @@ export default function DoctorForm(doc_data) {
 
                 {/* Uploads */}
                 <div className="mb-[20px]">
-                  <h4 className="text-[14px] font-bold text-[#007F5F] m-0 mb-[14px]">Clinical Reports & Documentation</h4>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'16px'}} className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E5E7EB]">
-                    <Form.Item label={<span className="font-semibold text-[#1E293B]">Results & Medical Records</span>} name="results_records" valuePropName="fileList" getValueFromEvent={normFile} className="m-0">
-                      <Upload multiple beforeUpload={() => false} listType="text">
-                        <Button icon={<UploadOutlined />} className="w-full">Upload Results & Records</Button>
+                  <h4 className="text-[14px] font-bold text-[#007F5F] m-0 mb-[14px]">
+                    Clinical Reports & Documentation
+                  </h4>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(220px, 1fr))",
+                      gap: "16px",
+                    }}
+                    className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E5E7EB]"
+                  >
+                    <Form.Item
+                      label={
+                        <span className="font-semibold text-[#1E293B]">
+                          Results & Medical Records
+                        </span>
+                      }
+                      name="results_records"
+                      valuePropName="fileList"
+                      getValueFromEvent={normFile}
+                      className="m-0"
+                    >
+                      <Upload
+                        multiple
+                        beforeUpload={() => false}
+                        listType="text"
+                      >
+                        <Button icon={<UploadOutlined />} className="w-full">
+                          Upload Results & Records
+                        </Button>
                       </Upload>
                     </Form.Item>
-                    <Form.Item label={<span className="font-semibold text-[#1E293B]">Diagnostic Images & Scans</span>} name="diagnostic_images" valuePropName="fileList" getValueFromEvent={normFile} className="m-0">
-                      <Upload multiple beforeUpload={() => false} listType="text" accept="image/*">
-                        <Button icon={<UploadOutlined />} className="w-full">Upload Images & Scans</Button>
+                    <Form.Item
+                      label={
+                        <span className="font-semibold text-[#1E293B]">
+                          Diagnostic Images & Scans
+                        </span>
+                      }
+                      name="diagnostic_images"
+                      valuePropName="fileList"
+                      getValueFromEvent={normFile}
+                      className="m-0"
+                    >
+                      <Upload
+                        multiple
+                        beforeUpload={() => false}
+                        listType="text"
+                        accept="image/*"
+                      >
+                        <Button icon={<UploadOutlined />} className="w-full">
+                          Upload Images & Scans
+                        </Button>
                       </Upload>
                     </Form.Item>
-                    <Form.Item label={<span className="font-semibold text-[#1E293B]">Voice Notes & Audio</span>} name="voice_notes" valuePropName="fileList" getValueFromEvent={normFile} className="m-0">
-                      <Upload multiple beforeUpload={() => false} listType="text" accept="audio/*">
-                        <Button icon={<UploadOutlined />} className="w-full">Upload Voice Notes</Button>
+                    <Form.Item
+                      label={
+                        <span className="font-semibold text-[#1E293B]">
+                          Voice Notes & Audio
+                        </span>
+                      }
+                      name="voice_notes"
+                      valuePropName="fileList"
+                      getValueFromEvent={normFile}
+                      className="m-0"
+                    >
+                      <Upload
+                        multiple
+                        beforeUpload={() => false}
+                        listType="text"
+                        accept="audio/*"
+                      >
+                        <Button icon={<UploadOutlined />} className="w-full">
+                          Upload Voice Notes
+                        </Button>
                       </Upload>
                     </Form.Item>
                   </div>
                   <div className="mt-[14px]">
-                    <Form.Item label="Other Supplementary Documents" name="documents" valuePropName="fileList" getValueFromEvent={normFile} className="m-0">
-                      <Upload multiple beforeUpload={() => false} listType="text">
-                        <Button icon={<UploadOutlined />}>Upload Other Documents</Button>
+                    <Form.Item
+                      label="Other Supplementary Documents"
+                      name="documents"
+                      valuePropName="fileList"
+                      getValueFromEvent={normFile}
+                      className="m-0"
+                    >
+                      <Upload
+                        multiple
+                        beforeUpload={() => false}
+                        listType="text"
+                      >
+                        <Button icon={<UploadOutlined />}>
+                          Upload Other Documents
+                        </Button>
                       </Upload>
                     </Form.Item>
                   </div>
@@ -386,9 +538,14 @@ export default function DoctorForm(doc_data) {
 
                 {/* Doctor Notes */}
                 <div className="mb-[24px]">
-                  <h4 className="text-[14px] font-bold text-[#007F5F] m-0 mb-[10px]">Doctor Notes & Clinical Synthesis</h4>
+                  <h4 className="text-[14px] font-bold text-[#007F5F] m-0 mb-[10px]">
+                    Doctor Notes & Clinical Synthesis
+                  </h4>
                   <Form.Item name="doctorNotes" className="m-0">
-                    <Input.TextArea rows={4} placeholder="Add clinical synthesis, diagnostic findings, and patient instructions here..." />
+                    <Input.TextArea
+                      rows={4}
+                      placeholder="Add clinical synthesis, diagnostic findings, and patient instructions here..."
+                    />
                   </Form.Item>
                 </div>
 
@@ -398,7 +555,9 @@ export default function DoctorForm(doc_data) {
                     onClick={() => {
                       form.resetFields();
                       if (appointmentData) {
-                        navigate("/view_patient_details", { state: { appointmentData } });
+                        navigate("/view_patient_details", {
+                          state: { appointmentData },
+                        });
                       } else {
                         navigate(-1);
                       }
@@ -407,7 +566,12 @@ export default function DoctorForm(doc_data) {
                   >
                     Cancel
                   </Button>
-                  <Button type="primary" htmlType="submit" loading={loading} className="bg-[#007F5F] border border-solid border-[#007F5F] px-[24px] h-[40px] font-semibold">
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    className="bg-[#007F5F] border border-solid border-[#007F5F] px-[24px] h-[40px] font-semibold"
+                  >
                     Submit Visit Report
                   </Button>
                 </div>
@@ -420,8 +584,14 @@ export default function DoctorForm(doc_data) {
                 centered
                 title={
                   <div className="text-center">
-                    <img src={Success} alt="Success" className="w-[60px] h-[60px] mb-[16px]" />
-                    <h2 className="text-[#007F5F] text-[20px] font-bold m-0">Report Submitted Successfully</h2>
+                    <img
+                      src={Success}
+                      alt="Success"
+                      className="w-[60px] h-[60px] mb-[16px]"
+                    />
+                    <h2 className="text-[#007F5F] text-[20px] font-bold m-0">
+                      Report Submitted Successfully
+                    </h2>
                   </div>
                 }
               >
@@ -434,7 +604,8 @@ export default function DoctorForm(doc_data) {
                         appointmentData?.patient?.user?.last_name ||
                       "the patient"}
                   </strong>{" "}
-                  has been recorded. An email notification has been dispatched to the sponsor.
+                  has been recorded. An email notification has been dispatched
+                  to the sponsor.
                 </p>
                 <div className="text-center mt-[24px]">
                   <Button
@@ -443,7 +614,9 @@ export default function DoctorForm(doc_data) {
                     onClick={() => {
                       setIsSuccessModalOpen(false);
                       if (appointmentData) {
-                        navigate("/view_patient_details", { state: { appointmentData } });
+                        navigate("/view_patient_details", {
+                          state: { appointmentData },
+                        });
                       } else {
                         navigate(-1);
                       }
@@ -454,7 +627,6 @@ export default function DoctorForm(doc_data) {
                 </div>
               </Modal>
             </div>
-
           </div>
         </div>
       </div>

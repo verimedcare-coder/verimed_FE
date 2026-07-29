@@ -688,7 +688,7 @@ export default function Appointments() {
   const handleDetailsCardClick = (appt) => {
     if (appt) {
       setSelectedAppointment(appt);
-      
+
       let parsedTime = undefined;
       if (appt.time) {
         const tStr = Array.isArray(appt.time) ? appt.time[0] : appt.time;
@@ -1015,7 +1015,7 @@ export default function Appointments() {
       service_purchased:
         selectedAppointment?.fullData?.service_purchased ?? true,
     };
-    
+
     setLoading(true);
     try {
       const endpoint = "/verimed_bookappoinment_create_update/";
@@ -1053,6 +1053,8 @@ export default function Appointments() {
       setLoading(false);
     }
   };
+
+  console.log("selectedAppointment", selectedAppointment);
 
   return (
     <div className="flex bg-[#F7F9FB]">
@@ -1344,13 +1346,17 @@ export default function Appointments() {
                             isAdminUser(userData)) && (
                             <Form.Item
                               name={
-                                isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
+                                isAdminUser(userData) &&
+                                selectedAppointment?.appointment_type !==
+                                  "Nurse Wellness Check"
                                   ? "doctorId"
                                   : "caretakerId"
                               }
                               label={
                                 <span className="font-medium text-[#334155]">
-                                  {isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
+                                  {isAdminUser(userData) &&
+                                  selectedAppointment?.appointment_type !==
+                                    "Nurse Wellness Check"
                                     ? "Assigned Doctor"
                                     : "Assigned Caretaker"}
                                 </span>
@@ -1366,7 +1372,9 @@ export default function Appointments() {
                                 placeholder={`Select ${isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check" ? "doctor" : "caretaker"}`}
                                 className="w-full"
                               >
-                                {isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check"
+                                {isAdminUser(userData) &&
+                                selectedAppointment?.appointment_type !==
+                                  "Nurse Wellness Check"
                                   ? doctors?.map((doc) => (
                                       <Option key={doc.id} value={doc.id}>
                                         {doc.user?.first_name}{" "}

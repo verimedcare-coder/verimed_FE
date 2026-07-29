@@ -38,6 +38,7 @@ import { getData } from "country-list";
 import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const enrollSchema = Yup.object().shape({
   patientName: Yup.string().required("Patient Name is required"),
@@ -129,7 +130,10 @@ const UserForm = ({ onFinish }) => {
 };
 
 const NOT_KNOWN_OPTIONS = [
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 const BLOOD_GROUP_OPTIONS = [
   { label: "A+", value: "A+" },
@@ -140,7 +144,10 @@ const BLOOD_GROUP_OPTIONS = [
   { label: "AB−", value: "AB−" },
   { label: "O+", value: "O+" },
   { label: "O−", value: "O−" },
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 const GENDER_OPTIONS = [
   { label: "Male", value: "male" },
@@ -150,7 +157,10 @@ const GENDER_OPTIONS = [
 const YES_NO_NOT_KNOWN_OPTIONS = [
   { label: "Yes", value: "Yes" },
   { label: "No", value: "No" },
-  { label: "Not Known at time of enrolment", value: "Not Known at time of enrolment" },
+  {
+    label: "Not Known at time of enrolment",
+    value: "Not Known at time of enrolment",
+  },
 ];
 
 export default function HeaderComponent() {
@@ -346,7 +356,12 @@ export default function HeaderComponent() {
       const data = await headerService.getSponsorPatients(storedSponsorId);
       return Array.isArray(data) ? data : [];
     },
-    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && storedSponsorId !== "0" && !!token,
+    enabled:
+      !!storedSponsorId &&
+      storedSponsorId !== "null" &&
+      storedSponsorId !== "undefined" &&
+      storedSponsorId !== "0" &&
+      !!token,
   });
 
   useEffect(() => {
@@ -407,18 +422,28 @@ export default function HeaderComponent() {
   };
 
   const patientList = useMemo(() => {
-    const list = Array.isArray(patients) && patients.length > 0
-      ? patients
-      : Array.isArray(careTakerPatients) ? careTakerPatients : [];
-    const uniqueList = Array.from(new Map(list.map(p => [String(p.id), p])).values());
+    const list =
+      Array.isArray(patients) && patients.length > 0
+        ? patients
+        : Array.isArray(careTakerPatients)
+          ? careTakerPatients
+          : [];
+    const uniqueList = Array.from(
+      new Map(list.map((p) => [String(p.id), p])).values(),
+    );
     return uniqueList.filter((p) => !checkIsLovedOne(p));
   }, [patients, careTakerPatients]);
 
   const lovedOnesList = useMemo(() => {
-    const list = Array.isArray(patients) && patients.length > 0
-      ? patients
-      : Array.isArray(careTakerPatients) ? careTakerPatients : [];
-    const uniqueList = Array.from(new Map(list.map(p => [String(p.id), p])).values());
+    const list =
+      Array.isArray(patients) && patients.length > 0
+        ? patients
+        : Array.isArray(careTakerPatients)
+          ? careTakerPatients
+          : [];
+    const uniqueList = Array.from(
+      new Map(list.map((p) => [String(p.id), p])).values(),
+    );
     return uniqueList.filter((p) => checkIsLovedOne(p));
   }, [patients, careTakerPatients]);
 
@@ -565,10 +590,13 @@ export default function HeaderComponent() {
 
       const patientprofile_data = {
         id: storedUpdateId ? Number(storedUpdateId) : null,
-        patient_profile_updateid: storedUpdateId ? Number(storedUpdateId) : null,
+        patient_profile_updateid: storedUpdateId
+          ? Number(storedUpdateId)
+          : null,
         updateid: storedUpdateId ? Number(storedUpdateId) : null,
         patientprofileid: storedUpdateId ? Number(storedUpdateId) : null,
-        reason_enrollment: editedData.reason_enrollment || editedData.reason || "Patient",
+        reason_enrollment:
+          editedData.reason_enrollment || editedData.reason || "Patient",
         reason: editedData.reason_enrollment || editedData.reason || "Patient",
         sponsorid: storedSponsorId ? Number(storedSponsorId) : null,
         caretakerid: editedData.caretakerid || null,
@@ -587,7 +615,8 @@ export default function HeaderComponent() {
         heart_rate: editedData.heartRate || editedData.heart_rate || "",
         oxygen: editedData.oxygen || "",
         temperature: editedData.temperature || "",
-        respiratory_rate: editedData.respiratoryRate || editedData.respiratory_rate || "",
+        respiratory_rate:
+          editedData.respiratoryRate || editedData.respiratory_rate || "",
 
         patient_dob: formattedDOB,
         patient_gender: editedData.patient_gender || "",
@@ -772,44 +801,36 @@ export default function HeaderComponent() {
   return (
     <>
       <ToastContainer />
-      <Header
-        className="flex justify-between items-center py-[12px] px-[24px] bg-white border-b-[1px] border-solid border-[#E5E7EB] shadow-[0_2px_8px_rgba(0,0,0,0.02)] h-auto min-h-[68px] leading-normal gap-[16px] flex-nowrap"
-      >
+      <Header className="flex justify-between items-center py-[12px] px-[24px] bg-white border-b-[1px] border-solid border-[#E5E7EB] shadow-[0_2px_8px_rgba(0,0,0,0.02)] h-auto min-h-[68px] leading-normal gap-[16px] flex-nowrap">
         {loading && (
-          <div
-            className="fixed inset-0 w-screen h-screen bg-[rgba(255,255,255,0.6)] z-[9999] flex items-center justify-center"
-          >
+          <div className="fixed inset-0 w-screen h-screen bg-[rgba(255,255,255,0.6)] z-[9999] flex items-center justify-center">
             <Spin tip="Updating..." size="large" />
           </div>
         )}
 
         {/* Left Side: Responsive Greeting */}
-        <div
-          className="flex flex-col justify-center mr-[8px] overflow-hidden min-w-[140px] flex-[0_1_auto]"
-        >
-          <div
-            className="text-[18px] font-bold text-[#1E293B] whitespace-nowrap overflow-hidden text-ellipsis"
-          >
-            Welcome Back, <span className="text-[#007F5F]">{user?.first_name || user?.username || "User"}</span>!
+        <div className="flex flex-col justify-center mr-[8px] overflow-hidden min-w-[140px] flex-[0_1_auto]">
+          <div className="text-[18px] font-bold text-[#1E293B] whitespace-nowrap overflow-hidden text-ellipsis">
+            Welcome Back,{" "}
+            <span className="text-[#007F5F]">
+              {user?.first_name || user?.username || "User"}
+            </span>
+            !
           </div>
           {user?.username && (
-            <div
-              className="text-[12px] text-[#64748B] font-medium whitespace-nowrap overflow-hidden mt-[2px] text-ellipsis"
-            >
+            <div className="text-[12px] text-[#64748B] font-medium whitespace-nowrap overflow-hidden mt-[2px] text-ellipsis">
               {user?.username}
             </div>
           )}
         </div>
 
         {/* Right Side: Action Controls */}
-        <div
-          className="flex items-center gap-[12px] shrink-0 flex-nowrap"
-        >
+        <div className="flex items-center gap-[12px] shrink-0 flex-nowrap">
           {user.user_role === "sponsor" && (
             <Select
               value={
                 [...patientList, ...lovedOnesList].some(
-                  (p) => String(p.id) === String(selectedPatient)
+                  (p) => String(p.id) === String(selectedPatient),
                 )
                   ? selectedPatient
                   : null
@@ -822,7 +843,9 @@ export default function HeaderComponent() {
               <Select.OptGroup label="Self">
                 {patientList.map((p) => {
                   const name =
-                    p.patient_name || p.patient?.patient_name || "Unknown Patient";
+                    p.patient_name ||
+                    p.patient?.patient_name ||
+                    "Unknown Patient";
                   return (
                     <Option key={p.id} value={p.id} label={name}>
                       <div className="flex items-center gap-[8px]">
@@ -869,15 +892,11 @@ export default function HeaderComponent() {
             placement="bottomRight"
             trigger={["click"]}
           >
-            <div
-              className="flex items-center gap-[6px] py-[6px] px-[10px] cursor-pointer rounded-[6px] border-[1px] border-solid border-[#E5E7EB] bg-[#FAFAFA]"
-            >
-              <img
-                src={flagIcon}
-                alt="Flag"
-                className="w-[18px] h-[18px]"
-              />
-              <span className="text-[13px] font-semibold text-[#374151]">{language}</span>
+            <div className="flex items-center gap-[6px] py-[6px] px-[10px] cursor-pointer rounded-[6px] border-[1px] border-solid border-[#E5E7EB] bg-[#FAFAFA]">
+              <img src={flagIcon} alt="Flag" className="w-[18px] h-[18px]" />
+              <span className="text-[13px] font-semibold text-[#374151]">
+                {language}
+              </span>
               <DownOutlined className="text-[10px] text-[#6B7280]" />
             </div>
           </Dropdown>
@@ -885,9 +904,7 @@ export default function HeaderComponent() {
           <Tooltip title="Logout">
             <Button
               shape="circle"
-              icon={
-                <LogoutOutlined className="text-[#FF4545] text-[16px]" />
-              }
+              icon={<LogoutOutlined className="text-[#FF4545] text-[16px]" />}
               className="bg-[#FF454514] rounded-[8px] w-[36px] h-[36px] flex items-center justify-center border-solid border-[#FF4545]"
               onClick={handleLogout}
             />
@@ -911,7 +928,11 @@ export default function HeaderComponent() {
             loading={loading}
             onClick={() => {
               const termsDom = document.getElementById("accept_terms");
-              if (termsDom && termsDom.checked && !form.getFieldValue("accept_terms")) {
+              if (
+                termsDom &&
+                termsDom.checked &&
+                !form.getFieldValue("accept_terms")
+              ) {
                 form.setFieldsValue({ accept_terms: true });
               }
               form
@@ -937,7 +958,8 @@ export default function HeaderComponent() {
             bp: editedData.bp || editedData.blood_pressure,
             heartRate: editedData.heartRate || editedData.heart_rate,
             sugar: editedData.sugar || editedData.blood_sugar,
-            respiratoryRate: editedData.respiratoryRate || editedData.respiratory_rate,
+            respiratoryRate:
+              editedData.respiratoryRate || editedData.respiratory_rate,
             patient_dob: editedData.patient_dob
               ? dayjs(editedData.patient_dob)
               : null,
@@ -952,9 +974,7 @@ export default function HeaderComponent() {
             });
           }}
         >
-          <div
-            className="max-h-[70vh] overflow-y-auto pr-[8px]"
-          >
+          <div className="max-h-[70vh] overflow-y-auto pr-[8px]">
             <h3>1. Personal Information</h3>
             <div className="grid grid-cols-[1fr_1fr] gap-[16px]">
               <Form.Item name="patientName" label="Patient Name">
@@ -1075,10 +1095,7 @@ export default function HeaderComponent() {
                 <DatePicker className="w-full" />
               </Form.Item>
               <Form.Item name="patient_gender" label="Gender">
-                <Select
-                  className="w-full"
-                  options={GENDER_OPTIONS}
-                />
+                <Select className="w-full" options={GENDER_OPTIONS} />
               </Form.Item>
               <Form.Item name="blood_group" label="Blood Group">
                 <Select
@@ -1506,7 +1523,9 @@ export default function HeaderComponent() {
               </Form.Item>
             </div>
 
-            <h3 className="text-black font-semibold border-b-[1px] border-solid border-[#ddd] pb-[4px] mt-[12px]">11. Upload Files</h3>
+            <h3 className="text-black font-semibold border-b-[1px] border-solid border-[#ddd] pb-[4px] mt-[12px]">
+              11. Upload Files
+            </h3>
             <Upload
               multiple
               fileList={editedData.patient_upload_files || []}
@@ -1544,21 +1563,28 @@ export default function HeaderComponent() {
               rules={[
                 {
                   validator: (_, value) => {
-                    const domChecked = document.getElementById("accept_terms")?.checked;
+                    const domChecked =
+                      document.getElementById("accept_terms")?.checked;
                     if (value || domChecked) {
                       if (!value && domChecked) {
                         form.setFieldsValue({ accept_terms: true });
                       }
                       return Promise.resolve();
                     }
-                    return Promise.reject("You must accept the terms to continue");
+                    return Promise.reject(
+                      "You must accept the terms to continue",
+                    );
                   },
                 },
               ]}
             >
               <Checkbox className="mt-[20px]">
                 I agree to the{" "}
-                <a href="https://verimed.care/consent-of-care" target="_blank" rel="noreferrer">
+                <a
+                  href="https://verimed.care/consent-of-care"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Consent of Care
                 </a>
                 ,{" "}

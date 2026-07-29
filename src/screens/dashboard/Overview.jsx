@@ -30,6 +30,7 @@ import {
 import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
 import { base_url, isAdminUser } from "../../constants/constants";
+import axios from "axios";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -125,19 +126,30 @@ export default function Overview() {
   const { data: patientsList = [], refetch: refetchPatients } = useQuery({
     queryKey: ["sponsorPatients", sponsorId],
     queryFn: async () => {
-      if (!sponsorId || sponsorId === "null" || sponsorId === "undefined" || sponsorId === "0") return [];
+      if (
+        !sponsorId ||
+        sponsorId === "null" ||
+        sponsorId === "undefined" ||
+        sponsorId === "0"
+      )
+        return [];
       const res = await overviewService.getSponsorPatients(sponsorId);
       return Array.isArray(res) ? res : [];
     },
-    enabled: !!sponsorId && (user?.user_role === "sponsor" || user?.user_role === "patient"),
+    enabled:
+      !!sponsorId &&
+      (user?.user_role === "sponsor" || user?.user_role === "patient"),
   });
 
   useEffect(() => {
     if (patientsList.length > 0) {
       const currentSelectedId = Number(
-        selectedPatientId || localStorage.getItem("selectedPatientId")
+        selectedPatientId || localStorage.getItem("selectedPatientId"),
       );
-      const selectedPatient = patientsList.find((p) => p.id === currentSelectedId) || patientsList[0] || null;
+      const selectedPatient =
+        patientsList.find((p) => p.id === currentSelectedId) ||
+        patientsList[0] ||
+        null;
       setPatientData(selectedPatient);
     } else {
       setPatientData(null);
@@ -1054,7 +1066,9 @@ export default function Overview() {
       key: "name",
       render: (_, record) => (
         <div>
-          <div className="font-semibold text-[#1B1B1B]">{record.patient_name || "Unknown"}</div>
+          <div className="font-semibold text-[#1B1B1B]">
+            {record.patient_name || "Unknown"}
+          </div>
           <div className="text-[12px] text-[#6B7280]">ID: {record.id}</div>
         </div>
       ),
@@ -1069,7 +1083,7 @@ export default function Overview() {
       title: "Care Taker",
       key: "caretaker",
       render: (_, record) => {
-        if (typeof record.caretaker === 'object' && record.caretaker !== null) {
+        if (typeof record.caretaker === "object" && record.caretaker !== null) {
           return record.caretaker.first_name || record.caretaker_name || "N/A";
         }
         return record.caretaker || record.caretaker_name || "N/A";
@@ -1080,26 +1094,36 @@ export default function Overview() {
       dataIndex: "reason_enrollment",
       key: "role",
       render: (text) => {
-        if (text === "Self") return <span className="text-[#007F5F] font-medium">Patient (Self)</span>;
-        if (text === "Loved One") return <span className="text-[#2F80ED] font-medium">Loved One</span>;
-        return <span className="text-gray-500 font-medium">{text || "Patient"}</span>;
+        if (text === "Self")
+          return (
+            <span className="text-[#007F5F] font-medium">Patient (Self)</span>
+          );
+        if (text === "Loved One")
+          return <span className="text-[#2F80ED] font-medium">Loved One</span>;
+        return (
+          <span className="text-gray-500 font-medium">{text || "Patient"}</span>
+        );
       },
     },
     {
       title: "Action",
       key: "action",
       render: (_, record) => (
-        <Button 
-          type="primary" 
-          size="small" 
-          onClick={() => navigate("/view_patient_details", { state: { appointmentData: record } })}
+        <Button
+          type="primary"
+          size="small"
+          onClick={() =>
+            navigate("/view_patient_details", {
+              state: { appointmentData: record },
+            })
+          }
           style={{ background: "#007F5F", borderColor: "#007F5F" }}
         >
           View
         </Button>
       ),
       width: 100,
-    }
+    },
   ];
 
   return (
@@ -1134,12 +1158,12 @@ export default function Overview() {
                 </SectionHeader>
 
                 <div className="w-full overflow-x-auto mt-4">
-                  <Table 
-                    dataSource={patientsList} 
-                    columns={patientTableColumns} 
-                    pagination={{ pageSize: 5 }} 
+                  <Table
+                    dataSource={patientsList}
+                    columns={patientTableColumns}
+                    pagination={{ pageSize: 5 }}
                     rowKey="id"
-                    scroll={{ x: 'max-content' }}
+                    scroll={{ x: "max-content" }}
                     className="min-w-full"
                   />
                 </div>

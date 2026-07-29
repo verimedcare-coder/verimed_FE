@@ -29,6 +29,7 @@ import {
   MoreOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 const { Option } = Select;
 const { TextArea } = Input;
 
@@ -36,9 +37,7 @@ function SectionHeader({ title, children }) {
   return (
     <div className="flex justify-between items-center flex-wrap gap-[10px] min-w-0">
       <p className="text-[16px] font-semibold text-[#1B1B1B]">{title}</p>
-      <div className="flex gap-[10px] flex-wrap">
-        {children}
-      </div>
+      <div className="flex gap-[10px] flex-wrap">{children}</div>
     </div>
   );
 }
@@ -323,9 +322,7 @@ export default function Departments() {
   ];
 
   return (
-    <div
-      className="flex h-screen bg-[#F7F9FB]"
-    >
+    <div className="flex h-screen bg-[#F7F9FB]">
       {/* Sidebar */}
       <div className="w-[240px] shrink-0">
         <Sider />
@@ -335,25 +332,17 @@ export default function Departments() {
       <div className="flex-1 flex flex-col">
         <Header />
 
-        <div
-          className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden"
-        >
+        <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
           {/* Stats Section */}
-          <div
-            className="flex items-center justify-between gap-[12px] w-full"
-          >
+          <div className="flex items-center justify-between gap-[12px] w-full">
             {deptStats.map((stat, idx) => (
               <div
                 key={stat.id}
                 className="min-w-[160px] flex-none bg-white rounded-[8px] p-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] flex flex-col justify-between"
               >
                 {/* ...card content... */}
-                <div
-                  className="flex items-center justify-start gap-[10px]"
-                >
-                  <div
-                    className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]"
-                  >
+                <div className="flex items-center justify-start gap-[10px]">
+                  <div className="h-[30px] w-[30px] rounded-[100px] flex items-center justify-center bg-[#007F5F33]">
                     <svg
                       width="18"
                       height="18"
@@ -400,29 +389,17 @@ export default function Departments() {
                       </defs>
                     </svg>
                   </div>
-                  <p
-                    className="text-[#6C7688] text-[14px] font-medium"
-                  >
+                  <p className="text-[#6C7688] text-[14px] font-medium">
                     {stat.name}
                   </p>
                 </div>
-                <div
-                  className="flex items-center justify-between"
-                >
-                  <p
-                    className="text-[#2E2E2E] text-[18px] font-extrabold"
-                  >
+                <div className="flex items-center justify-between">
+                  <p className="text-[#2E2E2E] text-[18px] font-extrabold">
                     {stat.count}
                   </p>
-                  <div
-                    className="flex flex-col items-end justify-center w-full"
-                  >
-                    <div
-                      className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]"
-                    >
-                      <p
-                        className="text-[white] text-[12px] font-medium"
-                      >
+                  <div className="flex flex-col items-end justify-center w-full">
+                    <div className="bg-[#27AE60] h-[20px] w-[49px] flex items-center justify-center rounded-[6px]">
+                      <p className="text-[white] text-[12px] font-medium">
                         {stat.diff}
                       </p>
                     </div>
@@ -526,10 +503,7 @@ export default function Departments() {
             </Form.Item>
 
             {/* Logo Upload */}
-            <Form.Item
-              label="Department Logo"
-              className="col-span-2"
-            >
+            <Form.Item label="Department Logo" className="col-span-2">
               <Upload
                 listType="picture"
                 maxCount={1}
@@ -543,9 +517,7 @@ export default function Departments() {
 
           {/* Action Buttons */}
           <Form.Item className="mb-[0px]">
-            <div
-              className="flex justify-end gap-[12px]"
-            >
+            <div className="flex justify-end gap-[12px]">
               <Button
                 onClick={() => setAddDrawerOpen(false)}
                 className="h-[40px] border-[1px] border-solid border-[#ccc] bg-white"
@@ -586,7 +558,9 @@ export default function Departments() {
             <div className="flex flex-col gap-[16px]">
               {/* Department Logo */}
               <div className="flex items-center gap-[16px]">
-                <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">Department Logo</p>
+                <p className="text-[14px] font-medium mb-[4px] block text-[#2E2E2E]">
+                  Department Logo
+                </p>
                 <Upload
                   listType="picture"
                   maxCount={1}
@@ -663,9 +637,7 @@ export default function Departments() {
 
             {/* Action Buttons */}
             <Form.Item className="mb-[0px] mt-[24px]">
-              <div
-                className="flex justify-end gap-[12px]"
-              >
+              <div className="flex justify-end gap-[12px]">
                 <Button
                   onClick={() => setViewDrawerOpen(false)}
                   className="h-[40px] border-[1px] border-solid border-[#ccc] bg-white"
