@@ -152,6 +152,8 @@ export default function Departments() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [logoFile, setLogoFile] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Get token from localStorage
   const token = localStorage.getItem("token");
@@ -160,9 +162,33 @@ export default function Departments() {
     queryKey: ["departments"],
     queryFn: async () => {
       const data = await departmentsService.getDepartments();
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+
+      return data.map((item) => {
+        return {
+          ...item,
+          hospital_name: item.dep_ID,
+          hospital_address: item.address,
+          hospital_phone: item.contact_phone,
+          dep_email: item.contact_email,
+          dep_exprience: item.description,
+          dep_category: item.dep_type,
+        };
+      });
     },
     enabled: !!token,
+  });
+
+  const filteredDepartmentList = departmentList.filter((dept) => {
+    const matchesSearch = searchText
+      ? dept.dep_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        dept.hospital_name?.toLowerCase().includes(searchText.toLowerCase())
+      : true;
+    const matchesCategory =
+      selectedCategory !== "All"
+        ? dept.dep_category === selectedCategory
+        : true;
+    return matchesSearch && matchesCategory;
   });
 
   const handleCreateDepartment = async (values) => {
@@ -171,12 +197,12 @@ export default function Departments() {
       const formData = new FormData();
       const deptData = {
         dep_name: values.dep_name,
-        hospital_name: values.hospital_name,
-        hospital_address: values.hospital_address,
-        hospital_phone: values.hospital_phone,
-        dep_email: values.dep_email,
-        dep_exprience: values.dep_exprience,
-        dep_category: values.dep_category,
+        dep_ID: values.hospital_name,
+        address: values.hospital_address,
+        contact_phone: values.hospital_phone,
+        contact_email: values.dep_email,
+        description: values.dep_exprience,
+        dep_type: values.dep_category,
       };
       formData.append("verimed_department", JSON.stringify(deptData));
       if (logoFile) {
@@ -213,13 +239,12 @@ export default function Departments() {
       const deptData = {
         depupdateid: selectedDept.id,
         dep_name: values.dep_name,
-        hospital_name: values.hospital_name,
-        hospital_address: values.hospital_address,
-        hospital_phone: values.hospital_phone,
-        dep_email: values.dep_email,
-        dep_ID: values.dep_ID,
-        dep_exprience: values.dep_exprience,
-        dep_category: values.dep_category,
+        dep_ID: values.hospital_name,
+        address: values.hospital_address,
+        contact_phone: values.hospital_phone,
+        contact_email: values.dep_email,
+        description: values.dep_exprience,
+        dep_type: values.dep_category,
       };
       formData.append("verimed_department", JSON.stringify(deptData));
       if (logoFile) {
@@ -261,10 +286,15 @@ export default function Departments() {
 
   const columns = [
     {
-      title: "Department ID",
-      dataIndex: "dep_ID",
-      key: "dep_ID",
-      width: 150,
+      title: "Logo",
+      key: "logo",
+      width: 80,
+      render: (_, record) => (
+        <Avatar
+          src={record.logo || `https://ui-avatars.com/api/?name=${record.dep_name || "D"}`}
+          className="object-cover"
+        />
+      ),
     },
     {
       title: "Department Name",
@@ -329,10 +359,10 @@ export default function Departments() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
 
-        <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
+        <div className="p-[20px] overflow-y-auto overflow-x-hidden gap-[20px] flex flex-col flex-1">
           {/* Stats Section */}
           <div className="flex items-center justify-between gap-[12px] w-full">
             {deptStats.map((stat, idx) => (
@@ -413,24 +443,39 @@ export default function Departments() {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-[12px] p-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-[16px] w-auto min-w-0">
+          <div className="bg-white rounded-[12px] p-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-[16px] ">
             <SectionHeader title="Department List">
               <div className="flex items-center gap-[12px]">
-                <Button className="h-[38px] rounded-[12px] border-solid border-[#0000001F]">
-                  Aug 2025 <CalendarOutlined />
-                </Button>
+                <Input.Search
+                  placeholder="Search departments..."
+                  allowClear
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: 200 }}
+                  className="rounded-[12px]"
+                />
+                <Select
+                  defaultValue="All"
+                  style={{ width: 150 }}
+                  onChange={(value) => setSelectedCategory(value)}
+                  className="rounded-[12px]"
+                >
+                  <Option value="All">All Categories</Option>
+                  <Option value="General">General</Option>
+                  <Option value="Specialty">Specialty</Option>
+                  <Option value="Emergency">Emergency</Option>
+                  <Option value="Diagnostic">Diagnostic</Option>
+                </Select>
                 <PrimaryBtn
                   icon={<PlusOutlined />}
                   name="New Department"
                   onClick={() => setAddDrawerOpen(true)}
                 />
-                <SecondaryBtn name="Filter" icon={<FilterOutlined />} />
               </div>
             </SectionHeader>
 
             <Table
               columns={columns}
-              dataSource={departmentList}
+              dataSource={filteredDepartmentList}
               rowKey="id"
               pagination={{ pageSize: 10 }}
               scroll={{ x: true }}

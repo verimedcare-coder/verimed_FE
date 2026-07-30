@@ -1883,82 +1883,74 @@ export default function Overview() {
               {/* Main Container */}
               <div className="flex justify-between gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]">
                 {/* Left - Care Team Details */}
-                <div className="bg-white border-[1px] border-solid border-[#E5E7EB] rounded-[10px] p-[16px] flex-1 font-['Inter',sans-serif]">
+                <div className="bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 rounded-[20px] p-[24px] flex-1 font-['Inter',sans-serif] flex flex-col gap-[20px]">
                   {/* Header */}
-                  <div className="flex justify-between items-center mb-[16px]">
-                    <h3 className="text-[16px] font-medium m-0 text-[#2E2E2E]">
+                  <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+                    <h3 className="text-[18px] font-bold m-0 text-gray-800 tracking-tight">
                       Care Team Details
                     </h3>
                     <SecondaryBtn name="view reports" onClick={() => {}} />
                   </div>
 
-                  <div className="mb-[16px] border-t-[1px] border-solid border-[#E5E7EB]" />
-
                   {/* Info Row */}
-                  <div className="flex gap-[16px]">
+                  <div className="flex gap-[24px] items-start">
                     <img
                       src={careTeam.avatar || patientdetails}
                       alt="Profile"
-                      className="w-[60px] h-[60px] rounded-[12px] shrink-0 object-cover"
+                      className="w-[80px] h-[80px] rounded-[20px] shrink-0 object-cover border border-gray-100 shadow-sm"
                     />
 
-                    <div className="flex-1 flex flex-col gap-[14px]">
+                    <div className="flex-1 flex flex-col gap-[16px]">
                       {/* Row 1 */}
-                      <div className="grid grid-cols-3 gap-[10px_20px]">
-                        <div>
-                          <div className="text-[13px] text-[#6B7280]">Name</div>
-                          <div className="text-[14px] font-medium">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px]">
+                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Name</div>
+                          <div className="text-[14px] font-bold text-gray-700">
                             {careTeam.name}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[13px] text-[#6B7280]">Role</div>
-                          <div className="text-[14px] font-medium">
+                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Role</div>
+                          <div className="text-[14px] font-bold text-gray-700">
                             {careTeam.role}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[13px] text-[#6B7280]">
+                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
                             Contact Number
                           </div>
-                          <div className="text-[14px] font-medium">
+                          <div className="text-[14px] font-bold text-gray-700">
                             {careTeam.contact}
                           </div>
                         </div>
                       </div>
 
-                      {/* Divider */}
-                      <div className="border-t-[1px] border-solid border-[#E5E7EB]" />
-
                       {/* Row 2 */}
-                      <div className="grid grid-cols-2 gap-[10px_20px]">
-                        <div>
-                          <div className="text-[13px] text-[#6B7280]">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
+                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
                             Next Visit
                           </div>
-                          <div className="text-[14px] font-medium">
+                          <div className="text-[14px] font-bold text-gray-700">
                             {careTeam.nextVisit}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[13px] text-[#6B7280]">
+                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                          <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
                             Visit Frequency
                           </div>
-                          <div className="text-[14px] font-medium">
+                          <div className="text-[14px] font-bold text-gray-700">
                             {careTeam.frequency}
                           </div>
                         </div>
                       </div>
 
-                      {/* Divider */}
-                      <div className="border-t-[1px] border-solid border-[#E5E7EB]" />
-
                       {/* Row 3 */}
-                      <div>
-                        <div className="text-[13px] text-[#6B7280]">
+                      <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
                           Specialization
                         </div>
-                        <div className="text-[14px] font-medium">
+                        <div className="text-[14px] font-bold text-gray-700">
                           {careTeam.specialization}
                         </div>
                       </div>
@@ -1968,39 +1960,37 @@ export default function Overview() {
 
                 {/* Right - Upcoming Appointments */}
 
-                <div className="bg-white w-[300px] rounded-[10px] border-[1px] border-solid border-[#E5E7EB] p-[20px] flex flex-col gap-[15px] font-['Inter',sans-serif]">
+                <div className="bg-white w-[350px] rounded-[20px] shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 p-[24px] flex flex-col gap-[20px] font-['Inter',sans-serif]">
                   {/* Header */}
-                  <div className="flex justify-between items-center">
-                    <p className="text-[16px] font-medium text-[#1B1B1B]">
+                  <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+                    <p className="text-[18px] font-bold text-gray-800 tracking-tight m-0">
                       Upcoming Appointments
                     </p>
-                    <span className="text-[14px] text-[#B38C1D] cursor-pointer">
+                    <span className="text-[13px] font-semibold text-teal-600 hover:text-teal-700 cursor-pointer transition-colors">
                       View All
                     </span>
                   </div>
 
-                  <div className="mb-[8px] border-t-[1px] border-solid border-[#E5E7EB]" />
-
                   {/* Calendar Row */}
-                  <div className="bg-[#E8F0EA] rounded-[6px] py-[6px] px-[10px] text-[14px] flex justify-between items-center">
-                    <span className="flex items-center gap-[8px]">
+                  <div className="bg-teal-50 text-teal-800 rounded-[12px] py-[10px] px-[16px] text-[14px] font-semibold flex justify-between items-center shadow-sm">
+                    <span className="flex items-center gap-[12px]">
                       <button
                         onClick={handlePrevMonth}
-                        className="border-none bg-transparent cursor-pointer text-[16px]"
+                        className="border-none bg-transparent cursor-pointer text-[18px] hover:scale-110 transition-transform"
                       >
                         ‹
                       </button>
                       {formatMonthYear(currentMonth)}
                       <button
                         onClick={handleNextMonth}
-                        className="border-none bg-transparent cursor-pointer text-[16px]"
+                        className="border-none bg-transparent cursor-pointer text-[18px] hover:scale-110 transition-transform"
                       >
                         ›
                       </button>
                     </span>
 
                     <span
-                      className="cursor-pointer text-[18px]"
+                      className="cursor-pointer text-[16px] hover:scale-110 transition-transform"
                       onClick={() => setShowCalendar(!showCalendar)}
                     >
                       {showCalendar ? (
@@ -2012,10 +2002,10 @@ export default function Overview() {
                   </div>
 
                   {/* Calendar Grid */}
-                  {showCalendar && (
-                    <div className="grid grid-cols-7 gap-[4px] mt-[-15px] text-center text-[12px] p-[10px] rounded-br-[8px] rounded-bl-[8px] bg-[#007F5F14]">
+                  <div className={`transition-all duration-300 overflow-hidden ${showCalendar ? "max-h-[300px] opacity-100 mt-[-10px]" : "max-h-0 opacity-0 m-0"}`}>
+                    <div className="grid grid-cols-7 gap-y-[10px] gap-x-[4px] text-center text-[12px] p-[16px] rounded-b-[16px] bg-white border border-t-0 border-gray-100 shadow-sm mx-1">
                       {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                        <div key={d} className="font-semibold">
+                        <div key={d} className="font-bold text-gray-400">
                           {d}
                         </div>
                       ))}
@@ -2026,20 +2016,20 @@ export default function Overview() {
                         return (
                           <div
                             key={day.toISOString()}
-                            className={`py-[4px] px-0 rounded-[6px] text-center relative ${isAppointment ? "bg-gradient-to-b from-[#B78520] to-[#F0C330] text-white font-semibold" : "bg-transparent text-inherit font-normal"}`}
+                            className={`w-[32px] h-[32px] flex items-center justify-center mx-auto rounded-full text-center relative transition-colors cursor-pointer ${isAppointment ? "bg-teal-500 text-white font-bold shadow-md" : "bg-transparent text-gray-600 font-medium hover:bg-gray-100"}`}
                           >
                             {day.getDate()}
                             {isAppointment && (
-                              <div className="w-[5px] h-[5px] bg-[#B38C1D] rounded-full absolute bottom-[2px] left-1/2 -translate-x-1/2" />
+                              <div className="w-[4px] h-[4px] bg-white rounded-full absolute bottom-[4px] left-1/2 -translate-x-1/2" />
                             )}
                           </div>
                         );
                       })}
                     </div>
-                  )}
+                  </div>
 
                   {/* Appointment Cards */}
-                  {/* Appointment Cards */}
+                  <div className="flex flex-col gap-3">
                   {appointmentList &&
                     appointmentList
                       .filter(
@@ -2056,55 +2046,36 @@ export default function Overview() {
                           <div
                             key={appt.id}
                             onClick={() => handleCardClick(appt)}
-                            className={`flex gap-[10px] items-center rounded-[8px] p-[10px] cursor-pointer transition-colors duration-200 ${isSelected ? "bg-[#004C91] text-white" : "bg-[#F3F4F6] text-black"}`}
+                            className={`flex gap-[16px] items-center rounded-[16px] p-[16px] cursor-pointer transition-all duration-300 border ${isSelected ? "bg-gradient-to-r from-[#007F5F] to-teal-500 text-white border-teal-500 shadow-md scale-[1.02]" : "bg-white text-gray-800 border-gray-100 hover:border-teal-200 hover:shadow-sm"}`}
                           >
                             {/* Date Box */}
-                            <div className="bg-[#FFFFFF] text-[#000] rounded-[6px] w-[45px] text-center py-[5px] px-[0px]">
-                              <div className="text-[13px]">
+                            <div className={`rounded-[12px] w-[50px] text-center py-[8px] px-[4px] flex flex-col justify-center items-center shadow-sm ${isSelected ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                              <div className="text-[12px] font-bold uppercase tracking-wider opacity-90">
                                 {appt.date.toLocaleDateString("en-US", {
                                   weekday: "short",
                                 })}
                               </div>
-                              <div className="text-[16px] font-semibold">
+                              <div className="text-[20px] font-black leading-tight mt-[-2px]">
                                 {appt.date.getDate()}
                               </div>
                             </div>
 
                             {/* Info */}
                             <div className="grow">
-                              <div className="text-[14px] font-medium">
+                              <div className={`text-[15px] font-bold tracking-tight ${isSelected ? "text-white" : "text-gray-800"}`}>
                                 {appt.doctor}
                               </div>
-                              <div className="text-[13px]">{appt.time}</div>
+                              <div className={`text-[13px] font-medium mt-[2px] ${isSelected ? "text-teal-50" : "text-gray-500"}`}>
+                                {appt.time}
+                              </div>
                             </div>
                           </div>
                         );
                       })}
+                  </div>
                 </div>
               </div>
 
-              {/* Medical History */}
-              <div className="bg-white rounded-[12px] p-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] w-full flex flex-col gap-[20px] min-w-0">
-                <SectionHeader title="Medical History">
-                  <Primarybtn
-                    name="Request Appointment"
-                    onClick={() =>
-                      navigate("/appointments", {
-                        state: { openBookingModal: true },
-                      })
-                    }
-                  />
-                </SectionHeader>
-
-                <Table
-                  columns={columns}
-                  dataSource={medicalReports}
-                  pagination={{ pageSize: 5 }}
-                  // scroll={{ x: true }}
-                  bordered
-                  className="w-full"
-                />
-              </div>
             </>
           )}
 

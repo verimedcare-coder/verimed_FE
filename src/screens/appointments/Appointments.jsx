@@ -1343,56 +1343,61 @@ export default function Appointments() {
                       >
                         <div className="grid grid-cols-[repeat(3,1fr)] gap-[16px]">
                           {(userData?.user_role === "doctor" ||
-                            isAdminUser(userData)) && (
-                            <Form.Item
-                              name={
-                                isAdminUser(userData) &&
-                                selectedAppointment?.appointment_type !==
-                                  "Nurse Wellness Check"
-                                  ? "doctorId"
-                                  : "caretakerId"
-                              }
-                              label={
-                                <span className="font-medium text-[#334155]">
-                                  {isAdminUser(userData) &&
-                                  selectedAppointment?.appointment_type !==
-                                    "Nurse Wellness Check"
-                                    ? "Assigned Doctor"
-                                    : "Assigned Caretaker"}
-                                </span>
-                              }
-                              rules={[
-                                {
-                                  required: true,
-                                  message: `Please select a ${isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check" ? "doctor" : "caretaker"}`,
-                                },
-                              ]}
-                            >
-                              <Select
-                                placeholder={`Select ${isAdminUser(userData) && selectedAppointment?.appointment_type !== "Nurse Wellness Check" ? "doctor" : "caretaker"}`}
-                                className="w-full"
-                              >
-                                {isAdminUser(userData) &&
-                                selectedAppointment?.appointment_type !==
-                                  "Nurse Wellness Check"
-                                  ? doctors?.map((doc) => (
-                                      <Option key={doc.id} value={doc.id}>
-                                        {doc.user?.first_name}{" "}
-                                        {doc.user?.last_name}
-                                      </Option>
-                                    ))
-                                  : caretakers?.map((caretaker) => (
-                                      <Option
-                                        key={caretaker.id}
-                                        value={caretaker.id}
-                                      >
-                                        {caretaker.user?.first_name}{" "}
-                                        {caretaker.user?.last_name}
-                                      </Option>
-                                    ))}
-                              </Select>
-                            </Form.Item>
-                          )}
+                            isAdminUser(userData)) && (() => {
+                              const doctorServices = [
+                                "Comprehensive Physician Intake In Person",
+                                "In Home Follow Up Physician Visit",
+                                "Virtual Physician Visit",
+                                "Comprehensive Physician Intake (In-Person)",
+                                "In-Home Follow-up Physician Visit"
+                              ];
+                              const isDoctorService = doctorServices.includes(selectedAppointment?.appointment_type);
+                              
+                              return (
+                                <Form.Item
+                                  name={
+                                    isAdminUser(userData) && isDoctorService
+                                      ? "doctorId"
+                                      : "caretakerId"
+                                  }
+                                  label={
+                                    <span className="font-medium text-[#334155]">
+                                      {isAdminUser(userData) && isDoctorService
+                                        ? "Assigned Doctor"
+                                        : "Assigned Caretaker"}
+                                    </span>
+                                  }
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: `Please select a ${isAdminUser(userData) && isDoctorService ? "doctor" : "caretaker"}`,
+                                    },
+                                  ]}
+                                >
+                                  <Select
+                                    placeholder={`Select ${isAdminUser(userData) && isDoctorService ? "doctor" : "caretaker"}`}
+                                    className="w-full"
+                                  >
+                                    {isAdminUser(userData) && isDoctorService
+                                      ? doctors?.map((doc) => (
+                                          <Option key={doc.id} value={doc.id}>
+                                            {doc.user?.first_name}{" "}
+                                            {doc.user?.last_name}
+                                          </Option>
+                                        ))
+                                      : caretakers?.map((caretaker) => (
+                                          <Option
+                                            key={caretaker.id}
+                                            value={caretaker.id}
+                                          >
+                                            {caretaker.user?.first_name}{" "}
+                                            {caretaker.user?.last_name}
+                                          </Option>
+                                        ))}
+                                  </Select>
+                                </Form.Item>
+                              );
+                            })()}
 
                           <Form.Item
                             name="appointment_date"

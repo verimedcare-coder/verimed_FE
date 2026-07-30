@@ -73,6 +73,8 @@ export default function MyLovedOnes() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm] = Form.useForm();
   const [editLoading, setEditLoading] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedHistoryRecord, setSelectedHistoryRecord] = useState(null);
 
   const countryOptions = useMemo(() => {
     return getData().map((country) => ({
@@ -185,6 +187,23 @@ export default function MyLovedOnes() {
           </div>
         );
       },
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          className="bg-gradient-to-r from-[#007F5F] to-teal-500 hover:from-[#006b4f] hover:to-teal-600 border-none rounded-full px-5 shadow-sm transition-all duration-300 transform hover:scale-105 hover:shadow-md flex items-center justify-center font-medium"
+          onClick={() => {
+            setSelectedHistoryRecord(record);
+            setIsHistoryModalOpen(true);
+          }}
+        >
+          View
+        </Button>
+      ),
     },
   ];
 
@@ -450,46 +469,34 @@ export default function MyLovedOnes() {
     },
   ];
 
-  const appointmentDetailsDynamic = vitalsData
-    ? [
-        {
-          date: vitalsData.appointment_date
-            ? new Date(vitalsData.appointment_date).toLocaleDateString(
-                "en-US",
-                {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }
-              ) + ` – ${vitalsData.appointment_time?.slice(0, 5)}`
-            : "N/A",
-          type: vitalsData.appointment_type || "N/A",
-          provider: vitalsData.doc?.doctor_id || "N/A",
-          status: vitalsData.appointment_status || "N/A",
-          comments: [vitalsData.care_taker_notes, vitalsData.doctor_notes].filter(Boolean).join("\n\n") || "",
-        },
-      ]
-    : [];
+  const appointmentDetailsDynamic = (medicalReports || []).map((report) => ({
+    date: report.appointment_date
+      ? new Date(report.appointment_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }) + (report.appointment_time ? ` – ${report.appointment_time.slice(0, 5)}` : "")
+      : "N/A",
+    type: report.appointment_type || "N/A",
+    provider: report.doctor || "N/A",
+    status: "Completed",
+    comments: report.care_taker_notes || "",
+  }));
 
-  const timelineDataDynamic = vitalsData
-    ? vitalsData.time_line
-      ? vitalsData.time_line.split("|").map((entry) => {
-          const [dateStr, status] = entry.split(":").map((s) => s.trim());
-          return {
-            title: status,
-            details: [
-              vitalsData.treatment_performed || "No treatment info",
-              [vitalsData.care_taker_notes, vitalsData.doctor_notes].filter(Boolean).join("\n") || "",
-            ],
-            date: new Date(dateStr).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }),
-          };
+  const timelineDataDynamic = (medicalReports || []).map((report) => ({
+    title: report.appointment_type || "Appointment Details",
+    details: [
+      report.treatment_performed || "Checkup",
+      report.care_taker_notes || "No additional comments"
+    ],
+    date: report.appointment_date
+      ? new Date(report.appointment_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
         })
-      : []
-    : [];
+      : "N/A",
+  }));
 
   return (
     <div
@@ -502,32 +509,21 @@ export default function MyLovedOnes() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col font-['Inter',sans-serif]">
         <div className="shrink-0">
           <Header />
         </div>
-        <div className="bg-[#F7F9FB] p-[30px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-[30px] overflow-y-auto gap-[24px] flex flex-col items-center overflow-x-hidden">
           {/* Content area */}
-          {/* Back Navigation Button */}
-          <div className="w-full flex justify-start mb-[-10]">
-            <Button
-              type="link"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/overview")}
-              className="text-[#007F5F] text-[15px] font-semibold p-0 flex items-center gap-[6px]"
-            >
-              Back to Overview
-            </Button>
-          </div>
 
           {/* patient details */}
-          <div className="rounded-[12px] p-[20px] w-full flex flex-col gap-[20px] min-w-0">
+          <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-shadow duration-300 border border-solid border-gray-100 p-[24px] w-full flex flex-col gap-[20px] min-w-0">
             <SectionHeader title="Patient Details">
               <div className="flex items-center gap-[12px]">
                 <Button
                   type="primary"
                   icon={<EditOutlined />}
-                  className="bg-[#007F5F] rounded-[20px] font-medium border border-solid border-[#007F5F]"
+                  className="bg-gradient-to-r from-[#007F5F] to-teal-500 hover:from-[#006b4f] hover:to-teal-600 border-none rounded-full font-medium px-5 shadow-sm transition-all duration-300 transform hover:scale-105"
                   onClick={handleEditOpen}
                 >
                   Edit Profile & Photo
@@ -541,7 +537,7 @@ export default function MyLovedOnes() {
             </SectionHeader>
 
             {/* Profile */}
-            <div className="flex items-center gap-[20px] border border-solid border-[#E6E8EB] rounded-[10px] p-[15px] min-w-0 flex-wrap">
+            <div className="flex items-center gap-[24px] border border-solid border-gray-100 bg-gray-50/50 rounded-[16px] p-[20px] min-w-0 flex-wrap transition-colors duration-300 hover:bg-gray-50">
               <img
                 src={getPhotoUrl(
                   patientData?.photo_view_url || patientData?.photo
@@ -625,16 +621,18 @@ export default function MyLovedOnes() {
               </div>
             </div>
             {/* Vitals */}
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[15px] min-w-0 w-full">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[16px] min-w-0 w-full mt-2">
               {vitals.map((item, i) => (
-                <div key={i} className="flex items-center gap-[10px] border border-solid border-[#1B1B1B1A] rounded-[10px] p-[10px] min-h-[80px] min-w-0">
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    className="w-[24px] h-[24px] shrink-0"
-                  />
-                  <div>
-                    <p className="text-[14px] font-semibold mb-[2px]">{item.label}</p>
+                <div key={i} className="flex items-center gap-[12px] bg-white border border-solid border-gray-100 shadow-sm rounded-[16px] p-[16px] min-h-[85px] min-w-0 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md cursor-pointer group">
+                  <div className="w-[40px] h-[40px] rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-teal-50 transition-colors duration-300 shrink-0">
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      className="w-[20px] h-[20px]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] text-gray-500 font-medium mb-[4px]">{item.label}</p>
                     <div className="flex items-center gap-[5px]">
                       <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ background: item.color }}></div>
                       <span className="text-[14px] text-[#2E2E2E] break-words">{item.value}</span>
@@ -645,24 +643,30 @@ export default function MyLovedOnes() {
             </div>
           </div>
 
-          {/* medical history */}
-          <div className="bg-white rounded-[12px] p-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.05)] w-full flex flex-col gap-[16px] min-w-0">
+          {/* Medical History */}
+          <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-shadow duration-300 border border-solid border-gray-100 p-[24px] w-full flex flex-col gap-[24px] min-w-0 mt-2">
             <SectionHeader title="Medical History">
-              <Primarybtn
-                name="Request Appointment"
-                onClick={() => navigate("/appointments", { state: { openBookingModal: true } })}
-              />
-              {/* <SecondaryBtn name="update membership" /> */}
+              <Button
+                type="primary"
+                onClick={() =>
+                  navigate("/appointments", {
+                    state: { openBookingModal: true },
+                  })
+                }
+                className="bg-gradient-to-r from-[#007F5F] to-teal-500 hover:from-[#006b4f] hover:to-teal-600 border-none rounded-full font-medium px-5 shadow-sm transition-all duration-300 transform hover:scale-105"
+              >
+                Request Appointment
+              </Button>
             </SectionHeader>
 
-            <Table
-              columns={columns}
-              dataSource={medicalReports}
-              pagination={{ pageSize: 5 }}
-              // scroll={{ x: true }}
-              bordered
-              className="w-full"
-            />
+            <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm">
+              <Table
+                columns={columns}
+                dataSource={medicalReports}
+                pagination={{ pageSize: 5 }}
+                className="w-full custom-modern-table"
+              />
+            </div>
           </div>
 
           {/* Appointment Details + Timeline */}
@@ -820,82 +824,92 @@ export default function MyLovedOnes() {
               ))}
             </div> */}
             {/* LEFT: Appointment Details Timeline */}
-            <div className="bg-white rounded-[12px] p-[20px] flex flex-col gap-[20px]">
+            <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-shadow duration-300 border border-solid border-gray-100 p-[24px] flex flex-col gap-[20px]">
               <SectionHeader title="Appointment Details" />
-              <div className="relative ml-[20px] flex flex-col gap-[20px]">
-                <div className="absolute left-[5px] top-0 bottom-0 w-[2px] bg-[#2E2E2E] opacity-10"></div>
-                {appointmentDetailsDynamic.map((item, index) => (
-                  <div key={index} className="flex items-start gap-[15px] relative">
-                    <div className="w-[12px] h-[12px] rounded-full bg-[#004E89] mt-[5px] shrink-0 z-10"></div>
-                    <div className="bg-[#004E890A] border border-solid border-[#E6E8EB] rounded-[10px] p-[15px] flex-1 gap-[16px]">
-                      <div className="flex justify-between items-center mb-[-10px]">
-                        <p className="text-[12px] font-semibold mb-[8px] text-[#2E2E2E]">{item.date}</p>
+              <div className="relative ml-[12px] flex flex-col gap-[24px] mt-2">
+                <div className="absolute left-[7px] top-2 bottom-0 w-[2px] bg-teal-100 rounded-full"></div>
+                {appointmentDetailsDynamic.length > 0 ? (
+                  appointmentDetailsDynamic.map((item, index) => (
+                    <div key={index} className="flex items-start gap-[20px] relative group">
+                      <div className="w-[16px] h-[16px] rounded-full bg-teal-500 mt-[6px] shrink-0 z-10 border-4 border-white shadow-sm group-hover:scale-125 transition-transform duration-300"></div>
+                      <div className="bg-white border border-solid border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 rounded-[16px] p-[16px] flex-1 flex flex-col gap-[8px]">
+                        <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                          <p className="text-[14px] font-bold text-gray-800">{item.date}</p>
+                          {item.status && (
+                            <span className="bg-teal-50 text-teal-700 text-[12px] font-semibold px-3 py-1 rounded-full">
+                              {item.status}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                          {item.type && (
+                            <div>
+                              <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Type</p>
+                              <p className="text-[14px] font-medium text-gray-700">{item.type}</p>
+                            </div>
+                          )}
+                          {item.provider && (
+                            <div>
+                              <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Provider</p>
+                              <p className="text-[14px] font-medium text-gray-700">{item.provider}</p>
+                            </div>
+                          )}
+                        </div>
+                        {item.comments && (
+                          <div className="mt-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Comments</p>
+                            <p className="text-[14px] text-gray-600 leading-relaxed">{item.comments}</p>
+                          </div>
+                        )}
                       </div>
-                      {item.type && (
-                        <p className="text-[14px] font-medium text-[#2E2E2E]">
-                          Type:{" "}
-                          <span className="text-[#06152B99]">
-                            {item.type}
-                          </span>
-                        </p>
-                      )}
-                      {item.provider && (
-                        <p className="text-[14px] font-medium text-[#2E2E2E]">
-                          Assigned Provider:{" "}
-                          <span className="text-[#06152B99]">
-                            {item.provider}
-                          </span>
-                        </p>
-                      )}
-                      {item.status && (
-                        <p className="text-[14px] font-medium text-[#2E2E2E]">
-                          Status:{" "}
-                          <span className="text-[#06152B99]">
-                            {item.status}
-                          </span>
-                        </p>
-                      )}
-                      {item.comments && (
-                        <p className="text-[14px] font-medium text-[#2E2E2E]">
-                          Comments:{" "}
-                          <span className="text-[#06152B99]">
-                            {item.comments}
-                          </span>
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-gray-400 italic py-4">No appointment details available.</div>
+                )}
               </div>
             </div>
 
             {/* RIGHT: Timeline */}
-            <div className="bg-transparent rounded-[12px] p-[20px] flex flex-col border border-solid border-[#007F5F4D]">
+            <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-shadow duration-300 border border-solid border-gray-100 p-[24px] flex flex-col gap-[16px]">
               <SectionHeader title="Timeline" />
-              {timelineDataDynamic.map((item, index) => (
-                <div key={index} className="mb-[20px] relative border-b border-solid border-[#007F5F4D] pb-[20px]">
-                  <p className="text-[14px] font-normal text-[#2E2E2E]">
-                    {item.title}
-                  </p>
-                  {Array.isArray(item.details) && item.details.length > 0 ? (
-                    <ul>
-                      {item.details.map((d, i) => (
-                        <li
-                          key={i}
-                          className="text-[14px] font-normal text-[#06152BB2]"
-                        >
-                          {d}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[14px] font-normal text-[#06152BB2]">
-                      No details available
-                    </p>
-                  )}
-                  <p className="text-[12px] italic text-[#6B7280] absolute bottom-[-5px] right-[8px]">{item.date}</p>
-                </div>
-              ))}
+              <div className="flex flex-col mt-2">
+                {timelineDataDynamic.length > 0 ? (
+                  timelineDataDynamic.map((item, index) => (
+                    <div key={index} className="relative border-l-2 border-teal-100 pl-[20px] pb-[24px] last:pb-0">
+                      <div className="absolute left-[-5px] top-[4px] w-[8px] h-[8px] rounded-full bg-teal-500 shadow-[0_0_0_4px_white]"></div>
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-[15px] font-bold text-gray-800 tracking-tight">
+                          {item.title}
+                        </p>
+                        <p className="text-[12px] font-medium bg-gray-50 text-gray-500 px-2 py-1 rounded-md">
+                          {item.date}
+                        </p>
+                      </div>
+                      
+                      {Array.isArray(item.details) && item.details.length > 0 ? (
+                        <ul className="flex flex-col gap-1 mt-2">
+                          {item.details.map((d, i) => (
+                            <li
+                              key={i}
+                              className="text-[14px] text-gray-600 flex items-start gap-2"
+                            >
+                              <span className="text-teal-500 mt-[4px] text-[10px]">●</span>
+                              <span className="leading-relaxed">{d}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-[13px] italic text-gray-400 mt-1">
+                          No details available
+                        </p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 italic py-4">No timeline events available.</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1132,6 +1146,71 @@ export default function MyLovedOnes() {
           </div>
         </Form>
       </Modal>
+
+      {/* History Details Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+            <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
+              <EditOutlined className="text-teal-600 text-lg" />
+            </div>
+            <span className="text-[20px] font-bold text-gray-800 tracking-tight">Medical History Details</span>
+          </div>
+        }
+        open={isHistoryModalOpen}
+        onCancel={() => setIsHistoryModalOpen(false)}
+        footer={
+          <div className="flex justify-end pt-4">
+             <Button type="primary" onClick={() => setIsHistoryModalOpen(false)} className="bg-[#007F5F] border-none rounded-full px-6 shadow-sm hover:scale-105 transition-transform duration-300">
+                Close
+             </Button>
+          </div>
+        }
+        width={750}
+        className="modern-modal"
+        styles={{
+          mask: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+          content: { borderRadius: '20px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }
+        }}
+      >
+        {selectedHistoryRecord && (
+          <div className="flex flex-col gap-[24px] mt-2 font-['Inter',sans-serif]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+              <InfoItem label="Date" value={selectedHistoryRecord.appointment_date || "N/A"} />
+              <InfoItem label="Time" value={selectedHistoryRecord.appointment_time || "N/A"} />
+              <InfoItem label="Doctor/Nurse" value={selectedHistoryRecord.doctor || "N/A"} />
+              <InfoItem label="Diagnostic" value={selectedHistoryRecord.treatment_performed || "N/A"} />
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <p className="text-gray-500 text-[14px] font-semibold tracking-wide uppercase">Comments & Notes</p>
+              <div className="bg-white p-5 rounded-2xl border-l-4 border-l-teal-500 border border-gray-100 shadow-sm min-h-[80px] whitespace-pre-wrap text-gray-700 leading-relaxed text-[15px]">
+                {selectedHistoryRecord.care_taker_notes || <span className="text-gray-400 italic">No comments available.</span>}
+              </div>
+            </div>
+
+            {selectedHistoryRecord.documents && selectedHistoryRecord.documents.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p className="text-gray-500 text-[14px] font-semibold tracking-wide uppercase">Uploaded Files</p>
+                <div className="flex flex-wrap gap-3">
+                  {selectedHistoryRecord.documents.map((doc, i) => (
+                    <a
+                      key={i}
+                      href={doc.view_link || doc.download_link || doc.file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-all duration-300"
+                    >
+                      <UploadOutlined className="text-lg" />
+                      <span className="font-medium text-[14px]">View Document {i + 1}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -1151,10 +1230,10 @@ function SectionHeader({ title, children }) {
 function InfoItem({ label, value }) {
   return (
     <div className="min-w-0">
-      <p className="text-[#6B7280] text-[14px] font-medium mb-[3px] break-words">
+      <p className="text-gray-500 text-[13px] font-semibold uppercase tracking-wider mb-[4px] break-words">
         {label}
       </p>
-      <p className="text-[16px] font-semibold text-[#2E2E2E] break-words">
+      <p className="text-[15px] font-medium text-gray-800 break-words leading-snug">
         {value}
       </p>
     </div>

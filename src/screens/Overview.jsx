@@ -2674,28 +2674,6 @@ export default function Overview() {
                 </div>
               </div>
 
-              {/* Medical History */}
-              <div style={tableContainer}>
-                <SectionHeader title="Medical History">
-                  <Primarybtn
-                    name="Request Appointment"
-                    onClick={() =>
-                      navigate("/appointments", {
-                        state: { openBookingModal: true },
-                      })
-                    }
-                  />
-                </SectionHeader>
-
-                <Table
-                  columns={columns}
-                  dataSource={medicalReports}
-                  pagination={{ pageSize: 5 }}
-                  // scroll={{ x: true }}
-                  bordered
-                  style={{ width: "100%" }}
-                />
-              </div>
             </>
           )}
 
