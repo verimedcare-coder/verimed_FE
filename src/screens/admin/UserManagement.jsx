@@ -567,38 +567,68 @@ export default function UserManagement() {
   };
 
   const handleStatusChange = async (newStatus) => {
-    let userId = null;
+    let targetId = null;
+    let isPatient = activeTab === "patients";
+
     switch (activeTab) {
       case "sponsors":
-        userId = selectedSponsor?.id;
+        targetId = selectedSponsor?.id;
         break;
       case "doctors":
-        userId = selectedDoctor?.id;
+        targetId = selectedDoctor?.id;
         break;
       case "caretakers":
-        userId = selectedCaretaker?.id;
+        targetId = selectedCaretaker?.id;
         break;
       case "patients":
-        userId = selectedPatient?.id;
+        targetId = selectedPatient?.id;
         break;
       default:
         console.warn("⚠️ Unknown user type:", activeTab);
         return;
     }
-    if (!userId) {
+    if (!targetId) {
       notification.error({
         message: "ERROR",
-        description: "Unable to identify user ID.",
+        description: "Unable to identify ID.",
         placement: "topRight",
       });
       return;
     }
     try {
-      const endpoint = "/user_update/";
-      const updateData = { updateid: userId, is_active_state: newStatus };
+      const endpoint = isPatient ? "/patientprofile_create_update/" : "/user_update/";
       const formdata = new FormData();
-      formdata.append("user_update_data", JSON.stringify(updateData));
-      console.log("🚀 Updating user status:", updateData);
+      
+      if (isPatient) {
+        const updateData = { 
+          id: targetId,
+          patientprofileid: targetId,
+          patient_profile_updateid: targetId,
+          updateid: targetId,
+          is_active_state: newStatus 
+        };
+        formdata.append("patientprofile_data", JSON.stringify(updateData));
+      } else {
+        const record =
+          activeTab === "sponsors"
+            ? selectedSponsor
+            : activeTab === "doctors"
+            ? selectedDoctor
+            : selectedCaretaker;
+
+        const updateData = {
+          updateid: targetId,
+          first_name: record?.first_name || "",
+          last_name: record?.last_name || "",
+          email: record?.email || "",
+          countrycode: record?.country_code || record?.countrycode || "CM",
+          phone: record?.phone ? String(record.phone).replace(/\D/g, "") : "",
+          is_active_state: newStatus,
+        };
+        formdata.append("user_update_data", JSON.stringify(updateData));
+      }
+
+      console.log("🚀 Updating status:", formdata.get("user_update_data") || formdata.get("patientprofile_data"));
       const response = await apiClient.patch(endpoint, formdata);
       const result = response.data;
       console.log("✅ Status Update Success:", result);
@@ -624,36 +654,69 @@ export default function UserManagement() {
   };
 
   const handleDeleteClick = async () => {
-    let userId = null;
+    let targetId = null;
+    let isPatient = activeTab === "patients";
+
     switch (activeTab) {
       case "sponsors":
-        userId = selectedSponsor?.id;
+        targetId = selectedSponsor?.id;
         break;
       case "doctors":
-        userId = selectedDoctor?.id;
+        targetId = selectedDoctor?.id;
         break;
       case "caretakers":
-        userId = selectedCaretaker?.id;
+        targetId = selectedCaretaker?.id;
         break;
-      case "patients":
-        userId = selectedPatient?.id;
+      case "patients": {
+        // Try all possible locations for the user ID
+        const pUser = selectedPatient?.patientProfile?.user;
+        const pUserId = typeof pUser === 'object' ? pUser?.id : pUser; // Handles if pUser is an object or a primitive (number/string)
+        
+        targetId = selectedPatient?.user_id 
+          || pUserId 
+          || selectedPatient?.user?.id 
+          || (typeof selectedPatient?.user === 'object' ? selectedPatient?.user?.id : selectedPatient?.user)
+          || selectedPatient?.patientProfile?.user_id;
+
+        // If STILL not found, let's try to find the user in allUsers by email or phone as a last resort
+        if (!targetId && selectedPatient?.email) {
+            const matchedUser = allusers.find(u => u.email === selectedPatient.email);
+            if (matchedUser) targetId = matchedUser.id;
+        }
+
+        // Absolute fallback: use the patient profile ID so the API call at least triggers. 
+        // If it's the wrong ID type, the backend will return 400, but it will show in the Network tab.
+        if (!targetId) {
+            targetId = selectedPatient?.id;
+        }
         break;
+      }
       default:
         return;
     }
 
-    if (!userId) {
+    if (!targetId) {
+      console.error("DELETE FAILED: Unable to identify ID. selectedPatient:", selectedPatient);
       notification.error({
         message: "DELETE FAILED",
-        description: "Unable to identify user ID.",
+        description: "Unable to identify User ID for deletion. The patient might not have an associated user account.",
         placement: "topRight",
       });
       return;
     }
 
     try {
-      const payload = { deleteids: [userId] };
-      await apiClient.delete("/user_delete/", {
+      let endpoint = "/user_delete/";
+      let payload = { deleteids: [targetId] };
+
+      // If we are deleting a patient, we use the Sponsor Patient Delete API
+      // and we must pass the patient profile ID instead of the User ID.
+      if (activeTab === "patients") {
+        endpoint = "/sponsor_patient_delete/";
+        payload = { deleteids: [selectedPatient?.id] }; // Use patient profile ID
+      }
+
+      await apiClient.delete(endpoint, {
         data: payload,
       });
 
@@ -661,22 +724,22 @@ export default function UserManagement() {
         if (!oldData) return oldData;
         return {
           allUsers:
-            oldData.allUsers?.filter((item) => item.id !== userId) || [],
+            oldData.allUsers?.filter((item) => item.id !== targetId) || [],
           sponsors:
             oldData.sponsors?.filter(
-              (item) => item.id !== userId && item.user?.id !== userId,
+              (item) => item.id !== targetId && item.user?.id !== targetId,
             ) || [],
           caretakers:
             oldData.caretakers?.filter(
-              (item) => item.id !== userId && item.user?.id !== userId,
+              (item) => item.id !== targetId && item.user?.id !== targetId,
             ) || [],
           patients:
             oldData.patients?.filter(
-              (item) => item.id !== userId && item.user?.id !== userId,
+              (item) => item.id !== targetId && item.user?.id !== targetId,
             ) || [],
           doctors:
             oldData.doctors?.filter(
-              (item) => item.id !== userId && item.user?.id !== userId,
+              (item) => item.id !== targetId && item.user?.id !== targetId,
             ) || [],
         };
       });

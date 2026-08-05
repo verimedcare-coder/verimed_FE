@@ -29,9 +29,9 @@ import "react-toastify/dist/ReactToastify.css";
 const enrollSchema = Yup.object().shape({
   name: Yup.string().required("Patient Name is required"),
   phone: Yup.string().required("Phone Number is required"),
-  country_code: Yup.string().required("Country Code is required"),
-  patient_dob: Yup.date().nullable().required("Date of Birth is required"),
-  patient_gender: Yup.string().required("Gender is required"),
+  country_code: Yup.string().nullable(),
+  patient_dob: Yup.date().nullable(),
+  patient_gender: Yup.string().nullable(),
 });
 
 const calculateAge = (dob) => {
@@ -75,6 +75,7 @@ export default function MyLovedOnes() {
   const [editLoading, setEditLoading] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedHistoryRecord, setSelectedHistoryRecord] = useState(null);
+  const [imageHash, setImageHash] = useState(Date.now());
 
   const countryOptions = useMemo(() => {
     return getData().map((country) => ({
@@ -218,11 +219,14 @@ export default function MyLovedOnes() {
 
   const getPhotoUrl = (url) => {
     if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
-    if (url?.startsWith("http")) return url;
+    if (url?.startsWith("http")) {
+      const hasQuery = url.includes("?");
+      return `${url}${hasQuery ? "&" : "?"}t=${imageHash}`;
+    }
     url = url.replace(/^\/media\/+/i, "/");
     const base = base_url.replace(/\/+$/, "");
     const cleanedUrl = url.replace(/^\/+/, "");
-    return `${base}/${cleanedUrl}`;
+    return `${base}/${cleanedUrl}?t=${imageHash}`;
   };
 
   const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
@@ -309,69 +313,99 @@ export default function MyLovedOnes() {
         values.patient_dob && dayjs.isDayjs(values.patient_dob)
           ? values.patient_dob.format("YYYY-MM-DD")
           : values.patient_dob || null;
-      const patientprofile_data = {
-        id: Number(patientData.id),
+      const patientprofile_update_data = {
         patient_profile_updateid: Number(patientData.id),
-        updateid: Number(patientData.id),
-        patientprofileid: Number(patientData.id),
-        patient_name: values.name || "",
-        phone: values.phone || "",
-        email: values.email || "",
-        age: values.age || "",
+        sponsorid: Number(storedSponsorId),
+        doctorid: patientData.doctorid || patientData.doctor || 1,
+        caretakerid: patientData.caretakerid || patientData.caretaker || null,
         patient_dob: formattedDOB,
         patient_gender: values.patient_gender || "",
         blood_group: values.blood_group || "",
-        height: values.height || "",
-        weight: values.weight || "",
-        blood_pressure: values.blood_pressure || "",
-        heart_rate: values.heart_rate || "",
-        blood_sugar: values.blood_sugar || "",
-        oxygen: values.oxygen || "",
-        temperature: values.temperature || "",
-        respiratory_rate: values.respiratory_rate || "",
-        country_code: values.country_code || patientData.country_code || "",
         patient_home_address: values.patient_home_address || "",
         primary_language: values.primary_language || "",
         religion: values.religion || "",
+        escalate_to_physician: values.escalate_to_physician || "Yes",
+
         emer_con_name: values.emer_con_name || "",
         emer_con_relation: values.emer_con_relation || "",
+        emer_con_coun_of_residen: values.emer_con_coun_of_residen || "",
         emer_con_country_code: values.emer_con_country_code || "",
         emer_con_phone: values.emer_con_phone || "",
+        emer_con_email: values.emer_con_email || "",
+
         local_con_name: values.local_con_name || "",
         local_con_relation: values.local_con_relation || "",
         local_con_country_code: values.local_con_country_code || "",
         local_con_phone: values.local_con_phone || "",
-        medical_his_diagnosis: values.condition || "",
-        medical_his_cancer: values.medical_his_cancer || "",
+
+        reason_enrollment: values.reason_enrollment || patientData.reason_enrollment || patientData.reason || "",
+        reason_other: values.reason_other || null,
+
+        medical_his_diagnosis: values.condition || values.medical_his_diagnosis || "",
+        medical_his_cancer: values.medical_his_cancer || null,
+        medical_his_other: values.medical_his_other || "",
+        medical_his_provided_medi_care: values.medical_his_provided_medi_care || "",
         medical_his_major_surgeries: values.medical_his_major_surgeries || "",
         medical_his_curr_symp: values.medical_his_curr_symp || "",
-        last_doctor_visit: values.last_doctor_visit || null,
-        has_regular_doctor: values.has_regular_doctor || "",
-        regular_doctor_name: values.regular_doctor_name || "",
+
+        medication_name: values.medication_name || "",
+        medication_dose: values.medication_dose || "",
+        medication_frequency: values.medication_frequency || "",
+        medication_reason: values.medication_reason || "",
+        medication_issues: values.medication_issues || false,
+        medication_issues_explain: values.medication_issues_explain || null,
+
+        allergies_issues: values.allergies_issues || false,
         allergies_drug: values.allergies_drug || "",
         allergies_food: values.allergies_food || "",
-        reason_enrollment: patientData.reason_enrollment || patientData.reason || "Loved One",
-        reason: patientData.reason_enrollment || patientData.reason || "Loved One",
-        sponsorid: Number(storedSponsorId),
-        sponsor: Number(storedSponsorId),
+
+        functional_bathe: values.functional_bathe || "",
+        functional_dress: values.functional_dress || "",
+        functional_eat: values.functional_eat || "",
+        functional_walk: values.functional_walk || "",
+        functional_use_bathroom: values.functional_use_bathroom || "",
+        functional_daily_activity: values.functional_daily_activity || "",
+        functional_manage_finance: values.functional_manage_finance || "",
+        functional_any_falls: values.functional_any_falls || false,
+        functional_how_many: values.functional_how_many || null,
+        functional_memory_pbms: values.functional_memory_pbms || false,
+
+        lifestyle_daily_routine: values.lifestyle_daily_routine || "",
+        lifestyle_dietary_habits: values.lifestyle_dietary_habits || "",
+        lifestyle_sleep_quality: values.lifestyle_sleep_quality || "",
+        lifestyle_physical_activity: values.lifestyle_physical_activity || "",
+        lifestyle_alcohol_use: values.lifestyle_alcohol_use || "",
+        lifestyle_pain_complaints: values.lifestyle_pain_complaints || "",
+        lifestyle_pain_where: values.lifestyle_pain_where || "",
+
+        social_emotion_health: values.social_emotion_health || "",
+        social_spiritual_needs: values.social_spiritual_needs || "",
+        social_trusted_person: values.social_trusted_person || false,
+        social_name: values.social_name || "",
+
+        goals_family_hope: values.goals_family_hope || "",
+        goals_special_instructions: values.goals_special_instructions || "",
+        goals_term_membership: values.goals_term_membership || "",
       };
+
       const formData = new FormData();
-      formData.append("patientprofile_data", JSON.stringify(patientprofile_data));
+      formData.append("patientprofile_update_data", JSON.stringify(patientprofile_update_data));
       if (values.photo && values.photo.length > 0) {
         const fileObj = values.photo[0].originFileObj || values.photo[0];
-        formData.append("patient_photo", fileObj);
         formData.append("photo", fileObj);
-        formData.append("user_photo", fileObj);
+        formData.append("patient_photo", fileObj);
       }
       await myLovedOnesService.patchPatientProfile(formData);
-      message.success("Loved one profile updated successfully!");
+      toast.success("Loved one profile updated successfully!", { position: "top-right", autoClose: 3000 });
       setIsEditModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["sponsorPatients"] });
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["lovedOnesMedicalHistory"] });
+      setImageHash(Date.now());
     } catch (error) {
       console.error("Error updating loved one:", error);
-      message.error("Failed to update loved one profile.");
+      const backendError = error.response?.data?.error || error.response?.data?.message || "Failed to update loved one profile.";
+      toast.error(backendError, { position: "top-right", autoClose: 3000 });
     } finally {
       setEditLoading(false);
     }
@@ -502,7 +536,6 @@ export default function MyLovedOnes() {
     <div
       className="flex h-screen bg-[#F7F9FB]"
     >
-      <ToastContainer />
       {/* Sidebar */}
       <div className="w-[240px] shrink-0">
         <Sider />
