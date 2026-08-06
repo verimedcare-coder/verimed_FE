@@ -581,7 +581,8 @@ export default function UserManagement() {
         targetId = selectedCaretaker?.id;
         break;
       case "patients":
-        targetId = selectedPatient?.id;
+        // Try to get the User ID for the patient, fallback to profile id
+        targetId = selectedPatient?.user_id || selectedPatient?.user?.id || selectedPatient?.id;
         break;
       default:
         console.warn("⚠️ Unknown user type:", activeTab);
@@ -596,37 +597,14 @@ export default function UserManagement() {
       return;
     }
     try {
-      const endpoint = isPatient ? "/patientprofile_create_update/" : "/user_update/";
+      const endpoint = "/user_update/";
       const formdata = new FormData();
       
-      if (isPatient) {
-        const updateData = { 
-          id: targetId,
-          patientprofileid: targetId,
-          patient_profile_updateid: targetId,
-          updateid: targetId,
-          is_active_state: newStatus 
-        };
-        formdata.append("patientprofile_data", JSON.stringify(updateData));
-      } else {
-        const record =
-          activeTab === "sponsors"
-            ? selectedSponsor
-            : activeTab === "doctors"
-            ? selectedDoctor
-            : selectedCaretaker;
-
-        const updateData = {
-          updateid: targetId,
-          first_name: record?.first_name || "",
-          last_name: record?.last_name || "",
-          email: record?.email || "",
-          countrycode: record?.country_code || record?.countrycode || "CM",
-          phone: record?.phone ? String(record.phone).replace(/\D/g, "") : "",
-          is_active_state: newStatus,
-        };
-        formdata.append("user_update_data", JSON.stringify(updateData));
-      }
+      const updateData = {
+        updateid: targetId,
+        is_active_state: newStatus,
+      };
+      formdata.append("user_update_data", JSON.stringify(updateData));
 
       console.log("🚀 Updating status:", formdata.get("user_update_data") || formdata.get("patientprofile_data"));
       const response = await apiClient.patch(endpoint, formdata);
@@ -708,17 +686,23 @@ export default function UserManagement() {
     try {
       let endpoint = "/user_delete/";
       let payload = { deleteids: [targetId] };
+      let method = "delete";
 
-      // If we are deleting a patient, we use the Sponsor Patient Delete API
+      // If we are deleting a patient, we use the patientprofile_list API with the DELETE method
       // and we must pass the patient profile ID instead of the User ID.
       if (activeTab === "patients") {
-        endpoint = "/sponsor_patient_delete/";
-        payload = { deleteids: [selectedPatient?.id] }; // Use patient profile ID
+        endpoint = "/patientprofile_list/";
+        payload = { patientprofiledeleteids: [selectedPatient?.id] }; // Use patient profile ID
+        method = "delete";
       }
 
-      await apiClient.delete(endpoint, {
-        data: payload,
-      });
+      if (method === "post") {
+        await apiClient.post(endpoint, payload);
+      } else {
+        await apiClient.delete(endpoint, {
+          data: payload,
+        });
+      }
 
       queryClient.setQueryData(["userManagementLists", token], (oldData) => {
         if (!oldData) return oldData;
@@ -1059,7 +1043,7 @@ export default function UserManagement() {
           (s?.first_name && s?.last_name
             ? `${s.first_name.toLowerCase()}_${s.last_name.toLowerCase()}`
             : "N/A"),
-        avatar: s?.photo_view_url || s?.photo,
+        avatar: s?.photo_view_url || (s?.photo && s.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${s.photo}` : s?.photo),
         name: (s?.first_name || "") + " " + (s?.last_name || ""),
         email: s?.email,
         phone: trimPhoneNumber(s?.phone),
@@ -1077,7 +1061,7 @@ export default function UserManagement() {
           (d?.first_name && d?.last_name
             ? `${d.first_name.toLowerCase()}_${d.last_name.toLowerCase()}`
             : d?.email?.split("@")[0] || "N/A"),
-        avatar: d?.photo_view_url || d?.photo,
+        avatar: d?.photo_view_url || (d?.photo && d.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${d.photo}` : d?.photo),
         name: (d?.first_name || "") + " " + (d?.last_name || ""),
         email: d?.email,
         phone: trimPhoneNumber(d?.phone),
@@ -1095,7 +1079,7 @@ export default function UserManagement() {
           (c?.first_name && c?.last_name
             ? `${c.first_name.toLowerCase()}_${c.last_name.toLowerCase()}`
             : c?.email?.split("@")[0] || "N/A"),
-        avatar: c?.photo_view_url || c?.photo,
+        avatar: c?.photo_view_url || (c?.photo && c.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${c.photo}` : c?.photo),
         name: (c?.first_name || "") + " " + (c?.last_name || ""),
         email: c?.email,
         phone: trimPhoneNumber(c?.phone),
@@ -1114,7 +1098,7 @@ export default function UserManagement() {
           (p?.first_name && p?.last_name
             ? `${p.first_name.toLowerCase()}_${p.last_name.toLowerCase()}`
             : p?.email?.split("@")[0] || `patient_${p?.id || "N/A"}`),
-        avatar: p?.photo_view_url || p?.photo,
+        avatar: p?.photo_view_url || (p?.photo && p.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${p.photo}` : p?.photo),
         name: (p?.first_name || "") + " " + (p?.last_name || ""),
         email: p?.email,
         phone: trimPhoneNumber(p?.phone),
@@ -1148,7 +1132,10 @@ export default function UserManagement() {
 
   const UserForm = ({ onFinish, activeTab }) => {
     const [form] = Form.useForm();
-    const normFile = (e) => (Array.isArray(e) ? e : e && e.file.originFileObj);
+    const normFile = (e) => {
+      if (Array.isArray(e)) return e;
+      return e?.fileList?.[0]?.originFileObj || e?.fileList?.[0] || e?.file;
+    };
     return (
       <Form
         layout="vertical"
