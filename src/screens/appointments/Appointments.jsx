@@ -474,8 +474,10 @@ export default function Appointments() {
         appointment_history: values.appointment_history || null,
         time_line: values.time_line || null,
         appointment_reason: values.appointment_reason || null,
-        appointment_status: values.appointment_status || null,
+        appointment_status: values.appointment_status || "Pending",
         service_purchased: true,
+        is_paid: true,
+        payment_status: "Completed",
       };
 
       const formData = new FormData();

@@ -610,12 +610,12 @@ export default function MyLovedOnes() {
                             : typeof patientData.diagnosis === "object"
                             ? patientData.diagnosis.name || JSON.stringify(patientData.diagnosis)
                             : patientData.diagnosis
-                          : "Hypertension Type 2 Diabetes"
+                          : "N/A"
                       }
                     />
                     <InfoItem
                       label="Primary Doctor"
-                      value={patientData?.primary_doctor || "Dr. Sarah Johnson"}
+                      value={patientData?.primary_doctor || "N/A"}
                     />
                     <InfoItem
                       label="Allergies"
@@ -626,7 +626,7 @@ export default function MyLovedOnes() {
                             : typeof patientData.allergies === "object"
                             ? patientData.allergies.name || JSON.stringify(patientData.allergies)
                             : patientData.allergies
-                          : "Penicillin"
+                          : "N/A"
                       }
                     />
                     <InfoItem
@@ -640,12 +640,12 @@ export default function MyLovedOnes() {
                             : typeof patientData.medication === "object"
                             ? patientData.medication.name || JSON.stringify(patientData.medication)
                             : patientData.medication
-                          : "Lisinopril 10mg"
+                          : "N/A"
                       }
                     />
                     <InfoItem
                       label="Insurance Provider"
-                      value={patientData?.insurance || "BlueShield"}
+                      value={patientData?.insurance || "N/A"}
                     />
                   </>
                 ) : (
