@@ -321,6 +321,7 @@ export default function Appointments() {
   };
 
   const bookAppointment = async (values) => {
+    if (loading) return;
     try {
       await bookingValidationSchema.validate(
         {
@@ -533,11 +534,13 @@ export default function Appointments() {
 
   const handleConfirmCheckout = async () => {
     if (!pendingBookingValues) return;
+    const currentValues = pendingBookingValues;
+    setPendingBookingValues(null);
     setCheckoutLoading(true);
     try {
       await apiClient.post(
-        pendingBookingValues.endpoint,
-        pendingBookingValues.formData,
+        currentValues.endpoint,
+        currentValues.formData,
       );
       setIsCheckoutModalOpen(false);
       setIsModalOpen(false);
@@ -548,6 +551,7 @@ export default function Appointments() {
     } catch (error) {
       console.error("Error finalizing appointment booking:", error);
       message.error("Booking failed. Please try again.");
+      setPendingBookingValues(currentValues);
     } finally {
       setCheckoutLoading(false);
     }
@@ -704,8 +708,8 @@ export default function Appointments() {
       }
 
       assignForm.setFieldsValue({
-        caretakerId:
-          appt.fullData?.caretaker?.id || appt.fullData?.caretaker || undefined,
+        caretakerId: undefined,
+        doctorId: undefined,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
         appointment_time: parsedTime,
         care_taker_notes:
@@ -1345,61 +1349,56 @@ export default function Appointments() {
                       >
                         <div className="grid grid-cols-[repeat(3,1fr)] gap-[16px]">
                           {(userData?.user_role === "doctor" ||
-                            isAdminUser(userData)) && (() => {
-                              const doctorServices = [
-                                "Comprehensive Physician Intake In Person",
-                                "In Home Follow Up Physician Visit",
-                                "Virtual Physician Visit",
-                                "Comprehensive Physician Intake (In-Person)",
-                                "In-Home Follow-up Physician Visit"
-                              ];
-                              const isDoctorService = doctorServices.includes(selectedAppointment?.appointment_type);
-                              
-                              return (
-                                <Form.Item
-                                  name={
-                                    isAdminUser(userData) && isDoctorService
-                                      ? "doctorId"
-                                      : "caretakerId"
-                                  }
-                                  label={
-                                    <span className="font-medium text-[#334155]">
-                                      {isAdminUser(userData) && isDoctorService
-                                        ? "Assigned Doctor"
-                                        : "Assigned Caretaker"}
-                                    </span>
-                                  }
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: `Please select a ${isAdminUser(userData) && isDoctorService ? "doctor" : "caretaker"}`,
-                                    },
-                                  ]}
+                            isAdminUser(userData)) && (
+                            <>
+                              <Form.Item
+                                name="caretakerId"
+                                label={
+                                  <span className="font-medium text-[#334155]">
+                                    Assigned Caretaker
+                                  </span>
+                                }
+                              >
+                                <Select
+                                  placeholder="Select caretaker"
+                                  className="w-full"
+                                  allowClear
                                 >
-                                  <Select
-                                    placeholder={`Select ${isAdminUser(userData) && isDoctorService ? "doctor" : "caretaker"}`}
-                                    className="w-full"
-                                  >
-                                    {isAdminUser(userData) && isDoctorService
-                                      ? doctors?.map((doc) => (
-                                          <Option key={doc.id} value={doc.id}>
-                                            {doc.user?.first_name}{" "}
-                                            {doc.user?.last_name}
-                                          </Option>
-                                        ))
-                                      : caretakers?.map((caretaker) => (
-                                          <Option
-                                            key={caretaker.id}
-                                            value={caretaker.id}
-                                          >
-                                            {caretaker.user?.first_name}{" "}
-                                            {caretaker.user?.last_name}
-                                          </Option>
-                                        ))}
-                                  </Select>
-                                </Form.Item>
-                              );
-                            })()}
+                                  {caretakers?.map((caretaker) => (
+                                    <Option
+                                      key={caretaker.id}
+                                      value={caretaker.id}
+                                    >
+                                      {caretaker.user?.first_name}{" "}
+                                      {caretaker.user?.last_name}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+
+                              <Form.Item
+                                name="doctorId"
+                                label={
+                                  <span className="font-medium text-[#334155]">
+                                    Assigned Doctor
+                                  </span>
+                                }
+                              >
+                                <Select
+                                  placeholder="Select doctor"
+                                  className="w-full"
+                                  allowClear
+                                >
+                                  {doctors?.map((doc) => (
+                                    <Option key={doc.id} value={doc.id}>
+                                      {doc.user?.first_name}{" "}
+                                      {doc.user?.last_name}
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+                            </>
+                          )}
 
                           <Form.Item
                             name="appointment_date"
@@ -1902,8 +1901,9 @@ export default function Appointments() {
           <div className="col-span-3 flex justify-end mt-[16px] gap-[20px]">
             <SecondaryBtn name="cancel" onClick={() => setIsModalOpen(false)} />
             <Primarybtn
-              name="Request Appointment"
+              name={loading ? "Requesting..." : "Request Appointment"}
               type="button"
+              disabled={loading}
               onClick={() => form.submit()}
             />
           </div>
