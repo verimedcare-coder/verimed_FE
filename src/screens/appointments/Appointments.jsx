@@ -632,29 +632,24 @@ export default function Appointments() {
   const mappedAppointments = useMemo(() => {
     return appointmentList.map((appt) => {
       const status = getAppointmentStatus(appt);
-      // For upcoming, use preferred_dates[0] if appointment_date is empty/null
+      // Use appointment_date if available, otherwise use preferred_dates for upcoming
       let displayDate = null;
-      if (status === "upcoming") {
-        if (
-          Array.isArray(appt.preferred_dates) &&
-          appt.preferred_dates.length > 0
-        ) {
-          displayDate = new Date(appt.preferred_dates[0]);
-        } else if (appt.appointment_date) {
-          displayDate = new Date(appt.appointment_date);
-        }
-      } else if (status === "past" || status === "cancelled") {
-        displayDate = appt.appointment_date
-          ? new Date(appt.appointment_date)
-          : null;
+      if (appt.appointment_date) {
+        displayDate = new Date(appt.appointment_date);
+      } else if (
+        status === "upcoming" &&
+        Array.isArray(appt.preferred_dates) &&
+        appt.preferred_dates.length > 0
+      ) {
+        displayDate = new Date(appt.preferred_dates[0]);
       }
 
-      // Time: use preferred_times for upcoming, else appointment_time
+      // Time: use appointment_time if available, otherwise preferred_times for upcoming
       let formattedTimes = [];
-      if (status === "upcoming" && Array.isArray(appt.preferred_times)) {
-        formattedTimes = appt.preferred_times.map((t) => t);
-      } else if (appt.appointment_time) {
+      if (appt.appointment_time) {
         formattedTimes = [appt.appointment_time];
+      } else if (status === "upcoming" && Array.isArray(appt.preferred_times)) {
+        formattedTimes = appt.preferred_times.map((t) => t);
       }
 
       // Doctor name
