@@ -614,6 +614,16 @@ export default function Appointments() {
     enabled: !!token,
   });
 
+  const parseSafeDate = (dateVal) => {
+    if (!dateVal) return null;
+    if (typeof dateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+      const [year, month, day] = dateVal.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // Updated status logic: treat empty string or null appointment_date as upcoming
   const getAppointmentStatus = (appointment) => {
     const today = new Date();
@@ -623,9 +633,9 @@ export default function Appointments() {
       return "upcoming";
     }
     // Otherwise, check date
-    const apptDate = new Date(appointment.appointment_date);
-    if (apptDate.toDateString() === today.toDateString()) return "upcoming";
-    return apptDate > today ? "upcoming" : "past";
+    const apptDate = parseSafeDate(appointment.appointment_date);
+    if (apptDate && apptDate.toDateString() === today.toDateString()) return "upcoming";
+    return apptDate && apptDate > today ? "upcoming" : "past";
   };
 
   // Updated mapping to match provided object structure
@@ -635,13 +645,13 @@ export default function Appointments() {
       // Use appointment_date if available, otherwise use preferred_dates for upcoming
       let displayDate = null;
       if (appt.appointment_date) {
-        displayDate = new Date(appt.appointment_date);
+        displayDate = parseSafeDate(appt.appointment_date);
       } else if (
         status === "upcoming" &&
         Array.isArray(appt.preferred_dates) &&
         appt.preferred_dates.length > 0
       ) {
-        displayDate = new Date(appt.preferred_dates[0]);
+        displayDate = parseSafeDate(appt.preferred_dates[0]);
       }
 
       // Time: use appointment_time if available, otherwise preferred_times for upcoming
