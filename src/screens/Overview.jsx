@@ -647,31 +647,45 @@ export default function Overview() {
     legend: { position: "bottom" },
   };
 
-  const appointmentListData = appointmentList.map((item, idx) => ({
-    id: item.id,
-    key: item.id,
-    date: item.appointment_date
-      ? new Date(item.appointment_date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : "",
-    sponsor: item?.sponsor?.user?.username,
-    patient: item.patient?.patient_name || "Unknown",
-    type: item.appointment_type || "-",
-    caretaker: item.caretaker?.caretaker_id || "Unknown",
-    time: item.appointment_time
-      ? `${new Date(`1970-01-01T${item.appointment_time}`).toLocaleTimeString(
-          [],
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          },
-        )}`
-      : "-",
-    status: item.appointment_status || "Pending",
-  }));
+  const parseSafeDate = (dateVal) => {
+    if (!dateVal) return null;
+    if (typeof dateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+      const [year, month, day] = dateVal.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatSafeTime = (timeStr) => {
+    if (!timeStr) return "-";
+    const [hour, min] = timeStr.split(":");
+    let h = parseInt(hour, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${min} ${ampm}`;
+  };
+
+  const appointmentListData = appointmentList.map((item, idx) => {
+    const safeDate = parseSafeDate(item.appointment_date);
+    return {
+      id: item.id,
+      key: item.id,
+      date: safeDate
+        ? safeDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "",
+      sponsor: item?.sponsor?.user?.username,
+      patient: item.patient?.patient_name || "Unknown",
+      type: item.appointment_type || "-",
+      caretaker: item.caretaker?.caretaker_id || "Unknown",
+      time: formatSafeTime(item.appointment_time),
+      status: item.appointment_status || "Pending",
+    };
+  });
 
   const appointmentListColumns = [
     {
