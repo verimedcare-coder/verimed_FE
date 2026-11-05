@@ -28,11 +28,18 @@ export default defineConfig(({ mode }) => {
       exclude: [],
     },
     optimizeDeps: {
-      esbuildOptions: {
-        loader: {
-          ".js": "jsx",
-        },
-      },
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react-router-dom",
+        "antd",
+        "@ant-design/icons",
+        "@tanstack/react-query",
+        "@ant-design/plots",
+        "axios",
+        "dayjs",
+      ],
     },
     server: {
       port: 3000,

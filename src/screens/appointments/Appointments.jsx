@@ -7,7 +7,7 @@ import Sider from "../../components/layout/Sider";
 import Banner from "../../components/illustrations/Banner";
 import Success from "../../assets/icons/success.svg";
 import { useNavigate, useLocation } from "react-router-dom";
-import StripeCheckoutModal from "../../components/modals/StripeCheckoutModal";
+
 import {
   DownOutlined,
   UpOutlined,
@@ -49,6 +49,7 @@ import {
   base_url,
   isAdminUser,
   REQUEST_SERVICES_LIST,
+  getServiceStripeLink,
 } from "../../constants/constants";
 import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
@@ -107,9 +108,7 @@ export default function Appointments() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [pendingBookingValues, setPendingBookingValues] = useState(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [pendingStripeUrl, setPendingStripeUrl] = useState(null);
 
   const handleOpenBookingModal = () => {
     form.resetFields();
@@ -189,8 +188,8 @@ export default function Appointments() {
   const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
 
   const resolveServiceInfo = (val) => {
-    if (!val && !pendingBookingValues?.values?.appointmentType) return null;
-    const targetVal = val || pendingBookingValues?.values?.appointmentType;
+    if (!val) return null;
+    const targetVal = val;
 
     // 1. Direct exact match by string ID or Name
     let service = REQUEST_SERVICES_LIST.find(
@@ -501,26 +500,28 @@ export default function Appointments() {
         : "";
       setBookedDateTime({ date: formattedDate, time: formattedTime });
 
-      if (
-        userData?.user_role === "sponsor" ||
-        selectedServiceObj ||
-        values.appointmentType
-      ) {
-        setPendingBookingValues({
-          endpoint,
-          formData,
-          headers,
-          values,
-          bookappoinment_data,
-        });
-        setIsCheckoutModalOpen(true);
-        return;
-      }
-
       await apiClient.post(endpoint, formData);
       setIsModalOpen(false);
+
+      // Determine real Stripe payment link
+      const stripeUrl =
+        selectedServiceObj?.stripeLink ||
+        getServiceStripeLink(values.appointmentType);
+
+      if (stripeUrl) {
+        setPendingStripeUrl(stripeUrl);
+        window.open(stripeUrl, "_blank", "noopener,noreferrer");
+        message.success(
+          "Appointment request sent! Opening Stripe checkout to complete payment...",
+        );
+      } else {
+        setPendingStripeUrl(null);
+        message.success("Appointment request sent successfully!");
+      }
+
       setIsSuccessModalOpen(true);
       form.resetFields();
+      setSelectedDates([]);
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.log(error);
@@ -529,31 +530,6 @@ export default function Appointments() {
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleConfirmCheckout = async () => {
-    if (!pendingBookingValues) return;
-    const currentValues = pendingBookingValues;
-    setPendingBookingValues(null);
-    setCheckoutLoading(true);
-    try {
-      await apiClient.post(
-        currentValues.endpoint,
-        currentValues.formData,
-      );
-      setIsCheckoutModalOpen(false);
-      setIsModalOpen(false);
-      setIsSuccessModalOpen(true);
-      form.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      message.success("Payment verified and appointment confirmed!");
-    } catch (error) {
-      console.error("Error finalizing appointment booking:", error);
-      message.error("Booking failed. Please try again.");
-      setPendingBookingValues(currentValues);
-    } finally {
-      setCheckoutLoading(false);
     }
   };
 
@@ -1918,7 +1894,10 @@ export default function Appointments() {
       {/* Request Appointment Success Modal */}
       <Modal
         open={isSuccessModalOpen}
-        onCancel={() => setIsSuccessModalOpen(false)}
+        onCancel={() => {
+          setIsSuccessModalOpen(false);
+          setPendingStripeUrl(null);
+        }}
         footer={null}
         centered
         title={
@@ -1926,7 +1905,7 @@ export default function Appointments() {
             <img
               src={Success}
               alt="Success"
-              className="w-[60px] h-[60px] mb-[16px]"
+              className="w-[60px] h-[60px] mb-[16px] mx-auto"
             />
             <h2 className="text-[#007F5F] text-[20px] font-bold m-0 capitalize leading-[1.5]">
               Your Appointment Request Sent Successfully <br />
@@ -1934,55 +1913,30 @@ export default function Appointments() {
           </div>
         }
       >
-        <p className="text-[16px] font-medium text-[#2E2E2E] text-center">
+        <p className="text-[16px] font-medium text-[#2E2E2E] text-center mb-[16px]">
           Our Practice Manager will review your request and get back to you
           shortly.
         </p>
-      </Modal>
 
-      {/* Verimed Multi-Step Secure Stripe Checkout Portal */}
-      <StripeCheckoutModal
-        open={isCheckoutModalOpen}
-        onCancel={() => setIsCheckoutModalOpen(false)}
-        onSuccess={handleConfirmCheckout}
-        title="Consultation Service"
-        summaryTitle="Appointment & Clinical Review"
-        itemName={(() => {
-          const resolved = resolveServiceInfo(
-            pendingBookingValues?.values?.appointmentType,
-          );
-          if (resolved) return resolved.name;
-          const dept = deptList?.find(
-            (d) =>
-              d.id === pendingBookingValues?.values?.appointmentType ||
-              String(d.id) ===
-                String(pendingBookingValues?.values?.appointmentType),
-          );
-          return (
-            dept?.dep_name ||
-            pendingBookingValues?.values?.appointmentType ||
-            "Physician Consultation"
-          );
-        })()}
-        subItemName={
-          pendingBookingValues?.values?.patientId
-            ? patients?.find(
-                (p) =>
-                  p.id === pendingBookingValues.values.patientId ||
-                  p.id === Number(pendingBookingValues.values.patientId),
-              )?.patient_name || "Loved One Patient"
-            : "Loved One Patient"
-        }
-        amount={(() => {
-          const resolved = resolveServiceInfo(
-            pendingBookingValues?.values?.appointmentType,
-          );
-          if (resolved) return resolved.stripeAmount;
-          return "75,000 CFA ($150.00 USD)";
-        })()}
-        buttonText="Complete & Confirm Booking"
-        userData={userData}
-      />
+        {pendingStripeUrl && (
+          <div className="text-center mt-[20px] p-[16px] bg-[#F7FDF9] border border-[#007F5F]/20 rounded-[10px]">
+            <p className="text-[14px] text-[#4A5568] mb-[12px] font-medium">
+              A Stripe payment tab was opened. If it was blocked, click below to complete your checkout:
+            </p>
+            <Button
+              type="primary"
+              size="large"
+              icon={<CreditCardOutlined />}
+              className="bg-[#007F5F] hover:bg-[#00664C] text-white font-semibold rounded-[8px] h-[42px] px-[24px]"
+              onClick={() =>
+                window.open(pendingStripeUrl, "_blank", "noopener,noreferrer")
+              }
+            >
+              Pay via Stripe Secure Checkout
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
