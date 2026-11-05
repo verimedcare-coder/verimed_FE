@@ -12,11 +12,15 @@ export default defineConfig(({ mode }) => {
       "process.env": {
         REACT_APP_API_BASE_URL: JSON.stringify(
           env.REACT_APP_API_BASE_URL ||
+            env.VITE_API_BASE_URL ||
             process.env.REACT_APP_API_BASE_URL ||
-            "",
+            "https://verimed-be.vercel.app/verimed",
         ),
         REACT_APP_BASE_URL: JSON.stringify(
-          env.REACT_APP_BASE_URL || process.env.REACT_APP_BASE_URL || "",
+          env.REACT_APP_BASE_URL ||
+            env.VITE_BASE_URL ||
+            process.env.REACT_APP_BASE_URL ||
+            "https://verimed-be.vercel.app",
         ),
         NODE_ENV: JSON.stringify(env.NODE_ENV || process.env.NODE_ENV || mode),
       },

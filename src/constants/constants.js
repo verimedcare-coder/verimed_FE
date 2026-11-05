@@ -6,7 +6,9 @@ const normalizeBaseUrl = (value) => {
     .replace(/\/+$/, "");
 };
 
-export const base_url = normalizeBaseUrl(process.env.REACT_APP_API_BASE_URL);
+export const base_url = normalizeBaseUrl(
+  process.env.REACT_APP_API_BASE_URL || "https://verimed-be.vercel.app/verimed",
+);
 
 // Special case: user with id 100 is always considered an admin regardless of role.
 export const isAdminUser = (user) =>
