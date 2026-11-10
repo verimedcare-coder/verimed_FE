@@ -1,6 +1,7 @@
 import axios from "axios";
 import { base_url } from "../constants/constants";
-import { getToken, removeToken } from "../utils/storage";
+import { clearAuthStorage, getToken } from "../utils/storage";
+import { clearRoleSessionStorage } from "../utils/sponsorIsolation";
 
 const apiClient = axios.create({
   baseURL: base_url,
@@ -26,7 +27,11 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       console.warn("Session expired or unauthorized (401). Clearing token.");
-      removeToken();
+      clearAuthStorage();
+      clearRoleSessionStorage();
+      try {
+        localStorage.removeItem("userData");
+      } catch (e) {}
       if (typeof window !== "undefined" && window.location.pathname !== "/") {
         window.location.href = "/";
       }

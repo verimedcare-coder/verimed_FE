@@ -19,7 +19,16 @@ import { CalendarOutlined } from "@ant-design/icons";
 import BackButton from "../../components/common/BackButton";
 import { useQuery } from "@tanstack/react-query";
 import { myLovedOnesService } from "../../services/myLovedOnesService";
-import { base_url } from "../../constants/constants";
+import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  filterSponsorPatients,
+  getStoredSponsorProfileId,
+  isPatientOwnedBySponsor,
+  isSponsorAppointment,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 
 function SectionHeader({ title, children }) {
   return (
@@ -47,24 +56,120 @@ export default function ViewPatientDetails() {
   }, []);
 
   const token = localStorage.getItem("token");
-  const storedSponsorId = localStorage.getItem("sponsorProfileId") || initialPData?.sponsorid || initialPData?.sponsor;
+  const user = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userData");
+      return raw && raw !== "undefined" && raw !== "null"
+        ? JSON.parse(raw)
+        : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
-  const { data: sponsorPatients = [] } = useQuery({
-    queryKey: ["sponsorPatients", storedSponsorId],
+  const isAdmin = isAdminUser(user);
+  const isSponsor = user?.user_role === "sponsor" && !isAdmin;
+
+  const storedSponsorId = isSponsor
+    ? getStoredSponsorProfileId()
+    : getStoredSponsorProfileId() ||
+      toValidId(initialPData?.sponsorid) ||
+      toValidId(initialPData?.sponsor);
+
+  const { data: sponsorProfilesList = [] } = useQuery({
+    queryKey: ["sponsorProfiles", user?.id],
     queryFn: async () => {
-      if (!storedSponsorId || storedSponsorId === "null" || storedSponsorId === "undefined") return [];
-      const data = await myLovedOnesService.getSponsorPatients(storedSponsorId);
-      return data || [];
+      const res = await myLovedOnesService.getSponsorProfiles();
+      return Array.isArray(res) ? res : [];
     },
-    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && !!token,
+    enabled: !!token && isSponsor && !storedSponsorId,
   });
+
+  const matchedSponsorProfile = useMemo(
+    () =>
+      isSponsor ? resolveSponsorProfileFromList(sponsorProfilesList, user) : null,
+    [isSponsor, sponsorProfilesList, user],
+  );
+
+  const effectiveSponsorId = useMemo(
+    () => storedSponsorId || toValidId(matchedSponsorProfile?.id),
+    [storedSponsorId, matchedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
+    }
+  }, [isSponsor, matchedSponsorProfile]);
+
+  const {
+    data: sponsorPatients = [],
+    isSuccess: isSponsorPatientsLoaded,
+  } = useQuery({
+    queryKey: ["sponsorPatients", effectiveSponsorId],
+    queryFn: async () => {
+      if (!effectiveSponsorId) return [];
+      const data = await myLovedOnesService.getSponsorPatients(effectiveSponsorId);
+      return filterSponsorPatients(
+        Array.isArray(data) ? data : [],
+        effectiveSponsorId,
+        true,
+      );
+    },
+    enabled: !!effectiveSponsorId && !!token && isSponsor,
+  });
+
+  const ownedPatientIds = useMemo(
+    () =>
+      (Array.isArray(sponsorPatients) ? sponsorPatients : [])
+        .map((p) => toValidId(p?.id))
+        .filter(Boolean),
+    [sponsorPatients],
+  );
 
   const livePatient = useMemo(() => {
     if (!initialPData?.id) return null;
-    return sponsorPatients.find((p) => Number(p.id) === Number(initialPData.id)) || null;
+    return (
+      sponsorPatients.find(
+        (p) => toValidId(p.id) === toValidId(initialPData.id),
+      ) || null
+    );
   }, [sponsorPatients, initialPData]);
 
-  const pData = livePatient ? { ...initialPData, ...livePatient } : initialPData;
+  const isAuthorizedPatient = useMemo(() => {
+    if (!isSponsor) return true;
+    if (!effectiveSponsorId || !isSponsorPatientsLoaded) return false;
+    if (!appointmentData) return true;
+    if (livePatient) return true;
+    if (appointmentData?.patient) {
+      return isSponsorAppointment(
+        appointmentData,
+        effectiveSponsorId,
+        ownedPatientIds,
+      );
+    }
+    return isPatientOwnedBySponsor(initialPData, effectiveSponsorId, false);
+  }, [
+    isSponsor,
+    effectiveSponsorId,
+    isSponsorPatientsLoaded,
+    appointmentData,
+    livePatient,
+    ownedPatientIds,
+    initialPData,
+  ]);
+
+  useEffect(() => {
+    if (isSponsor && isSponsorPatientsLoaded && appointmentData && !isAuthorizedPatient) {
+      navigate("/overview", { replace: true });
+    }
+  }, [isSponsor, isSponsorPatientsLoaded, appointmentData, isAuthorizedPatient, navigate]);
+
+  const safeAppointmentData = isAuthorizedPatient ? appointmentData : null;
+  const safeInitialPData = isAuthorizedPatient ? initialPData : {};
+  const pData = livePatient
+    ? { ...safeInitialPData, ...livePatient }
+    : safeInitialPData;
 
   const getPhotoUrl = (url) => {
     if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
@@ -121,17 +226,17 @@ export default function ViewPatientDetails() {
     { icon: statusIcon, label: "Status", value: "Stable", color: "#27AE60" },
   ];
 
-  const docUser = appointmentData?.doc?.user || pData?.doctor?.user || {};
+  const docUser = safeAppointmentData?.doc?.user || pData?.doctor?.user || {};
   const docName = docUser.first_name || docUser.last_name
     ? `${docUser.first_name || ""} ${docUser.last_name || ""}`.trim()
     : pData?.doctor_name || "N/A";
 
-  const caretakerUser = appointmentData?.caretaker?.user || pData?.caretaker?.user || {};
+  const caretakerUser = safeAppointmentData?.caretaker?.user || pData?.caretaker?.user || {};
   const caretakerName = caretakerUser.first_name || caretakerUser.last_name
     ? `${caretakerUser.first_name || ""} ${caretakerUser.last_name || ""}`.trim()
     : pData?.caretaker_name || "N/A";
 
-  const sponsorUser = appointmentData?.sponsor?.user || pData?.sponsor?.user || {};
+  const sponsorUser = safeAppointmentData?.sponsor?.user || pData?.sponsor?.user || {};
   const sponsorName = sponsorUser.first_name || sponsorUser.last_name
     ? `${sponsorUser.first_name || ""} ${sponsorUser.last_name || ""}`.trim()
     : pData?.sponsor_name || "N/A";
@@ -141,14 +246,14 @@ export default function ViewPatientDetails() {
   const patientEmail = pData?.email || "N/A";
 
   const careTeam = {
-    name: pData?.patient_name || appointmentData?.patient_name || "Unknown Patient",
-    Condition: appointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
+    name: pData?.patient_name || safeAppointmentData?.patient_name || "Unknown Patient",
+    Condition: safeAppointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
     Phone: patientPhone,
     Email: patientEmail,
     AssignedDoctor: docName,
     CareTaker: caretakerName,
-    Conditions: appointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
-    AssignedSince: appointmentData?.appointment_date || pData?.created_at?.split("T")[0] || "N/A",
+    Conditions: safeAppointmentData?.appointment_type || pData?.medical_his_diagnosis || "N/A",
+    AssignedSince: safeAppointmentData?.appointment_date || pData?.created_at?.split("T")[0] || "N/A",
     SponsorInfo: sponsorName,
     SponsorNumber: sponsorPhone,
     Address: pData?.patient_home_address || "N/A",
@@ -198,27 +303,27 @@ export default function ViewPatientDetails() {
   }));
 
   // Appointment Details (left)
-  const appointmentDetails = appointmentData ? [
+  const appointmentDetails = safeAppointmentData ? [
     {
-      date: appointmentData.appointment_date
-        ? new Date(appointmentData.appointment_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ` – ${appointmentData.appointment_time?.slice(0, 5)}`
+      date: safeAppointmentData.appointment_date
+        ? new Date(safeAppointmentData.appointment_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ` – ${safeAppointmentData.appointment_time?.slice(0, 5)}`
         : "N/A",
-      type: appointmentData.appointment_type || "N/A",
+      type: safeAppointmentData.appointment_type || "N/A",
       provider: docName,
-      status: appointmentData.appointment_status || "N/A",
-      comments: [appointmentData.care_taker_notes, appointmentData.doctor_notes].filter(Boolean).join("\n\n") || "No comments",
+      status: safeAppointmentData.appointment_status || "N/A",
+      comments: [safeAppointmentData.care_taker_notes, safeAppointmentData.doctor_notes].filter(Boolean).join("\n\n") || "No comments",
     }
   ] : [];
 
   // Timeline (right)
-  const timelineData = appointmentData?.time_line
-    ? appointmentData.time_line.split("|").map((entry) => {
+  const timelineData = safeAppointmentData?.time_line
+    ? safeAppointmentData.time_line.split("|").map((entry) => {
       const [dateStr, status] = entry.split(":").map((s) => s.trim());
       return {
         title: status,
         details: [
-          appointmentData.treatment_performed || "No treatment info",
-          [appointmentData.care_taker_notes, appointmentData.doctor_notes].filter(Boolean).join("\n") || "",
+          safeAppointmentData.treatment_performed || "No treatment info",
+          [safeAppointmentData.care_taker_notes, safeAppointmentData.doctor_notes].filter(Boolean).join("\n") || "",
         ],
         date: new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       };
@@ -269,7 +374,7 @@ export default function ViewPatientDetails() {
                   Assigned Since: <span className="font-semibold text-[#374151]">{careTeam.AssignedSince}</span>
                 </p>
                 <div className="flex gap-[12px]">
-                  <PrimaryBtn name="Edit Report" onClick={() => navigate("/doctor_form", { state: { appointmentData } })} />
+                  <PrimaryBtn name="Edit Report" onClick={() => navigate("/doctor_form", { state: { appointmentData: safeAppointmentData } })} />
                 </div>
               </div>
             </div>
@@ -368,7 +473,7 @@ export default function ViewPatientDetails() {
                   <h3 className="text-[18px] font-bold text-[#166534] m-0 mb-[6px]">Doctor Visit Reports & Docs</h3>
                   <p className="text-[14px] text-[#15803D] m-0 leading-relaxed">Upload results, medical records, diagnostic images, and voice notes. Submitting automatically notifies the sponsor.</p>
                 </div>
-                <button onClick={() => navigate("/doctor_form", { state: { appointmentData } })} className="bg-[#16A34A] hover:bg-[#15803D] text-white px-[24px] py-[12px] rounded-[10px] font-bold transition-colors shrink-0 cursor-pointer border-none shadow-[0_2px_4px_rgba(22,163,74,0.3)] hover:shadow-md">
+                <button onClick={() => navigate("/doctor_form", { state: { appointmentData: safeAppointmentData } })} className="bg-[#16A34A] hover:bg-[#15803D] text-white px-[24px] py-[12px] rounded-[10px] font-bold transition-colors shrink-0 cursor-pointer border-none shadow-[0_2px_4px_rgba(22,163,74,0.3)] hover:shadow-md">
                   Submit Reports
                 </button>
               </div>

@@ -1,11 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Header from "../../components/layout/Header";
 import Sider from "../../components/layout/Sider";
 import { Button, Table, Spin, Empty, Tag, Card, Divider, DatePicker } from "antd";
 import { DownloadOutlined, FilePdfOutlined, CalendarOutlined, FileImageOutlined, FileTextOutlined, AudioOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { myLovedOnesService } from "../../services/myLovedOnesService";
-import { base_url } from "../../constants/constants";
+import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  filterSponsorAppointments,
+  filterSponsorPatients,
+  getStoredSponsorProfileId,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 import dayjs from "dayjs";
 
 function SectionHeader({ title, children }) {
@@ -47,16 +55,97 @@ export default function MyReports() {
     };
   }, []);
 
-  const cleanedPatientId = Number(selectedPatientId);
+  const cleanedPatientId = toValidId(selectedPatientId);
   const token = localStorage.getItem("token");
+  const user = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userData");
+      return raw && raw !== "undefined" && raw !== "null"
+        ? JSON.parse(raw)
+        : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  const isAdmin = isAdminUser(user);
+  const isSponsor = user?.user_role === "sponsor" && !isAdmin;
+
+  const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
+
+  const { data: sponsorProfilesList = [] } = useQuery({
+    queryKey: ["sponsorProfiles", user?.id],
+    queryFn: async () => {
+      const res = await myLovedOnesService.getSponsorProfiles();
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!token && isSponsor && !storedSponsorId,
+  });
+
+  const matchedSponsorProfile = useMemo(
+    () =>
+      isSponsor ? resolveSponsorProfileFromList(sponsorProfilesList, user) : null,
+    [isSponsor, sponsorProfilesList, user],
+  );
+
+  const resolvedSponsorId = useMemo(
+    () =>
+      isSponsor
+        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
+        : null,
+    [isSponsor, storedSponsorId, matchedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
+    }
+  }, [isSponsor, matchedSponsorProfile]);
+
+  const {
+    data: sponsorPatients = [],
+    isSuccess: isSponsorPatientsLoaded,
+  } = useQuery({
+    queryKey: ["sponsorPatients", resolvedSponsorId],
+    queryFn: async () => {
+      const res = await myLovedOnesService.getSponsorPatients(resolvedSponsorId);
+      return filterSponsorPatients(
+        Array.isArray(res) ? res : [],
+        resolvedSponsorId,
+        true,
+      );
+    },
+    enabled: !!token && isSponsor && !!resolvedSponsorId,
+  });
+
+  const ownedPatientIds = useMemo(
+    () =>
+      (Array.isArray(sponsorPatients) ? sponsorPatients : [])
+        .map((p) => toValidId(p?.id))
+        .filter(Boolean),
+    [sponsorPatients],
+  );
+
+  const isPatientAuthorized = !isSponsor
+    ? true
+    : Boolean(cleanedPatientId && ownedPatientIds.includes(cleanedPatientId));
 
   const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ["lovedOnesMedicalHistory", cleanedPatientId],
+    queryKey: [
+      "lovedOnesMedicalHistory",
+      cleanedPatientId,
+      isSponsor ? resolvedSponsorId : "all",
+    ],
     queryFn: async () => {
       const data = await myLovedOnesService.getPatientAppointments(cleanedPatientId);
-      return data || [];
+      const list = Array.isArray(data) ? data : [];
+      return isSponsor
+        ? filterSponsorAppointments(list, resolvedSponsorId, ownedPatientIds)
+        : list;
     },
-    enabled: !isNaN(cleanedPatientId) && cleanedPatientId > 0 && !!token,
+    enabled:
+      !!cleanedPatientId &&
+      !!token &&
+      (!isSponsor || (isSponsorPatientsLoaded && isPatientAuthorized)),
   });
 
   // Filter appointments that have files or notes

@@ -51,6 +51,16 @@ import {
   REQUEST_SERVICES_LIST,
   getServiceStripeLink,
 } from "../../constants/constants";
+import {
+  filterSponsorAppointments,
+  filterSponsorPatients,
+  getStoredSponsorPatientIds,
+  getStoredSponsorProfileId,
+  isSponsorAppointment,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import * as yup from "yup";
@@ -114,15 +124,22 @@ export default function Appointments() {
     form.resetFields();
     setSelectedDates([]);
     form.setFieldsValue({ preferred_dates: [], depId: undefined });
-    if (userData?.user_role === "sponsor") {
-      const storedSponsorId =
-        Number(localStorage.getItem("sponsorProfileId")) || sponsorId;
-      if (storedSponsorId) {
-        form.setFieldsValue({ sponsorId: storedSponsorId });
+    if (isSponsor) {
+      const currentSponsorId = resolvedSponsorId || getStoredSponsorProfileId();
+      if (currentSponsorId) {
+        form.setFieldsValue({ sponsorId: currentSponsorId });
       }
     }
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    if (isModalOpen && isSponsor && resolvedSponsorId) {
+      if (!form.getFieldValue("sponsorId")) {
+        form.setFieldsValue({ sponsorId: resolvedSponsorId });
+      }
+    }
+  }, [isModalOpen, isSponsor, resolvedSponsorId, form]);
 
   const [selectedPatientId, setSelectedPatientId] = useState(() =>
     localStorage.getItem("selectedPatientId"),
@@ -162,15 +179,91 @@ export default function Appointments() {
   };
 
   const token = localStorage.getItem("token");
-  const userData = JSON.parse(localStorage.getItem("userData"));
+  const userData = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userData");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  const isAdmin = isAdminUser(userData);
+  const isSponsor = userData?.user_role === "sponsor" && !isAdmin;
 
-  const { data: appointmentList = [] } = useQuery({
-    queryKey: ["appointments"],
+  const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
+
+  const { data: sponsors = [] } = useQuery({
+    queryKey: ["sponsors", isSponsor ? userData?.id : "all"],
     queryFn: async () => {
-      const data = await appointmentsService.getAllAppointments();
+      const data = await appointmentsService.getSponsors();
       return Array.isArray(data) ? data : [];
     },
     enabled: !!token,
+  });
+
+  const matchedSponsorProfile = useMemo(
+    () => (isSponsor ? resolveSponsorProfileFromList(sponsors, userData) : null),
+    [isSponsor, sponsors, userData],
+  );
+
+  const resolvedSponsorId = useMemo(
+    () =>
+      isSponsor
+        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
+        : null,
+    [isSponsor, storedSponsorId, matchedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
+    }
+  }, [isSponsor, matchedSponsorProfile]);
+
+  const { data: patients = [], isSuccess: isPatientsLoaded } = useQuery({
+    queryKey: [
+      "patients",
+      isSponsor ? `sponsor-${resolvedSponsorId || "pending"}` : "all",
+    ],
+    queryFn: async () => {
+      if (isSponsor) {
+        const data =
+          await appointmentsService.getSponsorPatients(resolvedSponsorId);
+        return Array.isArray(data) ? data : [];
+      }
+      const data = await appointmentsService.getPatients();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token && (!isSponsor || !!resolvedSponsorId),
+  });
+
+  const ownedPatientIds = useMemo(() => {
+    if (!isSponsor) return [];
+    const fromQuery = (Array.isArray(patients) ? patients : [])
+      .map((p) => toValidId(p?.id))
+      .filter(Boolean);
+    if (fromQuery.length > 0) return fromQuery;
+    if (isPatientsLoaded) return [];
+    return getStoredSponsorPatientIds();
+  }, [isSponsor, patients, isPatientsLoaded]);
+
+  const { data: appointmentList = [] } = useQuery({
+    queryKey: [
+      "appointments",
+      isSponsor ? `sponsor-${resolvedSponsorId || "pending"}` : "all",
+    ],
+    queryFn: async () => {
+      if (isSponsor) {
+        const data = await appointmentsService.getSponsorAppointments(
+          resolvedSponsorId,
+          ownedPatientIds,
+        );
+        return Array.isArray(data) ? data : [];
+      }
+      const data = await appointmentsService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token && (!isSponsor || (!!resolvedSponsorId && isPatientsLoaded)),
   });
 
   const { data: deptList = [] } = useQuery({
@@ -182,10 +275,15 @@ export default function Appointments() {
     enabled: !!token,
   });
 
-  const caretakerId = JSON.parse(
-    localStorage.getItem("selectedPatientData"),
-  )?.caretaker;
-  const sponsorId = Number(localStorage.getItem("sponsorProfileId"));
+  let caretakerId = null;
+  try {
+    caretakerId = JSON.parse(
+      localStorage.getItem("selectedPatientData") || "null",
+    )?.caretaker;
+  } catch {
+    caretakerId = null;
+  }
+  const sponsorId = resolvedSponsorId || toValidId(localStorage.getItem("sponsorProfileId"));
 
   const resolveServiceInfo = (val) => {
     if (!val) return null;
@@ -357,24 +455,24 @@ export default function Appointments() {
       }
 
       let finalPatientId =
-        Number(
+        toValidId(values.patientId) ||
+        toValidId(
           selectedPatientId || localStorage.getItem("selectedPatientId"),
         ) ||
-        storedPatientData?.id ||
-        patientId ||
+        toValidId(storedPatientData?.id) ||
+        toValidId(patientId) ||
         null;
 
-      let finalSponsorId =
-        Number(localStorage.getItem("sponsorProfileId")) ||
-        storedPatientData?.sponsor?.id ||
-        storedPatientData?.sponsorid ||
-        storedPatientData?.sponsor_id ||
-        storedPatientData?.sponsorProfileId ||
-        (typeof storedPatientData?.sponsor === "number"
-          ? storedPatientData?.sponsor
-          : null) ||
-        sponsorId ||
-        null;
+      let finalSponsorId = isSponsor
+        ? resolvedSponsorId || getStoredSponsorProfileId() || null
+        : toValidId(values.sponsorId) ||
+          toValidId(localStorage.getItem("sponsorProfileId")) ||
+          toValidId(storedPatientData?.sponsor) ||
+          toValidId(storedPatientData?.sponsorid) ||
+          toValidId(storedPatientData?.sponsor_id) ||
+          toValidId(storedPatientData?.sponsorProfileId) ||
+          toValidId(sponsorId) ||
+          null;
 
       let finalCaretakerId =
         storedPatientData?.caretaker?.id ||
@@ -389,31 +487,46 @@ export default function Appointments() {
 
       if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
         try {
-          if (!finalPatientId) {
-            const pRes = await apiClient.get("/patientprofile_list/");
-            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
-              const matchedP =
-                pRes.data.find((p) => p.user?.id === userData?.id) ||
-                pRes.data[0];
-              finalPatientId = matchedP?.id || null;
-              if (!finalSponsorId && matchedP?.sponsor) {
-                finalSponsorId =
-                  typeof matchedP.sponsor === "object"
-                    ? matchedP.sponsor.id
-                    : matchedP.sponsor;
-              }
-              if (!finalCaretakerId && matchedP?.caretakerid) {
-                finalCaretakerId = matchedP.caretakerid;
+          if (isSponsor) {
+            if (!finalSponsorId) {
+              const sRes = await appointmentsService.getSponsors();
+              const matchedS = resolveSponsorProfileFromList(sRes, userData);
+              finalSponsorId = toValidId(matchedS?.id);
+            }
+            if (!finalPatientId && finalSponsorId) {
+              const spPatients =
+                await appointmentsService.getSponsorPatients(finalSponsorId);
+              if (Array.isArray(spPatients) && spPatients.length > 0) {
+                finalPatientId = toValidId(spPatients[0]?.id);
               }
             }
-          }
-          if (!finalSponsorId) {
-            const sRes = await apiClient.get("/sponsorprofile_list/");
-            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
-              const matchedS =
-                sRes.data.find((s) => s.user?.id === userData?.id) ||
-                sRes.data[0];
-              finalSponsorId = matchedS?.id || null;
+          } else {
+            if (!finalPatientId) {
+              const pRes = await apiClient.get("/patientprofile_list/");
+              if (Array.isArray(pRes.data) && pRes.data.length > 0) {
+                const matchedP =
+                  pRes.data.find((p) => p.user?.id === userData?.id) ||
+                  pRes.data[0];
+                finalPatientId = matchedP?.id || null;
+                if (!finalSponsorId && matchedP?.sponsor) {
+                  finalSponsorId =
+                    typeof matchedP.sponsor === "object"
+                      ? matchedP.sponsor.id
+                      : matchedP.sponsor;
+                }
+                if (!finalCaretakerId && matchedP?.caretakerid) {
+                  finalCaretakerId = matchedP.caretakerid;
+                }
+              }
+            }
+            if (!finalSponsorId) {
+              const sRes = await apiClient.get("/sponsorprofile_list/");
+              if (Array.isArray(sRes.data) && sRes.data.length > 0) {
+                const matchedS =
+                  sRes.data.find((s) => s.user?.id === userData?.id) ||
+                  sRes.data[0];
+                finalSponsorId = matchedS?.id || null;
+              }
             }
           }
           if (!finalCaretakerId) {
@@ -457,10 +570,29 @@ export default function Appointments() {
         values.depId ?? values.appointmentType,
       );
 
+      const resolvedBookingPatientId =
+        toValidId(values.patientId) || finalPatientId;
+
+      if (
+        isSponsor &&
+        (!finalSponsorId ||
+          !resolvedBookingPatientId ||
+          (isPatientsLoaded &&
+            !ownedPatientIds.includes(resolvedBookingPatientId)))
+      ) {
+        message.error(
+          "You can only request appointments for your own linked patients.",
+        );
+        setLoading(false);
+        return;
+      }
+
       const bookappoinment_data = {
         dep: selectedDepId,
-        patient: values.patientId || finalPatientId,
-        sponsor: values.sponsorId || finalSponsorId,
+        patient: resolvedBookingPatientId,
+        sponsor: isSponsor
+          ? finalSponsorId
+          : values.sponsorId || finalSponsorId,
         caretaker: finalCaretakerId,
         appointment_date: null,
         appointment_time: null,
@@ -508,7 +640,26 @@ export default function Appointments() {
         selectedServiceObj?.stripeLink ||
         getServiceStripeLink(values.appointmentType);
 
-      if (stripeUrl) {
+      // Check if user has already purchased this service via Stripe during website signup
+      const purchasedService = userData?.service_purchased?.trim().toLowerCase();
+      const currentServiceName = (selectedServiceObj?.name || values.appointmentType || "").trim().toLowerCase();
+
+      const isPrePaid = Boolean(
+        purchasedService &&
+        currentServiceName &&
+        (currentServiceName.includes(purchasedService) ||
+         purchasedService.includes(currentServiceName) ||
+         (purchasedService.includes("nurse") && currentServiceName.includes("nurse")) ||
+         (purchasedService.includes("intake") && currentServiceName.includes("intake")) ||
+         (purchasedService.includes("wellness") && currentServiceName.includes("wellness")))
+      );
+
+      if (isPrePaid) {
+        setPendingStripeUrl(null);
+        message.success(
+          `Appointment request sent! Covered under your active plan: ${userData.service_purchased}.`,
+        );
+      } else if (stripeUrl) {
         setPendingStripeUrl(stripeUrl);
         window.open(stripeUrl, "_blank", "noopener,noreferrer");
         message.success(
@@ -562,24 +713,6 @@ export default function Appointments() {
     enabled: !!token,
   });
 
-  const { data: sponsors = [] } = useQuery({
-    queryKey: ["sponsors"],
-    queryFn: async () => {
-      const data = await appointmentsService.getSponsors();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: !!token,
-  });
-
-  const { data: patients = [] } = useQuery({
-    queryKey: ["patients"],
-    queryFn: async () => {
-      const data = await appointmentsService.getPatients();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: !!token,
-  });
-
   // eslint-disable-next-line no-unused-vars
   const { data: sponsorUser = null } = useQuery({
     queryKey: ["users"],
@@ -587,7 +720,7 @@ export default function Appointments() {
       const data = await appointmentsService.getUsers();
       return data;
     },
-    enabled: !!token,
+    enabled: !!token && !isSponsor,
   });
 
   const parseSafeDate = (dateVal) => {
@@ -614,9 +747,20 @@ export default function Appointments() {
     return apptDate && apptDate > today ? "upcoming" : "past";
   };
 
+  const scopedAppointments = useMemo(() => {
+    if (!Array.isArray(appointmentList)) return [];
+    if (!isSponsor) return appointmentList;
+    if (!resolvedSponsorId) return [];
+    return filterSponsorAppointments(
+      appointmentList,
+      resolvedSponsorId,
+      ownedPatientIds,
+    );
+  }, [appointmentList, isSponsor, resolvedSponsorId, ownedPatientIds]);
+
   // Updated mapping to match provided object structure
   const mappedAppointments = useMemo(() => {
-    return appointmentList.map((appt) => {
+    return scopedAppointments.map((appt) => {
       const status = getAppointmentStatus(appt);
       // Use appointment_date if available, otherwise use preferred_dates for upcoming
       let displayDate = null;
@@ -670,7 +814,7 @@ export default function Appointments() {
         fullData: appt,
       };
     });
-  }, [appointmentList]);
+  }, [scopedAppointments]);
 
   const handleDetailsCardClick = (appt) => {
     if (appt) {
@@ -737,11 +881,17 @@ export default function Appointments() {
   const renderAppointments = (status) => {
     let filtered = mappedAppointments.filter((appt) => appt.status === status);
 
-    // If user is sponsor, only show appointments for their sponsor profile
-    if (userData?.user_role === "sponsor" && sponsorId) {
-      filtered = filtered.filter(
-        (appt) => appt.fullData?.sponsor?.id === sponsorId,
-      );
+    // If user is sponsor, only show appointments belonging to their sponsor profile or loved ones
+    if (isSponsor) {
+      filtered = resolvedSponsorId
+        ? filtered.filter((appt) =>
+            isSponsorAppointment(
+              appt.fullData,
+              resolvedSponsorId,
+              ownedPatientIds,
+            ),
+          )
+        : [];
     }
 
     if (!filtered.length)
@@ -907,20 +1057,17 @@ export default function Appointments() {
     const headers = { Authorization: `Token ${token}` };
 
     let finalSponsorId =
-      selectedAppointment?.fullData?.sponsor?.id ||
-      selectedAppointment?.fullData?.sponsorid ||
-      selectedAppointment?.fullData?.sponsor_id ||
-      (typeof selectedAppointment?.fullData?.sponsor === "number"
-        ? selectedAppointment?.fullData?.sponsor
-        : null) ||
+      (isSponsor ? resolvedSponsorId || getStoredSponsorProfileId() : null) ||
+      toValidId(selectedAppointment?.fullData?.sponsor?.id) ||
+      toValidId(selectedAppointment?.fullData?.sponsorid) ||
+      toValidId(selectedAppointment?.fullData?.sponsor_id) ||
+      toValidId(selectedAppointment?.fullData?.sponsor) ||
       null;
 
     let finalPatientId =
-      selectedAppointment?.fullData?.patient?.id ||
-      selectedAppointment?.fullData?.patientid ||
-      (typeof selectedAppointment?.fullData?.patient === "number"
-        ? selectedAppointment?.fullData?.patient
-        : null) ||
+      toValidId(selectedAppointment?.fullData?.patient?.id) ||
+      toValidId(selectedAppointment?.fullData?.patientid) ||
+      toValidId(selectedAppointment?.fullData?.patient) ||
       null;
 
     let finalCaretakerId =
@@ -934,17 +1081,23 @@ export default function Appointments() {
 
     if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
       try {
-        if (!finalPatientId) {
-          const pRes = await apiClient.get("/patientprofile_list/");
-          if (Array.isArray(pRes.data) && pRes.data.length > 0) {
-            finalPatientId = pRes.data[0]?.id || null;
+        if (!isSponsor) {
+          if (!finalPatientId) {
+            const pRes = await apiClient.get("/patientprofile_list/");
+            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
+              finalPatientId = pRes.data[0]?.id || null;
+            }
           }
-        }
-        if (!finalSponsorId) {
-          const sRes = await apiClient.get("/sponsorprofile_list/");
-          if (Array.isArray(sRes.data) && sRes.data.length > 0) {
-            finalSponsorId = sRes.data[0]?.id || null;
+          if (!finalSponsorId) {
+            const sRes = await apiClient.get("/sponsorprofile_list/");
+            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
+              finalSponsorId = sRes.data[0]?.id || null;
+            }
           }
+        } else if (!finalSponsorId) {
+          const sRes = await appointmentsService.getSponsors();
+          const matchedS = resolveSponsorProfileFromList(sRes, userData);
+          finalSponsorId = toValidId(matchedS?.id);
         }
         if (!finalCaretakerId) {
           const cRes = await apiClient.get("/caretakerprofile_list/");
@@ -958,6 +1111,19 @@ export default function Appointments() {
           err,
         );
       }
+    }
+
+    if (
+      isSponsor &&
+      (!finalSponsorId ||
+        !isSponsorAppointment(
+          selectedAppointment?.fullData,
+          finalSponsorId,
+          ownedPatientIds,
+        ))
+    ) {
+      message.error("You are not authorized to modify this appointment.");
+      return;
     }
 
     const bookappoinment_data = {
@@ -1568,8 +1734,13 @@ export default function Appointments() {
                       (a.date &&
                         a.date.getMonth() === currentMonth.getMonth() &&
                         a.date.getFullYear() === currentMonth.getFullYear())) &&
-                    (userData?.user_role !== "sponsor" ||
-                      a.fullData?.sponsor?.id === sponsorId),
+                    (!isSponsor ||
+                      (resolvedSponsorId &&
+                        isSponsorAppointment(
+                          a.fullData,
+                          resolvedSponsorId,
+                          ownedPatientIds,
+                        ))),
                 )
                 .map((appt, index) => {
                   const isSelected =
@@ -1672,16 +1843,36 @@ export default function Appointments() {
                 }
               }}
             >
-              {REQUEST_SERVICES_LIST.map((service) => (
-                <Option key={service.id} value={service.id}>
-                  <div className="flex justify-between items-center w-full">
-                    <span>{service.name}</span>
-                    <span className="text-[#007F5F] font-semibold ml-2">
-                      {service.priceLabel}
-                    </span>
-                  </div>
-                </Option>
-              ))}
+              {REQUEST_SERVICES_LIST.map((service) => {
+                const isUserPlan =
+                  userData?.service_purchased &&
+                  (service.name
+                    ?.toLowerCase()
+                    .includes(userData.service_purchased.toLowerCase()) ||
+                    userData.service_purchased
+                      .toLowerCase()
+                      .includes(service.name?.toLowerCase()));
+                return (
+                  <Option key={service.id} value={service.id}>
+                    <div className="flex justify-between items-center w-full">
+                      <span>{service.name}</span>
+                      <span
+                        className={`font-semibold ml-2 ${
+                          isUserPlan
+                            ? "text-[#007F5F] bg-[#007F5F]/10 px-2 py-0.5 rounded text-[12px]"
+                            : "text-[#007F5F]"
+                        }`}
+                      >
+                        {isUserPlan
+                          ? "Active Plan (Covered)"
+                          : service.priceLabel}
+                      </span>
+                    </div>
+                  </Option>
+                );
+              })}
+
+
               {deptList
                 ?.filter(
                   (dept) =>
@@ -1711,14 +1902,16 @@ export default function Appointments() {
             <Select
               placeholder="Select Sponsor"
               allowClear
-              disabled={userData?.user_role === "sponsor"}
+              disabled={isSponsor}
             >
-              {(userData?.user_role === "sponsor"
+              {(isSponsor
                 ? sponsors?.filter(
                     (s) =>
-                      s.id ===
-                        (Number(localStorage.getItem("sponsorProfileId")) ||
-                          sponsorId) || s.user?.id === userData?.id,
+                      (resolvedSponsorId &&
+                        toValidId(s.id) === resolvedSponsorId) ||
+                      (toValidId(userData?.id) &&
+                        toValidId(s.user?.id ?? s.user) ===
+                          toValidId(userData?.id)),
                   )
                 : sponsors
               )?.map((sponsor) => (
@@ -1740,19 +1933,8 @@ export default function Appointments() {
             rules={[yupRule(bookingValidationSchema, "patientId")]}
           >
             <Select placeholder="Select Patient" allowClear>
-              {(userData?.user_role === "sponsor"
-                ? patients?.filter((p) => {
-                    const sId =
-                      typeof p.sponsor === "object" ? p.sponsor?.id : p.sponsor;
-                    const spId =
-                      Number(localStorage.getItem("sponsorProfileId")) ||
-                      sponsorId;
-                    return (
-                      sId === spId ||
-                      p.sponsorid === spId ||
-                      p.user?.id === userData?.id
-                    );
-                  })
+              {(isSponsor
+                ? filterSponsorPatients(patients, resolvedSponsorId, true)
                 : patients
               )?.map((patient) => (
                 <Option key={patient.id} value={patient.id}>

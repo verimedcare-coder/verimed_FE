@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { overviewService } from "../../services/overviewService";
 import Header from "../../components/layout/Header";
@@ -30,6 +30,14 @@ import {
 import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
 import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  filterSponsorAppointments,
+  getStoredSponsorPatientIds,
+  getStoredSponsorProfileId,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 import axios from "axios";
 
 export default function Overview() {
@@ -63,6 +71,26 @@ export default function Overview() {
   }, []);
 
   const token = localStorage.getItem("token");
+
+  const [user] = useState(() => {
+    try {
+      const data = localStorage.getItem("userData");
+      return data && data !== "undefined" && data !== "null"
+        ? JSON.parse(data)
+        : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const isAdmin = isAdminUser(user);
+  const isSponsor = user?.user_role === "sponsor" && !isAdmin;
+
+  useEffect(() => {
+    if (!user) {
+      window.location.href = "/";
+    }
+  }, [user]);
 
   const deleteAppointment = async (id) => {
     try {
@@ -99,55 +127,140 @@ export default function Overview() {
     setSelectedPatientRow(null);
   };
 
-  const { data: appointmentList = [] } = useQuery({
-    queryKey: ["appointments"],
+  const storedSponsorId = isSponsor
+    ? getStoredSponsorProfileId()
+    : toValidId(localStorage.getItem("sponsorProfileId"));
+
+  const { data: sponsorProfilesList = [] } = useQuery({
+    queryKey: ["sponsorProfiles", user?.id],
     queryFn: async () => {
-      const data = await overviewService.getAllAppointments();
-      return Array.isArray(data) ? data : [];
+      const res = await overviewService.getSponsorProfiles();
+      return Array.isArray(res) ? res : [];
     },
-    enabled: !!token,
+    enabled: !!token && isSponsor && !storedSponsorId,
   });
 
-  const [user] = useState(() => {
-    const data = localStorage.getItem("userData");
-    return data ? JSON.parse(data) : null;
-  });
+  const matchedSponsorProfile = useMemo(
+    () =>
+      isSponsor ? resolveSponsorProfileFromList(sponsorProfilesList, user) : null,
+    [isSponsor, sponsorProfilesList, user],
+  );
 
-  const isAdmin = isAdminUser(user);
+  const sponsorId = useMemo(
+    () =>
+      isSponsor
+        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
+        : storedSponsorId,
+    [isSponsor, storedSponsorId, matchedSponsorProfile],
+  );
 
   useEffect(() => {
-    if (!user) {
-      window.location.href = "/";
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
     }
-  }, [user]);
+  }, [isSponsor, matchedSponsorProfile]);
 
-  const sponsorId = localStorage.getItem("sponsorProfileId");
-
-  const { data: patientsList = [], refetch: refetchPatients } = useQuery({
+  const {
+    data: patientsList = [],
+    refetch: refetchPatients,
+    isSuccess: isSponsorPatientsLoaded,
+  } = useQuery({
     queryKey: ["sponsorPatients", sponsorId],
     queryFn: async () => {
-      if (
-        !sponsorId ||
-        sponsorId === "null" ||
-        sponsorId === "undefined" ||
-        sponsorId === "0"
-      )
-        return [];
+      if (!sponsorId) return [];
       const res = await overviewService.getSponsorPatients(sponsorId);
       return Array.isArray(res) ? res : [];
     },
     enabled:
+      !!token &&
       !!sponsorId &&
-      (user?.user_role === "sponsor" || user?.user_role === "patient"),
+      (isSponsor || user?.user_role === "patient"),
   });
+
+  const ownedPatientIds = useMemo(() => {
+    if (!isSponsor) return [];
+    const fromQuery = (Array.isArray(patientsList) ? patientsList : [])
+      .map((p) => toValidId(p?.id))
+      .filter(Boolean);
+    if (fromQuery.length > 0) return fromQuery;
+    if (isSponsorPatientsLoaded) return [];
+    return getStoredSponsorPatientIds();
+  }, [isSponsor, patientsList, isSponsorPatientsLoaded]);
+
+  const { data: appointmentList = [] } = useQuery({
+    queryKey: [
+      "appointments",
+      isSponsor ? `sponsor-${sponsorId || "pending"}` : "all",
+    ],
+    queryFn: async () => {
+      if (isSponsor) {
+        const data = await overviewService.getSponsorAppointments(
+          sponsorId,
+          ownedPatientIds,
+        );
+        return Array.isArray(data) ? data : [];
+      }
+      const data = await overviewService.getAllAppointments();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled:
+      !!token &&
+      (!isSponsor || (!!sponsorId && isSponsorPatientsLoaded)),
+  });
+
+  const scopedAppointments = useMemo(() => {
+    if (!Array.isArray(appointmentList)) return [];
+    if (!isSponsor) return appointmentList;
+    if (!sponsorId) return [];
+    return filterSponsorAppointments(
+      appointmentList,
+      sponsorId,
+      ownedPatientIds,
+    );
+  }, [appointmentList, isSponsor, sponsorId, ownedPatientIds]);
+
+  const parseSafeDate = (dateVal) => {
+    if (!dateVal) return null;
+    if (typeof dateVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+      const [year, month, day] = dateVal.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+    const d = new Date(dateVal);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const upcomingMappedAppointments = useMemo(() => {
+    return scopedAppointments.map((appt) => {
+      const rawDate =
+        appt?.appointment_date ||
+        (Array.isArray(appt?.preferred_dates) && appt.preferred_dates.length > 0
+          ? appt.preferred_dates[0]
+          : null);
+      const parsedDate = parseSafeDate(rawDate);
+      const rawTime =
+        appt?.appointment_time ||
+        (Array.isArray(appt?.preferred_times) && appt.preferred_times.length > 0
+          ? appt.preferred_times[0]
+          : null);
+      const doctorName = appt?.doc?.user
+        ? `${appt.doc.user.first_name || ""} ${appt.doc.user.last_name || ""}`.trim()
+        : appt?.appointment_type || "Appointment";
+      return {
+        ...appt,
+        date: parsedDate,
+        doctor: doctorName || "Yet to assign",
+        time: rawTime || "Time TBD",
+      };
+    });
+  }, [scopedAppointments]);
 
   useEffect(() => {
     if (patientsList.length > 0) {
-      const currentSelectedId = Number(
+      const currentSelectedId = toValidId(
         selectedPatientId || localStorage.getItem("selectedPatientId"),
       );
       const selectedPatient =
-        patientsList.find((p) => p.id === currentSelectedId) ||
+        patientsList.find((p) => toValidId(p.id) === currentSelectedId) ||
         patientsList[0] ||
         null;
       setPatientData(selectedPatient);
@@ -157,6 +270,8 @@ export default function Overview() {
   }, [patientsList, selectedPatientId]);
 
   useEffect(() => {
+    if (!token || user?.user_role !== "doctor") return;
+
     const fetchLoggedInDoctor = async () => {
       try {
         const endpoint = `${base_url}/doctorprofile_list/`;
@@ -164,10 +279,14 @@ export default function Overview() {
           Authorization: `Token ${token}`,
         };
         const res = await axios.get(endpoint, { headers });
-        const loggedInDoctor = res.data.find(
+        const loggedInDoctor = (Array.isArray(res.data) ? res.data : []).find(
           (doc) => doc?.user?.id === user?.id,
         );
-        localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
+        if (loggedInDoctor) {
+          localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
+        } else {
+          localStorage.removeItem("doctorData");
+        }
       } catch (error) {
         console.log("Error fetching logged in doctor:", error);
         message.error("Failed to load doctor profile");
@@ -193,9 +312,13 @@ export default function Overview() {
 
   const doctorDataRaw = localStorage.getItem("doctorData");
   let doctorId = 0;
-  if (doctorDataRaw && doctorDataRaw !== "undefined") {
-    const doctorData = JSON.parse(doctorDataRaw);
-    doctorId = doctorData?.id || null;
+  if (doctorDataRaw && doctorDataRaw !== "undefined" && doctorDataRaw !== "null") {
+    try {
+      const doctorData = JSON.parse(doctorDataRaw);
+      doctorId = doctorData?.id || null;
+    } catch {
+      doctorId = 0;
+    }
   }
 
   const { data: doctorAppointments = [] } = useQuery({
@@ -399,14 +522,14 @@ export default function Overview() {
     {
       id: 1,
       name: "Total Appointments",
-      count: appointmentList.length,
+      count: scopedAppointments.length,
       diff: "+95%",
       duration: "in last 7 Days",
     },
     {
       id: 2,
       name: "Total Appointments",
-      count: appointmentList.length,
+      count: scopedAppointments.length,
       diff: "+95%",
       duration: "in last 7 Days",
     },
@@ -647,7 +770,7 @@ export default function Overview() {
     legend: { position: "bottom" },
   };
 
-  const appointmentListData = appointmentList.map((item, idx) => ({
+  const appointmentListData = scopedAppointments.map((item, idx) => ({
     id: item.id,
     key: item.id,
     date: item.appointment_date
@@ -822,11 +945,21 @@ export default function Overview() {
     currentMonth?.getMonth(),
   );
 
-  const appointmentDates = appointmentList.map((a) => a.date?.toDateString());
+  const appointmentDates = upcomingMappedAppointments
+    .map((a) => a.date?.toDateString())
+    .filter(Boolean);
 
   const userToken = localStorage.getItem("token");
 
   useEffect(() => {
+    if (
+      !userToken ||
+      (!isAdmin &&
+        user?.user_role !== "doctor" &&
+        user?.user_role !== "care_taker")
+    ) {
+      return;
+    }
     const fetchUsers = async () => {
       try {
         const endpoint = `${base_url}/user_view/`;
@@ -842,7 +975,7 @@ export default function Overview() {
       }
     };
     fetchUsers();
-  }, []);
+  }, [userToken, isAdmin, user?.user_role]);
 
   const base_url1 = process.env.REACT_APP_API_BASE_URL
     ? process.env.REACT_APP_API_BASE_URL.replace(/\/verimed\/?$/i, "")
@@ -896,9 +1029,9 @@ export default function Overview() {
     document.body.removeChild(link);
   };
 
-  const patientId = localStorage.getItem("sponsorPatientIds");
-
-  const cleanedPatientId = Number(patientId?.replace(/[\[\]]/g, ""));
+  const storedSponsorPatientIds = getStoredSponsorPatientIds();
+  const cleanedPatientId =
+    toValidId(selectedPatientId) || storedSponsorPatientIds[0] || null;
 
   const { data: medicalReports = [] } = useQuery({
     queryKey: ["medicalHistory", cleanedPatientId],
@@ -917,7 +1050,10 @@ export default function Overview() {
       }));
       return reports;
     },
-    enabled: !!cleanedPatientId && !isNaN(cleanedPatientId) && !!token,
+    enabled:
+      !!cleanedPatientId &&
+      !!token &&
+      user?.user_role === "care_taker",
   });
 
   const CaretakerAppointmentCard = ({ appointment }) => {
@@ -995,22 +1131,28 @@ export default function Overview() {
     );
   };
 
-  const userDataRaw = localStorage.getItem("userData");
-  const userData =
-    userDataRaw && userDataRaw !== "undefined" ? JSON.parse(userDataRaw) : null;
+  const userData = user;
 
   useEffect(() => {
+    if (!token || userData?.user_role !== "care_taker") return;
+
     const fetchCareTakerPatients = async () => {
       try {
         const endpoint = `${base_url}/caretakerprofile_list/`;
-        const res = await axios.get(endpoint);
-        const loggedInCaretaker = res.data.find(
+        const res = await axios.get(endpoint, {
+          headers: { Authorization: `Token ${token}` },
+        });
+        const loggedInCaretaker = (Array.isArray(res.data) ? res.data : []).find(
           (ct) => ct?.user?.id === userData?.id,
         );
-        localStorage.setItem(
-          "careTakerData",
-          JSON.stringify(loggedInCaretaker),
-        );
+        if (loggedInCaretaker) {
+          localStorage.setItem(
+            "careTakerData",
+            JSON.stringify(loggedInCaretaker),
+          );
+        } else {
+          localStorage.removeItem("careTakerData");
+        }
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
         message.error("Failed to load caretaker profile");
@@ -1019,14 +1161,26 @@ export default function Overview() {
       }
     };
     fetchCareTakerPatients();
-  }, [userData]);
+  }, [userData, token]);
 
-  const careTakerDataRaw = localStorage.getItem("careTakerData");
-  const careTakerData =
-    careTakerDataRaw && careTakerDataRaw !== "undefined"
-      ? JSON.parse(careTakerDataRaw)
-      : null;
+  let careTakerData = null;
+  try {
+    const careTakerDataRaw = localStorage.getItem("careTakerData");
+    careTakerData =
+      careTakerDataRaw &&
+      careTakerDataRaw !== "undefined" &&
+      careTakerDataRaw !== "null"
+        ? JSON.parse(careTakerDataRaw)
+        : null;
+  } catch {
+    careTakerData = null;
+  }
+
   useEffect(() => {
+    if (!token || userData?.user_role !== "care_taker" || !careTakerData?.id) {
+      return;
+    }
+
     const fetchCareTakerPatients = async () => {
       try {
         const endpoint = `${base_url}/verimed_bookappoinment_create_update/`;
@@ -1046,7 +1200,7 @@ export default function Overview() {
       }
     };
     fetchCareTakerPatients();
-  }, [careTakerData, token]);
+  }, [careTakerData, token, userData?.user_role]);
 
   const patientTableColumns = [
     {
@@ -1142,12 +1296,11 @@ export default function Overview() {
         {/* Page Content */}
         <div className="p-[20px] overflow-y-auto gap-[20px] flex flex-col items-center overflow-x-hidden">
           {/* Banner */}
-          {user?.user_role === "sponsor" && <Banner />}
+          {isSponsor && <Banner />}
 
           {/* Patient Details */}
           {user?.user_role !== "doctor" &&
-            (user?.user_role === "sponsor" ||
-              user?.user_role === "patient") && (
+            (isSponsor || user?.user_role === "patient") && (
               <div className="rounded-[12px] p-[20px] w-full flex flex-col gap-[20px] min-w-0">
                 <SectionHeader title="Patient Details">
                   <Primarybtn
@@ -1878,7 +2031,7 @@ export default function Overview() {
           )}
 
           {/* Care Team & Medical History */}
-          {user?.user_role === "sponsor" && (
+          {isSponsor && (
             <>
               {/* Main Container */}
               <div className="flex justify-between gap-[20px] w-full bg-[#F9FAFB] p-[20px] rounded-[10px]">
@@ -1966,7 +2119,10 @@ export default function Overview() {
                     <p className="text-[18px] font-bold text-gray-800 tracking-tight m-0">
                       Upcoming Appointments
                     </p>
-                    <span className="text-[13px] font-semibold text-teal-600 hover:text-teal-700 cursor-pointer transition-colors">
+                    <span
+                      onClick={() => navigate("/appointments")}
+                      className="text-[13px] font-semibold text-teal-600 hover:text-teal-700 cursor-pointer transition-colors"
+                    >
                       View All
                     </span>
                   </div>
@@ -2030,12 +2186,12 @@ export default function Overview() {
 
                   {/* Appointment Cards */}
                   <div className="flex flex-col gap-3">
-                  {appointmentList &&
-                    appointmentList
+                  {upcomingMappedAppointments
                       .filter(
                         (a) =>
-                          a.date?.getMonth() === currentMonth?.getMonth() &&
-                          a.date?.getFullYear() === currentMonth?.getFullYear(),
+                          a.date &&
+                          a.date.getMonth() === currentMonth?.getMonth() &&
+                          a.date.getFullYear() === currentMonth?.getFullYear(),
                       )
                       .map((appt, index) => {
                         const isSelected =
@@ -2394,12 +2550,12 @@ export default function Overview() {
                     })}
                   </div>
                 )}
-                {appointmentList &&
-                  appointmentList
+                {upcomingMappedAppointments
                     .filter(
                       (a) =>
-                        a.date?.getMonth() === currentMonth?.getMonth() &&
-                        a.date?.getFullYear() === currentMonth?.getFullYear(),
+                        a.date &&
+                        a.date.getMonth() === currentMonth?.getMonth() &&
+                        a.date.getFullYear() === currentMonth?.getFullYear(),
                     )
                     .map((appt, index) => {
                       const isSelected =
@@ -2563,12 +2719,12 @@ export default function Overview() {
                   )}
 
                   {/* Appointment Cards */}
-                  {appointmentList &&
-                    appointmentList
+                  {upcomingMappedAppointments
                       .filter(
                         (a) =>
-                          a.date?.getMonth() === currentMonth?.getMonth() &&
-                          a.date?.getFullYear() === currentMonth?.getFullYear(),
+                          a.date &&
+                          a.date.getMonth() === currentMonth?.getMonth() &&
+                          a.date.getFullYear() === currentMonth?.getFullYear(),
                       )
                       .map((appt, index) => {
                         const isSelected =

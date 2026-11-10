@@ -27,6 +27,10 @@ import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
 import { isAdminUser, base_url } from "../../constants/constants";
+import {
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+} from "../../utils/sponsorIsolation";
 import axios from "axios";
 
 const { Sider } = Layout;
@@ -146,9 +150,12 @@ export default function CustomSider() {
   const location = useLocation();
   const data = localStorage.getItem("userData");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const sponsorData = JSON.parse(localStorage.getItem("sponsorData"));
-  // const user = sponsorData?.user;
-  const user = data ? JSON.parse(data) : null;
+  let user = null;
+  try {
+    user = data ? JSON.parse(data) : null;
+  } catch {
+    user = null;
+  }
   // check with shared helper
   const isAdmin = isAdminUser(user);
   const [form] = Form.useForm();
@@ -278,20 +285,24 @@ export default function CustomSider() {
         console.error("Error refreshing user view:", e);
       }
 
-      try {
-        const sponsorRes = await axios.get(`${base_url}/sponsorprofile_list/`, {
-          headers: { Authorization: `Token ${token}` },
-        });
-        if (Array.isArray(sponsorRes?.data)) {
-          const matchedSponsor = sponsorRes.data.find(
-            (s) => s.user?.id === user.id,
+      if (!isAdmin && user?.user_role === "sponsor") {
+        try {
+          const sponsorRes = await axios.get(
+            `${base_url}/sponsorprofile_list/`,
+            {
+              headers: { Authorization: `Token ${token}` },
+            },
           );
-          if (matchedSponsor) {
-            localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
+          if (Array.isArray(sponsorRes?.data)) {
+            const matchedSponsor = resolveSponsorProfileFromList(
+              sponsorRes.data,
+              user,
+            );
+            persistSponsorProfile(matchedSponsor);
           }
+        } catch (e) {
+          console.error("Error refreshing sponsor list:", e);
         }
-      } catch (e) {
-        console.error("Error refreshing sponsor list:", e);
       }
 
       setIsModalOpen(false);

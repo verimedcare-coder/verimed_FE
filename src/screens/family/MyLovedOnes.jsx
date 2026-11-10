@@ -19,7 +19,15 @@ import { Table, message, Modal, Form, Input, Upload, Button, Select, DatePicker,
 import dayjs from "dayjs";
 import { getData } from "country-list";
 import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { base_url } from "../../constants/constants";
+import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  filterSponsorAppointments,
+  filterSponsorPatients,
+  getStoredSponsorProfileId,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
@@ -87,6 +95,24 @@ export default function MyLovedOnes() {
 
 
   const token = localStorage.getItem("token");
+  const user = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userData");
+      return raw && raw !== "undefined" && raw !== "null"
+        ? JSON.parse(raw)
+        : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  if (!user) {
+    window.location.href = "/";
+  }
+
+  const isAdmin = isAdminUser(user);
+  const isSponsor = user?.user_role === "sponsor" && !isAdmin;
+
   const dotStyle = (color) => ({
     width: "8px",
     height: "8px",
@@ -111,13 +137,92 @@ export default function MyLovedOnes() {
     };
   }, []);
 
-  const cleanedPatientId = Number(selectedPatientId);
+  const cleanedPatientId = toValidId(selectedPatientId);
+
+  const storedSponsorId = isSponsor
+    ? getStoredSponsorProfileId()
+    : toValidId(localStorage.getItem("sponsorProfileId"));
+
+  const { data: sponsorProfilesList = [] } = useQuery({
+    queryKey: ["sponsorProfiles", user?.id],
+    queryFn: async () => {
+      const res = await myLovedOnesService.getSponsorProfiles();
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!token && isSponsor && !storedSponsorId,
+  });
+
+  const matchedSponsorProfile = useMemo(
+    () =>
+      isSponsor ? resolveSponsorProfileFromList(sponsorProfilesList, user) : null,
+    [isSponsor, sponsorProfilesList, user],
+  );
+
+  const resolvedSponsorId = useMemo(
+    () =>
+      isSponsor
+        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
+        : storedSponsorId,
+    [isSponsor, storedSponsorId, matchedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
+    }
+  }, [isSponsor, matchedSponsorProfile]);
+
+  const {
+    data: sponsorPatients = [],
+    isSuccess: isSponsorPatientsLoaded,
+  } = useQuery({
+    queryKey: ["sponsorPatients", resolvedSponsorId],
+    queryFn: async () => {
+      const data =
+        await myLovedOnesService.getSponsorPatients(resolvedSponsorId);
+      const filtered = filterSponsorPatients(
+        Array.isArray(data) ? data : [],
+        resolvedSponsorId,
+        true,
+      );
+      localStorage.setItem("sponsorPatientData", JSON.stringify(filtered));
+      return filtered;
+    },
+    enabled: !!resolvedSponsorId && !!token,
+  });
+
+  const ownedPatientIds = useMemo(
+    () =>
+      (Array.isArray(sponsorPatients) ? sponsorPatients : [])
+        .map((p) => toValidId(p?.id))
+        .filter(Boolean),
+    [sponsorPatients],
+  );
+
+  const isSelectedPatientOwned = useMemo(() => {
+    if (!cleanedPatientId) return false;
+    if (!isSponsor) return true;
+    return ownedPatientIds.includes(cleanedPatientId);
+  }, [cleanedPatientId, isSponsor, ownedPatientIds]);
 
   const { data: medicalReports = [] } = useQuery({
-    queryKey: ["lovedOnesMedicalHistory", cleanedPatientId],
+    queryKey: [
+      "lovedOnesMedicalHistory",
+      cleanedPatientId,
+      isSponsor ? resolvedSponsorId : "all",
+    ],
     queryFn: async () => {
       const data = await myLovedOnesService.getPatientAppointments(cleanedPatientId);
-      return (data || []).map((item, index) => ({
+      const scoped = isSponsor
+        ? filterSponsorAppointments(
+            Array.isArray(data) ? data : [],
+            resolvedSponsorId,
+            ownedPatientIds,
+          )
+        : Array.isArray(data)
+          ? data
+          : [];
+      return scoped.map((item, index) => ({
         key: index,
         appointment_date: item.appointment_date,
         appointment_time: item.appointment_time,
@@ -130,7 +235,10 @@ export default function MyLovedOnes() {
         documents: item.documents || [],
       }));
     },
-    enabled: !isNaN(cleanedPatientId) && cleanedPatientId > 0 && !!token,
+    enabled:
+      !!cleanedPatientId &&
+      !!token &&
+      (!isSponsor || (isSponsorPatientsLoaded && isSelectedPatientOwned)),
   });
 
   const columns = [
@@ -209,13 +317,7 @@ export default function MyLovedOnes() {
   ];
 
 
-  const data = localStorage.getItem("userData");
-  const user = data ? JSON.parse(data) : null;
-  if (!user) {
-    window.location.href = "/";
-  }
-
-  const sponsorId = localStorage.getItem("sponsorProfileId");
+  const sponsorId = resolvedSponsorId;
 
   const getPhotoUrl = (url) => {
     if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
@@ -229,21 +331,10 @@ export default function MyLovedOnes() {
     return `${base}/${cleanedUrl}?t=${imageHash}`;
   };
 
-  const storedSponsorId = localStorage.getItem("sponsorProfileId") || sponsorId;
-  const { data: sponsorPatients = [] } = useQuery({
-    queryKey: ["sponsorPatients", storedSponsorId],
-    queryFn: async () => {
-      const data = await myLovedOnesService.getSponsorPatients(storedSponsorId);
-      if (Array.isArray(data)) {
-        localStorage.setItem("sponsorPatientData", JSON.stringify(data));
-      }
-      return data || [];
-    },
-    enabled: !!storedSponsorId && storedSponsorId !== "null" && storedSponsorId !== "undefined" && storedSponsorId !== "0" && !!token,
-  });
-
   const patientData = useMemo(() => {
-    return sponsorPatients.find((p) => p.id === cleanedPatientId) || null;
+    return (
+      sponsorPatients.find((p) => toValidId(p.id) === cleanedPatientId) || null
+    );
   }, [sponsorPatients, cleanedPatientId]);
 
   const handleEditOpen = () => {
@@ -304,10 +395,10 @@ export default function MyLovedOnes() {
     
     setEditLoading(true);
     try {
-      const storedSponsorId =
-        localStorage.getItem("sponsorProfileId") ||
-        patientData?.sponsorid ||
-        patientData?.sponsor ||
+      const targetSponsorId =
+        (isSponsor ? resolvedSponsorId || getStoredSponsorProfileId() : null) ||
+        toValidId(patientData?.sponsorid) ||
+        toValidId(patientData?.sponsor) ||
         0;
       const formattedDOB =
         values.patient_dob && dayjs.isDayjs(values.patient_dob)
@@ -315,7 +406,7 @@ export default function MyLovedOnes() {
           : values.patient_dob || null;
       const patientprofile_update_data = {
         patient_profile_updateid: Number(patientData.id),
-        sponsorid: Number(storedSponsorId),
+        sponsorid: Number(targetSponsorId),
         doctorid: patientData.doctorid || patientData.doctor || 1,
         caretakerid: patientData.caretakerid || patientData.caretaker || null,
         patient_dob: formattedDOB,

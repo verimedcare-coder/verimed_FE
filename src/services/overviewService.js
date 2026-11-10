@@ -1,11 +1,57 @@
 import apiClient from "./apiClient";
+import {
+  filterSponsorAppointments,
+  filterSponsorPatients,
+  toValidId,
+} from "../utils/sponsorIsolation";
 
 export const overviewService = {
-  getSponsorPatients: async (sponsorId) => {
-    const response = await apiClient.post("/sponsorid_patientprofile_list/", {
-      sponsorid: Number(sponsorId),
-    });
+  getSponsorProfiles: async () => {
+    const response = await apiClient.get("/sponsorprofile_list/");
     return response.data;
+  },
+
+  getSponsorPatients: async (sponsorId) => {
+    const validSponsorId = toValidId(sponsorId);
+    if (!validSponsorId) return [];
+    const response = await apiClient.post("/sponsorid_patientprofile_list/", {
+      sponsorid: validSponsorId,
+    });
+    return filterSponsorPatients(
+      Array.isArray(response.data) ? response.data : [],
+      validSponsorId,
+      true,
+    );
+  },
+
+  getSponsorAppointments: async (sponsorId, ownedPatientIds = []) => {
+    const validSponsorId = toValidId(sponsorId);
+    if (!validSponsorId) return [];
+
+    try {
+      const response = await apiClient.post("/vb_sponsorappoinment_list/", {
+        sponsorid: validSponsorId,
+      });
+      return filterSponsorAppointments(
+        Array.isArray(response.data) ? response.data : [],
+        validSponsorId,
+        ownedPatientIds,
+      );
+    } catch (error) {
+      const status = error?.response?.status;
+      if (status !== 404 && status !== 405) {
+        throw error;
+      }
+      const fallbackRes = await apiClient.get(
+        "/verimed_bookappoinment_create_update/",
+        { params: { sponsor_id: validSponsorId } },
+      );
+      return filterSponsorAppointments(
+        Array.isArray(fallbackRes.data) ? fallbackRes.data : [],
+        validSponsorId,
+        ownedPatientIds,
+      );
+    }
   },
 
   getDoctors: async () => {

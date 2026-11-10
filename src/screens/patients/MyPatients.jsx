@@ -75,18 +75,25 @@ export default function MyPatients() {
     }
   };
 
-  const careTakerDataRaw = localStorage.getItem("careTakerData");
-  const careTakerData =
-    careTakerDataRaw && careTakerDataRaw !== "undefined"
-      ? JSON.parse(careTakerDataRaw)
-      : null;
+  let careTakerData = null;
+  try {
+    const careTakerDataRaw = localStorage.getItem("careTakerData");
+    careTakerData =
+      careTakerDataRaw &&
+      careTakerDataRaw !== "undefined" &&
+      careTakerDataRaw !== "null"
+        ? JSON.parse(careTakerDataRaw)
+        : null;
+  } catch {
+    careTakerData = null;
+  }
   const { data: allAppointments = [] } = useQuery({
-    queryKey: ["allAppointments"],
+    queryKey: ["allAppointments", careTakerData?.id || "all"],
     queryFn: async () => {
       const data = await myPatientsService.getAllAppointments();
       return Array.isArray(data) ? data : [];
     },
-    enabled: !!token,
+    enabled: !!token && !!careTakerData?.id,
   });
 
   const patient = useMemo(() => {

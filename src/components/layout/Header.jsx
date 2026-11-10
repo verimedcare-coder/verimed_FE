@@ -32,7 +32,14 @@ import {
 import flagIcon from "../../assets/icons/flag.svg";
 import Primarybtn from "../common/PrimaryBtn";
 import { useNavigate } from "react-router-dom";
-import { base_url } from "../../constants/constants";
+import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  clearRoleSessionStorage,
+  getStoredSponsorProfileId,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 import dayjs from "dayjs";
 import { getData } from "country-list";
 import * as Yup from "yup";
@@ -199,12 +206,18 @@ export default function HeaderComponent() {
   const data = localStorage.getItem("userData");
   const user = data ? JSON.parse(data) : null;
   const token = localStorage.getItem("token");
+  const isSponsor = user?.user_role === "sponsor" && !isAdminUser(user);
 
   const handleLanguageChange = (lang) => setLanguage(lang);
 
-  const careTakerPatients = JSON.parse(
-    localStorage.getItem("careTakerPatients"),
-  );
+  let careTakerPatients = [];
+  try {
+    careTakerPatients = JSON.parse(
+      localStorage.getItem("careTakerPatients") || "[]",
+    );
+  } catch {
+    careTakerPatients = [];
+  }
 
   const items = [
     { key: "1", label: "Enroll Yourself" },
@@ -254,6 +267,8 @@ export default function HeaderComponent() {
   );
 
   const handleLogout = () => {
+    queryClient.clear();
+    clearRoleSessionStorage();
     localStorage.clear();
     navigate("/");
   };
@@ -271,6 +286,7 @@ export default function HeaderComponent() {
 
   const showPatientDetails = (patientId) => {
     try {
+      const targetId = toValidId(patientId);
       const storedAppointments = JSON.parse(
         localStorage.getItem("sponsorAppointments") || "[]",
       );
@@ -279,22 +295,31 @@ export default function HeaderComponent() {
       );
 
       const patientAppointments = storedAppointments.filter(
-        (item) => item?.patient?.user?.id === patientId,
+        (item) =>
+          (targetId && toValidId(item?.patient?.id) === targetId) ||
+          (targetId && toValidId(item?.patient?.user?.id) === targetId),
       );
 
       let patientDetails = null;
 
       if (patientAppointments.length > 0) {
-        patientDetails = patientAppointments[0]?.patient?.user;
+        patientDetails =
+          patientAppointments[0]?.patient?.user ||
+          patientAppointments[0]?.patient ||
+          null;
         localStorage.setItem(
           "selectedPatientAppointments",
           JSON.stringify(patientAppointments),
         );
       } else {
         localStorage.removeItem("selectedPatientAppointments");
-        const match = sponsorPatientData.find((p) => p?.user?.id === patientId);
+        const match = sponsorPatientData.find(
+          (p) =>
+            (targetId && toValidId(p?.id) === targetId) ||
+            (targetId && toValidId(p?.user?.id) === targetId),
+        );
         if (match) {
-          patientDetails = match.user;
+          patientDetails = match.user || match;
         }
       }
 
@@ -312,24 +337,28 @@ export default function HeaderComponent() {
   };
 
   const handlePatientChange = (value) => {
-    setSelectedPatient(value);
-    localStorage.setItem("selectedPatientId", value);
-    window.dispatchEvent(new Event("patientChanged"));
+    const valueStr = value !== null && value !== undefined ? String(value) : "";
+    setSelectedPatient(valueStr || null);
+    if (valueStr) {
+      localStorage.setItem("selectedPatientId", valueStr);
+    } else {
+      localStorage.removeItem("selectedPatientId");
+    }
 
     let selectedPatientObj = null;
     let selectedSource = null;
     if (
       Array.isArray(patients) &&
-      patients.some((p) => String(p.id) === String(value))
+      patients.some((p) => String(p.id) === String(valueStr))
     ) {
-      selectedPatientObj = patients.find((p) => String(p.id) === String(value));
+      selectedPatientObj = patients.find((p) => String(p.id) === String(valueStr));
       selectedSource = "patients";
     } else if (
       Array.isArray(careTakerPatients) &&
-      careTakerPatients.some((p) => String(p.id) === String(value))
+      careTakerPatients.some((p) => String(p.id) === String(valueStr))
     ) {
       selectedPatientObj = careTakerPatients.find(
-        (p) => String(p.id) === String(value),
+        (p) => String(p.id) === String(valueStr),
       );
       selectedSource = "careTakerPatients";
     }
@@ -340,33 +369,65 @@ export default function HeaderComponent() {
         JSON.stringify(selectedPatientObj),
       );
       localStorage.setItem("selectedPatientSource", selectedSource);
-      showPatientDetails(value);
+      showPatientDetails(valueStr);
     } else {
       localStorage.removeItem("selectedPatientData");
       localStorage.removeItem("selectedPatientSource");
     }
 
     setEditedData(selectedPatientObj || {});
+    window.dispatchEvent(new Event("patientChanged"));
   };
 
-  const storedSponsorId = localStorage.getItem("sponsorProfileId");
-  const { data: fetchedPatients = [] } = useQuery({
-    queryKey: ["sponsorPatients", storedSponsorId],
+  const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
+  const { data: sponsorProfilesList = [] } = useQuery({
+    queryKey: ["sponsorProfiles", user?.id],
     queryFn: async () => {
-      const data = await headerService.getSponsorPatients(storedSponsorId);
-      return Array.isArray(data) ? data : [];
+      const res = await headerService.getSponsorProfiles();
+      return Array.isArray(res) ? res : [];
     },
-    enabled:
-      !!storedSponsorId &&
-      storedSponsorId !== "null" &&
-      storedSponsorId !== "undefined" &&
-      storedSponsorId !== "0" &&
-      !!token,
+    enabled: !!token && isSponsor && !storedSponsorId,
+  });
+
+  const resolvedSponsorProfile = useMemo(
+    () => resolveSponsorProfileFromList(sponsorProfilesList, user),
+    [sponsorProfilesList, user],
+  );
+
+  const effectiveSponsorId = useMemo(
+    () => storedSponsorId || toValidId(resolvedSponsorProfile?.id),
+    [storedSponsorId, resolvedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (resolvedSponsorProfile) {
+      persistSponsorProfile(resolvedSponsorProfile);
+    }
+  }, [resolvedSponsorProfile]);
+
+  const {
+    data: fetchedPatients = [],
+    isSuccess: isSponsorPatientsFetched,
+  } = useQuery({
+    queryKey: ["sponsorPatients", effectiveSponsorId],
+    queryFn: async () => {
+      const res = await headerService.getSponsorPatients(effectiveSponsorId);
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!effectiveSponsorId && !!token && isSponsor,
   });
 
   useEffect(() => {
+    if (!isSponsor) return;
+
     if (fetchedPatients.length > 0) {
       setPatients(fetchedPatients);
+      const patientIds = fetchedPatients
+        .map((p) => toValidId(p.id))
+        .filter(Boolean);
+      localStorage.setItem("sponsorPatientIds", JSON.stringify(patientIds));
+      localStorage.setItem("sponsorPatientData", JSON.stringify(fetchedPatients));
+
       const storedSelectedId = localStorage.getItem("selectedPatientId");
       let foundPatient = null;
       if (storedSelectedId) {
@@ -375,8 +436,9 @@ export default function HeaderComponent() {
         );
       }
       if (foundPatient) {
-        setSelectedPatient(String(foundPatient.id));
-        localStorage.setItem("selectedPatientId", String(foundPatient.id));
+        const foundIdStr = String(foundPatient.id);
+        setSelectedPatient(foundIdStr);
+        localStorage.setItem("selectedPatientId", foundIdStr);
         localStorage.setItem(
           "selectedPatientData",
           JSON.stringify(foundPatient),
@@ -391,9 +453,20 @@ export default function HeaderComponent() {
           JSON.stringify(fetchedPatients[0]),
         );
         showPatientDetails(firstPatientId);
+        window.dispatchEvent(new Event("patientChanged"));
       }
+    } else if (isSponsorPatientsFetched) {
+      setPatients([]);
+      setSelectedPatient(null);
+      localStorage.removeItem("sponsorPatientIds");
+      localStorage.removeItem("sponsorPatientData");
+      localStorage.removeItem("selectedPatientId");
+      localStorage.removeItem("selectedPatientData");
+      localStorage.removeItem("selectedPatientDetails");
+      localStorage.removeItem("selectedPatientAppointments");
+      window.dispatchEvent(new Event("patientChanged"));
     }
-  }, [fetchedPatients]);
+  }, [fetchedPatients, isSponsor, isSponsorPatientsFetched]);
 
   const checkIsLovedOne = (p) => {
     if (!p) return false;
@@ -565,7 +638,8 @@ export default function HeaderComponent() {
     try {
       const formData = new FormData();
 
-      const storedSponsorId = localStorage.getItem("sponsorProfileId");
+      const resolvedSponsorId =
+        effectiveSponsorId || getStoredSponsorProfileId();
 
       const formattedDOB = editedData.patient_dob
         ? dayjs(editedData.patient_dob).format("YYYY-MM-DD")
@@ -598,7 +672,7 @@ export default function HeaderComponent() {
         reason_enrollment:
           editedData.reason_enrollment || editedData.reason || "Patient",
         reason: editedData.reason_enrollment || editedData.reason || "Patient",
-        sponsorid: storedSponsorId ? Number(storedSponsorId) : null,
+        sponsorid: resolvedSponsorId || null,
         caretakerid: editedData.caretakerid || null,
 
         patient_name: editedData.patientName || "",
@@ -759,6 +833,7 @@ export default function HeaderComponent() {
       console.log("Update Response:", response.data);
 
       queryClient.invalidateQueries({ queryKey: ["sponsorPatients"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
 
       message.success("Patient details updated successfully!");
       Modal.success({
@@ -826,13 +901,13 @@ export default function HeaderComponent() {
 
         {/* Right Side: Action Controls */}
         <div className="flex items-center gap-[12px] shrink-0 flex-nowrap">
-          {user.user_role === "sponsor" && (
+          {isSponsor && (
             <Select
               value={
                 [...patientList, ...lovedOnesList].some(
                   (p) => String(p.id) === String(selectedPatient),
                 )
-                  ? selectedPatient
+                  ? String(selectedPatient)
                   : null
               }
               onChange={handlePatientChange}
@@ -847,7 +922,7 @@ export default function HeaderComponent() {
                     p.patient?.patient_name ||
                     "Unknown Patient";
                   return (
-                    <Option key={p.id} value={p.id} label={name}>
+                    <Option key={p.id} value={String(p.id)} label={name}>
                       <div className="flex items-center gap-[8px]">
                         <UserOutlined className="text-[#007F5F]" />
                         <span>{name}</span>
@@ -864,7 +939,7 @@ export default function HeaderComponent() {
                       p.patient?.patient_name ||
                       "Unknown Loved One";
                     return (
-                      <Option key={p.id} value={p.id} label={name}>
+                      <Option key={p.id} value={String(p.id)} label={name}>
                         <div className="flex items-center gap-[8px]">
                           <HeartOutlined className="text-[#FF4D4F]" />
                           <span>{name}</span>
@@ -877,7 +952,7 @@ export default function HeaderComponent() {
             </Select>
           )}
 
-          {user.user_role === "sponsor" && (
+          {isSponsor && (
             <Dropdown
               menu={{ items, onClick: handleMenuClick }}
               trigger={["click"]}

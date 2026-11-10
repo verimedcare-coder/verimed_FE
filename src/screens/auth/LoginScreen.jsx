@@ -1,7 +1,14 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loginService } from "../../services/loginService";
+import {
+  clearRoleSessionStorage,
+  filterSponsorAppointments,
+  persistSponsorProfile,
+  resolveSponsorProfileFromList,
+  toValidId,
+} from "../../utils/sponsorIsolation";
 import {
   Form,
   Input,
@@ -28,6 +35,7 @@ const { Title, Text } = Typography;
 export default function LoginScreen() {
   const [api, contextHolder] = notification.useNotification();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
 
   // Single helper — always uses notification (not message) so toasts are visible
@@ -41,8 +49,12 @@ export default function LoginScreen() {
   };
 
   const [user] = useState(() => {
-    const data = localStorage.getItem("userData");
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = localStorage.getItem("userData");
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
   });
 
   const location = useLocation();
@@ -58,17 +70,33 @@ export default function LoginScreen() {
 
   const token = localStorage.getItem("token");
 
-  // ─── Sponsor helpers (unchanged) ─────────────────────────────────────────
-  const fetchSponsorProfile = async (userId, token) => {
-    if (!userId || !token) return;
+  // ─── Sponsor helpers ──────────────────────────────────────────────────────
+  const fetchSponsorProfile = async (userOrId, authToken) => {
+    const userObj =
+      userOrId && typeof userOrId === "object"
+        ? userOrId
+        : { id: userOrId };
+    if (!toValidId(userObj?.id) || !authToken) return;
     try {
       const sponsorList = await loginService.getSponsorProfiles();
-      const matchedSponsor = (Array.isArray(sponsorList) ? sponsorList : []).find((s) => s.user.id === userId);
-      if (matchedSponsor) {
-        localStorage.setItem("sponsorData", JSON.stringify(matchedSponsor));
-        localStorage.setItem("sponsorProfileId", matchedSponsor.id);
-        await fetchSponsorPatients(matchedSponsor.id, token);
-        await fetchSponsorAppointments(token);
+      const matchedSponsor = resolveSponsorProfileFromList(sponsorList, userObj);
+      const resolvedSponsorId = persistSponsorProfile(matchedSponsor);
+      if (resolvedSponsorId) {
+        const ownedPatients = await fetchSponsorPatients(
+          resolvedSponsorId,
+          authToken,
+        );
+        await fetchSponsorAppointments(
+          resolvedSponsorId,
+          ownedPatients,
+          authToken,
+        );
+      } else {
+        localStorage.removeItem("sponsorData");
+        localStorage.removeItem("sponsorProfileId");
+        localStorage.removeItem("sponsorPatientIds");
+        localStorage.removeItem("sponsorPatientData");
+        localStorage.removeItem("sponsorAppointments");
       }
     } catch (error) {
       console.error("Error fetching sponsor profile:", error);
@@ -76,36 +104,56 @@ export default function LoginScreen() {
     }
   };
 
-  const fetchSponsorPatients = async (sponsorProfileId, token) => {
-    if (!sponsorProfileId || !token) return;
+  const fetchSponsorPatients = async (sponsorProfileId, authToken) => {
+    if (!sponsorProfileId || !authToken) return [];
     try {
       const patients = await loginService.getSponsorPatients(sponsorProfileId);
       if (Array.isArray(patients) && patients.length > 0) {
-        localStorage.setItem("sponsorPatientIds", JSON.stringify(patients.map((p) => p.id)));
+        const patientIds = patients
+          .map((p) => toValidId(p.id))
+          .filter(Boolean);
+        localStorage.setItem(
+          "sponsorPatientIds",
+          JSON.stringify(patientIds),
+        );
         localStorage.setItem("sponsorPatientData", JSON.stringify(patients));
+        return patients;
       } else {
         localStorage.removeItem("sponsorPatientIds");
         localStorage.removeItem("sponsorPatientData");
+        return [];
       }
     } catch (error) {
       console.error("Error fetching sponsor patients:", error);
       notify("error", "Failed to load sponsor patients");
+      return [];
     }
   };
 
-  const fetchSponsorAppointments = async (token) => {
+  const fetchSponsorAppointments = async (
+    sponsorProfileId,
+    ownedPatients = [],
+    authToken,
+  ) => {
     try {
-      const sponsorProfileId = localStorage.getItem("sponsorProfileId");
-      const sponsorPatientIds = JSON.parse(
-        localStorage.getItem("sponsorPatientIds") || "[]",
-      );
-      if (!sponsorProfileId || sponsorPatientIds.length === 0) return;
+      const validSponsorId = toValidId(sponsorProfileId);
+      if (!validSponsorId || !authToken) {
+        localStorage.removeItem("sponsorAppointments");
+        return;
+      }
 
-      const data = await loginService.getPatientAppointments(sponsorPatientIds[0]);
-      const filtered = (Array.isArray(data) ? data : []).filter(
-        (item) =>
-          item?.patient?.sponsor === Number(sponsorProfileId) &&
-          sponsorPatientIds.includes(item?.patient?.id),
+      const ownedIds = (Array.isArray(ownedPatients) ? ownedPatients : [])
+        .map((p) => toValidId(p?.id))
+        .filter(Boolean);
+
+      const data = await loginService.getSponsorAppointments(
+        validSponsorId,
+        ownedIds,
+      );
+      const filtered = filterSponsorAppointments(
+        Array.isArray(data) ? data : [],
+        validSponsorId,
+        ownedIds,
       );
       localStorage.setItem("sponsorAppointments", JSON.stringify(filtered));
     } catch (error) {
@@ -122,8 +170,13 @@ export default function LoginScreen() {
     try {
       // Step 1 — authenticate
       const res = await loginService.login({ username, password });
-      const token = res.token;
-      localStorage.setItem("token", token);
+      const authToken = res.token;
+
+      // Clear previous session & React Query cache so stale data never leaks across users
+      queryClient.clear();
+      clearRoleSessionStorage();
+      localStorage.removeItem("userData");
+      localStorage.setItem("token", authToken);
 
       // Step 2 — get user details
       const userList = await loginService.getUsers();
@@ -142,8 +195,8 @@ export default function LoginScreen() {
 
       localStorage.setItem("userData", JSON.stringify(userData));
 
-      if (userData.user_role === "sponsor") {
-        await fetchSponsorProfile(userData.id, token);
+      if (userData.user_role === "sponsor" && !isAdminUser(userData)) {
+        await fetchSponsorProfile(userData, authToken);
       }
 
       // Step 3 — notify success, then redirect after toast is visible
@@ -187,10 +240,14 @@ export default function LoginScreen() {
   useQuery({
     queryKey: ["sponsorProfileInit", user?.id],
     queryFn: async () => {
-      await fetchSponsorProfile(user.id, token);
+      await fetchSponsorProfile(user, token);
       return true;
     },
-    enabled: !!user && !!token && user.user_role === "sponsor",
+    enabled:
+      !!user &&
+      !!token &&
+      user.user_role === "sponsor" &&
+      !isAdminUser(user),
   });
 
   return (

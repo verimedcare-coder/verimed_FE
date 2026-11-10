@@ -7,7 +7,8 @@ import Header from "../../components/layout/Header";
 import Sider from "../../components/layout/Sider";
 import SecondaryBtn from "../../components/common/SecondaryBtn";
 import patientdetails from "../../assets/images/patient-profile.jpg";
-import { base_url } from "../../constants/constants";
+import { base_url, isAdminUser } from "../../constants/constants";
+import { getStoredSponsorProfileId } from "../../utils/sponsorIsolation";
 
 import { Empty, message, Table, Avatar } from "antd";
 const actions = [
@@ -56,21 +57,14 @@ export default function CareTeam() {
   const [fallbackPatientId, setFallbackPatientId] = React.useState(null);
 
   React.useEffect(() => {
-    if (user?.user_role === "sponsor" && !selectedPatientId) {
+    if (user?.user_role === "sponsor" && !isAdminUser(user) && !selectedPatientId && token) {
       const fetchPatients = async () => {
         try {
-          const storedSponsorId = localStorage.getItem("sponsorProfileId");
+          const storedSponsorId = getStoredSponsorProfileId();
           if (!storedSponsorId) return;
-          const res = await fetch(`${base_url}/sponsorid_patientprofile_list/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Token ${token}`,
-            },
-            body: JSON.stringify({ sponsorid: Number(storedSponsorId) }),
-          });
-          const patients = await res.json();
-          if (patients && patients.length > 0) {
+          const patients =
+            await appointmentsService.getSponsorPatients(storedSponsorId);
+          if (Array.isArray(patients) && patients.length > 0) {
             setFallbackPatientId(patients[0].id);
           }
         } catch (error) {
