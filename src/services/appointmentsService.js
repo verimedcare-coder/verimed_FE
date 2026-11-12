@@ -102,4 +102,24 @@ export const appointmentsService = {
     const response = await apiClient.post("/verimed_bookappoinment_create_update/", formData);
     return response.data;
   },
+
+  createAppointmentCheckoutSession: async (formData) => {
+    const response = await apiClient.post("/appointment-checkout/create/", formData);
+    return response.data;
+  },
+
+  verifyAppointmentCheckoutSession: async ({ session_id, draft_id }) => {
+    const response = await apiClient.post("/appointment-checkout/verify/", {
+      session_id,
+      ...(draft_id ? { draft_id } : {}),
+    });
+    return response.data;
+  },
+
+  cancelAppointmentCheckoutSession: async ({ draft_id }) => {
+    const response = await apiClient.post("/appointment-checkout/cancel/", {
+      draft_id,
+    });
+    return response.data;
+  },
 };

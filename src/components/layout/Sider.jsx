@@ -137,6 +137,11 @@ const menuConfig = {
       path: "/my_appointments",
     },
     {
+      label: "Appointments",
+      icon: <CalendarOutlined />,
+      path: "/appointments",
+    },
+    {
       label: "My Patients",
       icon: <UserOutlined />,
       path: "/my_patients",

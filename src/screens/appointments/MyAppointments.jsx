@@ -8,7 +8,7 @@ import SecondaryBtn from "../../components/common/SecondaryBtn";
 import Primarybtn from "../../components/common/PrimaryBtn";
 import patientdetails from "../../assets/images/patient-profile.jpg";
 import { Button, DatePicker, Table, Spin, message } from "antd";
-import { CalendarOutlined, FilterOutlined } from "@ant-design/icons";
+import { CalendarOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import BackButton from "../../components/common/BackButton";
@@ -231,7 +231,7 @@ export default function MyAppointments() {
             {/* Appointment Table Card */}
             <div className="bg-white rounded-[16px] p-[20px] lg:p-[24px] shadow-sm border border-[#E5E7EB]  min-w-0">
               <SectionHeader title="Appointment List">
-                <div className="flex items-center justify-center gap-[12px]">
+                <div className="flex items-center justify-center gap-[12px] flex-wrap">
                   <DatePicker
                     picker="year"
                     value={selectedYear}
@@ -242,6 +242,15 @@ export default function MyAppointments() {
                     className="w-[115px]"
                   />
                   <Primarybtn icon={<FilterOutlined />} name="Filter" />
+                  <Primarybtn
+                    icon={<PlusOutlined />}
+                    name="Request Appointment"
+                    onClick={() =>
+                      navigate("/appointments", {
+                        state: { openBookingModal: true },
+                      })
+                    }
+                  />
                 </div>
               </SectionHeader>
 

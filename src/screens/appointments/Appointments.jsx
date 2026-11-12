@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentsService } from "../../services/appointmentsService";
 import Header from "../../components/layout/Header";
@@ -50,7 +50,6 @@ import {
   isAdminUser,
   isMatchingService,
   REQUEST_SERVICES_LIST,
-  getServiceStripeLink,
   resolveMediaUrl,
 } from "../../constants/constants";
 import {
@@ -120,7 +119,8 @@ export default function Appointments() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isAppointmentDetailsModal, setIsAppointmentDetailsModal] =
     useState(false);
-  const [pendingStripeUrl, setPendingStripeUrl] = useState(null);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const handledStripeReturnRef = useRef(null);
 
   const token = localStorage.getItem("token");
   const userData = useMemo(() => {
@@ -133,6 +133,7 @@ export default function Appointments() {
   }, []);
   const isAdmin = isAdminUser(userData);
   const isSponsor = userData?.user_role === "sponsor" && !isAdmin;
+  const watchedSponsorId = Form.useWatch("sponsorId", form);
 
   const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
 
@@ -157,6 +158,109 @@ export default function Appointments() {
         : null,
     [isSponsor, storedSponsorId, matchedSponsorProfile],
   );
+
+  const activeSponsorPurchasedService = useMemo(() => {
+    if (isSponsor) {
+      return (
+        matchedSponsorProfile?.user?.service_purchased ||
+        userData?.service_purchased ||
+        ""
+      );
+    }
+    const targetSponsorId = toValidId(watchedSponsorId);
+    if (targetSponsorId && Array.isArray(sponsors)) {
+      const found = sponsors.find((s) => toValidId(s?.id) === targetSponsorId);
+      if (found?.user?.service_purchased) {
+        return found.user.service_purchased;
+      }
+    }
+    return userData?.service_purchased || "";
+  }, [isSponsor, matchedSponsorProfile, userData, watchedSponsorId, sponsors]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const stripeStatus = searchParams.get("stripe_payment");
+    const sessionId = searchParams.get("session_id");
+    const draftId = searchParams.get("draft_id");
+
+    if (!stripeStatus || !token) return;
+    const returnKey = `${stripeStatus}:${sessionId || ""}:${draftId || ""}`;
+    if (handledStripeReturnRef.current === returnKey) return;
+    handledStripeReturnRef.current = returnKey;
+
+    const handleStripeReturn = async () => {
+      if (stripeStatus === "success" && sessionId) {
+        setVerifyingPayment(true);
+        try {
+          const res = await appointmentsService.verifyAppointmentCheckoutSession({
+            session_id: sessionId,
+            draft_id: draftId,
+          });
+          if (res?.paid) {
+            try {
+              const savedRaw = sessionStorage.getItem("pendingAppointmentCheckout");
+              if (savedRaw) {
+                const saved = JSON.parse(savedRaw);
+                if (saved?.date || saved?.time) {
+                  setBookedDateTime({ date: saved.date || "", time: saved.time || "" });
+                }
+              }
+            } catch {
+              // ignore storage errors
+            }
+            sessionStorage.removeItem("pendingAppointmentCheckout");
+            setIsModalOpen(false);
+            setIsSuccessModalOpen(true);
+            form.resetFields();
+            setSelectedDates([]);
+            queryClient.invalidateQueries({ queryKey: ["appointments"] });
+            queryClient.invalidateQueries({ queryKey: ["doctorAppointments"] });
+            if (res?.email_sent === false) {
+              message.warning(
+                "Payment confirmed and appointment requested, but sponsor email could not be sent.",
+              );
+            } else {
+              message.success(
+                res?.message ||
+                  "Payment confirmed! Your appointment request and confirmation email have been sent.",
+              );
+            }
+          } else {
+            message.error(
+              res?.error ||
+                "Stripe payment could not be verified. Your appointment was not created.",
+            );
+          }
+        } catch (error) {
+          message.error(
+            error.response?.data?.error ||
+              "Failed to verify Stripe payment. Appointment request was not completed.",
+          );
+        } finally {
+          setVerifyingPayment(false);
+          navigate(location.pathname, { replace: true });
+        }
+      } else if (stripeStatus === "cancelled") {
+        sessionStorage.removeItem("pendingAppointmentCheckout");
+        if (draftId) {
+          try {
+            await appointmentsService.cancelAppointmentCheckoutSession({
+              draft_id: draftId,
+            });
+          } catch {
+            // draft cleanup best-effort
+          }
+        }
+        message.warning(
+          "Stripe payment was cancelled. No appointment request was submitted and no email was sent.",
+        );
+        navigate(location.pathname, { replace: true });
+      }
+    };
+
+    handleStripeReturn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, token]);
 
   useEffect(() => {
     if (isSponsor && matchedSponsorProfile) {
@@ -575,6 +679,17 @@ export default function Appointments() {
       const resolvedBookingPatientId =
         toValidId(values.patientId) || finalPatientId;
 
+      const selectedPatientRecord = Array.isArray(patients)
+        ? patients.find((p) => toValidId(p?.id) === resolvedBookingPatientId)
+        : null;
+      const patientLinkedSponsorId = toValidId(
+        selectedPatientRecord?.sponsor?.id ?? selectedPatientRecord?.sponsor,
+      );
+
+      if (!isSponsor && !values.sponsorId && patientLinkedSponsorId) {
+        finalSponsorId = patientLinkedSponsorId;
+      }
+
       if (
         isSponsor &&
         (!finalSponsorId ||
@@ -595,7 +710,12 @@ export default function Appointments() {
         sponsor: isSponsor
           ? finalSponsorId
           : values.sponsorId || finalSponsorId,
-        caretaker: finalCaretakerId,
+        caretaker:
+          toValidId(
+            selectedPatientRecord?.caretaker?.id ??
+              selectedPatientRecord?.caretakerid ??
+              selectedPatientRecord?.caretaker,
+          ) || finalCaretakerId,
         appointment_date: null,
         appointment_time: null,
         preferred_dates: selectedDates,
@@ -609,9 +729,7 @@ export default function Appointments() {
         time_line: values.time_line || null,
         appointment_reason: values.appointment_reason || null,
         appointment_status: values.appointment_status || "Pending",
-        service_purchased: true,
-        is_paid: true,
-        payment_status: "Completed",
+        service_purchased: false,
       };
 
       const formData = new FormData();
@@ -619,6 +737,8 @@ export default function Appointments() {
         "bookappoinment_data",
         JSON.stringify(bookappoinment_data),
       );
+      formData.append("frontend_origin", window.location.origin);
+      formData.append("return_path", "/appointments");
 
       if (values.labReport && values.labReport.length > 0) {
         appendLabReportFields(formData, values.labReport);
@@ -634,44 +754,50 @@ export default function Appointments() {
         : "";
       setBookedDateTime({ date: formattedDate, time: formattedTime });
 
-      await apiClient.post(endpoint, formData);
-      setIsModalOpen(false);
+      const checkoutRes =
+        await appointmentsService.createAppointmentCheckoutSession(formData);
 
-      // Determine real Stripe payment link
-      const stripeUrl =
-        selectedServiceObj?.stripeLink ||
-        getServiceStripeLink(values.appointmentType);
-
-      // Check if user has already purchased this service via Stripe during website signup
-      const purchasedService = userData?.service_purchased?.trim();
-      const currentServiceName = (
-        selectedServiceObj?.name ||
-        values.appointmentType ||
-        ""
-      ).trim();
-
-      const isPrePaid = isMatchingService(purchasedService, currentServiceName);
-
-      if (isPrePaid) {
-        setPendingStripeUrl(null);
-        message.success(
-          `Appointment request sent! Covered under your active plan: ${userData.service_purchased}.`,
+      if (checkoutRes?.payment_required && checkoutRes?.checkout_url) {
+        try {
+          sessionStorage.setItem(
+            "pendingAppointmentCheckout",
+            JSON.stringify({
+              draft_id: checkoutRes.draft_id,
+              session_id: checkoutRes.session_id,
+              date: formattedDate,
+              time: formattedTime,
+            }),
+          );
+        } catch {
+          // ignore storage errors
+        }
+        message.info(
+          "Redirecting to Stripe Checkout. Your appointment request and email will be sent once payment is completed.",
         );
-      } else if (stripeUrl) {
-        setPendingStripeUrl(stripeUrl);
-        window.open(stripeUrl, "_blank", "noopener,noreferrer");
+        window.location.assign(checkoutRes.checkout_url);
+        return;
+      }
+
+      setIsModalOpen(false);
+      if (checkoutRes?.covered_plan) {
         message.success(
-          "Appointment request sent! Opening Stripe checkout to complete payment...",
+          `Appointment request sent! Covered under active plan: ${checkoutRes.covered_plan}.`,
+        );
+      } else if (checkoutRes?.email_sent === false) {
+        message.warning(
+          "Appointment request created, but confirmation email could not be sent.",
         );
       } else {
-        setPendingStripeUrl(null);
-        message.success("Appointment request sent successfully!");
+        message.success(
+          checkoutRes?.message || "Appointment request sent successfully!",
+        );
       }
 
       setIsSuccessModalOpen(true);
       form.resetFields();
       setSelectedDates([]);
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["doctorAppointments"] });
     } catch (error) {
       console.log(error);
       message.error(
@@ -1239,7 +1365,7 @@ export default function Appointments() {
         <Sider />
       </div>
 
-      {loading && (
+      {(loading || verifyingPayment) && (
         <div className="fixed top-0 left-0 w-screen h-screen bg-[rgba(255,255,255,0.7)] z-[9999] flex items-center justify-center">
           <Spin size="large" />
         </div>
@@ -1911,7 +2037,7 @@ export default function Appointments() {
             >
               {REQUEST_SERVICES_LIST.map((service) => {
                 const isUserPlan = isMatchingService(
-                  userData?.service_purchased,
+                  activeSponsorPurchasedService,
                   service.name,
                 );
                 return (
@@ -1994,7 +2120,23 @@ export default function Appointments() {
             }
             rules={[yupRule(bookingValidationSchema, "patientId")]}
           >
-            <Select placeholder="Select Patient" allowClear>
+            <Select
+              placeholder="Select Patient"
+              allowClear
+              onChange={(val) => {
+                if (!isSponsor && val) {
+                  const matchedPatient = (patients || []).find(
+                    (p) => toValidId(p?.id) === toValidId(val),
+                  );
+                  const linkedSponsorId = toValidId(
+                    matchedPatient?.sponsor?.id ?? matchedPatient?.sponsor,
+                  );
+                  if (linkedSponsorId) {
+                    form.setFieldsValue({ sponsorId: linkedSponsorId });
+                  }
+                }
+              }}
+            >
               {(isSponsor
                 ? filterSponsorPatients(patients, resolvedSponsorId, true)
                 : patients
@@ -2140,7 +2282,6 @@ export default function Appointments() {
         open={isSuccessModalOpen}
         onCancel={() => {
           setIsSuccessModalOpen(false);
-          setPendingStripeUrl(null);
         }}
         footer={null}
         centered
@@ -2161,25 +2302,6 @@ export default function Appointments() {
           Our Practice Manager will review your request and get back to you
           shortly.
         </p>
-
-        {pendingStripeUrl && (
-          <div className="text-center mt-[20px] p-[16px] bg-[#F7FDF9] border border-[#007F5F]/20 rounded-[10px]">
-            <p className="text-[14px] text-[#4A5568] mb-[12px] font-medium">
-              A Stripe payment tab was opened. If it was blocked, click below to complete your checkout:
-            </p>
-            <Button
-              type="primary"
-              size="large"
-              icon={<CreditCardOutlined />}
-              className="bg-[#007F5F] hover:bg-[#00664C] text-white font-semibold rounded-[8px] h-[42px] px-[24px]"
-              onClick={() =>
-                window.open(pendingStripeUrl, "_blank", "noopener,noreferrer")
-              }
-            >
-              Pay via Stripe Secure Checkout
-            </Button>
-          </div>
-        )}
       </Modal>
     </div>
   );
