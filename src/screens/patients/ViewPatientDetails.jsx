@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, no-useless-escape */
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useMemo, useEffect, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import Sider from "../../components/layout/Sider";
 import PrimaryBtn from "../../components/common/PrimaryBtn";
@@ -19,7 +19,8 @@ import { CalendarOutlined } from "@ant-design/icons";
 import BackButton from "../../components/common/BackButton";
 import { useQuery } from "@tanstack/react-query";
 import { myLovedOnesService } from "../../services/myLovedOnesService";
-import { base_url, isAdminUser } from "../../constants/constants";
+import { doctorFormService } from "../../services/doctorFormService";
+import { isAdminUser, resolveMediaUrl } from "../../constants/constants";
 import {
   filterSponsorPatients,
   getStoredSponsorProfileId,
@@ -42,6 +43,7 @@ function SectionHeader({ title, children }) {
 }
 
 export default function ViewPatientDetails() {
+  const [selectedHistoryYear, setSelectedHistoryYear] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { appointmentData } = location.state || {};
@@ -171,14 +173,7 @@ export default function ViewPatientDetails() {
     ? { ...safeInitialPData, ...livePatient }
     : safeInitialPData;
 
-  const getPhotoUrl = (url) => {
-    if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
-    if (url?.startsWith("http")) return url;
-    url = url.replace(/^\/media\/+/i, "/");
-    const base = base_url.replace(/\/+$/, "");
-    const cleanedUrl = url.replace(/^\/+/, "");
-    return `${base}/${cleanedUrl}`;
-  };
+  const getPhotoUrl = (url) => resolveMediaUrl(url, patientdetails);
 
   const vitals = [
     {
@@ -262,7 +257,61 @@ export default function ViewPatientDetails() {
     CareCoordinator: caretakerName,
   };
 
-  const medicalHistory = [];
+  const patientProfileId = toValidId(pData?.id);
+  const { data: doctorReports = [] } = useQuery({
+    queryKey: ["patientDoctorReports", patientProfileId],
+    queryFn: async () => {
+      const res = await doctorFormService.getDoctorReports();
+      return Array.isArray(res) ? res : [];
+    },
+    enabled: !!token && !!patientProfileId && isAuthorizedPatient,
+  });
+
+  const medicalHistory = useMemo(() => {
+    const patientReports = (Array.isArray(doctorReports) ? doctorReports : []).filter(
+      (r) => toValidId(r?.patient) === patientProfileId,
+    );
+    const filtered = selectedHistoryYear
+      ? patientReports.filter((r) => {
+          const dt = r.uploaded_at || r.initial_visit;
+          return (
+            dt &&
+            dayjs(dt).isValid() &&
+            dayjs(dt).year() === selectedHistoryYear.year()
+          );
+        })
+      : patientReports;
+    return filtered.map((r) => {
+      const vitalsText = [
+        r.bp && r.bp !== "N/A" ? `BP: ${r.bp}` : null,
+        r.sugar && r.sugar !== "N/A" ? `Sugar: ${r.sugar}` : null,
+        r.temperature && r.temperature !== "N/A"
+          ? `Temp: ${r.temperature}`
+          : null,
+        r.heart_rate && r.heart_rate !== "N/A" ? `HR: ${r.heart_rate}` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      const dateSource =
+        (r.uploaded_at && dayjs(r.uploaded_at).isValid() ? r.uploaded_at : null) ||
+        (r.initial_visit && dayjs(r.initial_visit).isValid()
+          ? r.initial_visit
+          : null);
+      return {
+        key: r.id,
+        date: dateSource
+          ? dayjs(dateSource).format("MMM D, YYYY")
+          : r.initial_visit || "N/A",
+        time:
+          r.uploaded_at && dayjs(r.uploaded_at).isValid()
+            ? dayjs(r.uploaded_at).format("hh:mm A")
+            : "—",
+        doctor: r.doctor_name ? `Dr. ${r.doctor_name}` : docName,
+        diagnostic: vitalsText || "Doctor Visit Report",
+        comments: r.doctor_notes || "No comments",
+      };
+    });
+  }, [doctorReports, patientProfileId, selectedHistoryYear, docName]);
 
   const columns = [
     {
@@ -298,7 +347,7 @@ export default function ViewPatientDetails() {
   ];
 
   const dataSource = medicalHistory.map((item, index) => ({
-    key: index,
+    key: item.key ?? index,
     ...item,
   }));
 
@@ -460,7 +509,15 @@ export default function ViewPatientDetails() {
               <div className="bg-white rounded-[20px] p-[24px] border border-[#E5E7EB] shadow-sm  min-w-0">
                 <div className="flex justify-between items-center border-b border-[#E5E7EB] pb-[16px] mb-[20px] flex-wrap gap-[12px]">
                   <h2 className="text-[18px] font-bold text-[#111827] m-0">Medical History</h2>
-                  <DatePicker picker="year" defaultValue={dayjs("2025", "YYYY")} suffixIcon={<CalendarOutlined />} className="w-[120px] h-[36px] rounded-[8px]" />
+                  <DatePicker
+                    picker="year"
+                    value={selectedHistoryYear}
+                    onChange={(val) => setSelectedHistoryYear(val)}
+                    allowClear
+                    placeholder="All Years"
+                    suffixIcon={<CalendarOutlined />}
+                    className="w-[125px] h-[36px] rounded-[8px]"
+                  />
                 </div>
                 <div className="overflow-x-auto w-full">
                   <Table columns={columns} dataSource={dataSource} pagination={{ pageSize: 5 }} className="min-w-[600px]" />

@@ -1,14 +1,80 @@
 const normalizeBaseUrl = (value) => {
   if (typeof value !== "string") return "";
-  return value
+  const cleaned = value
     .trim()
     .replace(/^['"]|['"]$/g, "")
     .replace(/\/+$/, "");
+  if (!cleaned) return "";
+  return /\/verimed$/i.test(cleaned) ? cleaned : `${cleaned}/verimed`;
 };
 
 export const base_url = normalizeBaseUrl(
   process.env.REACT_APP_API_BASE_URL || "https://verimed-be.vercel.app/verimed",
 );
+
+export const base_origin = base_url.replace(/\/verimed$/i, "");
+
+export const resolveMediaUrl = (url, fallback = null) => {
+  if (!url || typeof url !== "string") return fallback;
+  let cleaned = url.trim();
+  if (!cleaned) return fallback;
+
+  // Handle accidental double-prefixed external URLs (e.g. legacy host + Cloudinary URL)
+  const embeddedUrlMatch = cleaned.match(/^.+?(https?:\/\/.+)$/i);
+  if (embeddedUrlMatch && !cleaned.startsWith(embeddedUrlMatch[1])) {
+    return embeddedUrlMatch[1];
+  }
+
+  // Rewrite legacy PythonAnywhere URLs to current backend origin and collapse "//media"
+  if (/^https?:\/\/verimedramja\.pythonanywhere\.com/i.test(cleaned)) {
+    cleaned = cleaned.replace(
+      /^https?:\/\/verimedramja\.pythonanywhere\.com\/+/i,
+      `${base_origin}/`,
+    );
+    return cleaned.replace(/([^:]\/)\/+/g, "$1");
+  }
+
+  // Already an absolute, data, blob, or bundled Vite asset URL
+  if (
+    /^(https?:\/\/|data:|blob:)/i.test(cleaned) ||
+    cleaned.startsWith("/assets/") ||
+    cleaned.startsWith("/src/")
+  ) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("/verimed/media/")) {
+    cleaned = cleaned.replace(/^\/verimed/i, "");
+  }
+  const normalizedPath = cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
+  return `${base_origin}${normalizedPath}`;
+};
+
+export const stripDialCode = (phone) => {
+  if (phone === null || phone === undefined) return "";
+  const str = String(phone).trim().replace(/^none[-\s]*/i, "");
+  if (!str) return "";
+  if (str.startsWith("+") && str.includes("-")) {
+    return str.split("-").slice(1).join("-").trim();
+  }
+  return str.replace(/^\+\d{1,4}[-\s]+/, "").trim();
+};
+
+export const normalizeServiceName = (name) =>
+  String(name || "")
+    .toLowerCase()
+    .replace(/[()\-_&,/]+/g, " ")
+    .replace(/\bmedications\b/g, "medication")
+    .replace(/\bfollow[\s-]?ups?\b/g, "follow up")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const isMatchingService = (serviceA, serviceB) => {
+  const a = normalizeServiceName(serviceA);
+  const b = normalizeServiceName(serviceB);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+};
 
 // Special case: user with id 100 is always considered an admin regardless of role.
 export const isAdminUser = (user) =>

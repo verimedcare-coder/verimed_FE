@@ -18,7 +18,7 @@ import {
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
-import { base_url } from "../../constants/constants";
+import { base_url, resolveMediaUrl } from "../../constants/constants";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -60,61 +60,90 @@ export default function DoctorForm(doc_data) {
       };
 
       let finalCaretakerId =
-        appointmentData?.caretaker?.id || appointmentData?.caretakerid || null;
+        appointmentData?.caretaker?.id ||
+        appointmentData?.caretakerid ||
+        appointmentData?.patient?.caretaker?.id ||
+        (typeof appointmentData?.patient?.caretaker === "number"
+          ? appointmentData.patient.caretaker
+          : null) ||
+        (typeof appointmentData?.caretaker === "number"
+          ? appointmentData.caretaker
+          : null) ||
+        null;
       let finalDoctorId =
-        appointmentData?.doc?.id || appointmentData?.docid || null;
-      let finalPatientId =
-        appointmentData?.patient?.id || appointmentData?.patientid || null;
-      let finalSponsorId =
-        appointmentData?.sponsor?.id || appointmentData?.sponsorid || null;
+        appointmentData?.doc?.id ||
+        appointmentData?.docid ||
+        appointmentData?.doctor?.id ||
+        null;
+      const finalPatientId =
+        appointmentData?.patient?.id ||
+        appointmentData?.patientid ||
+        (appointmentData?.patient_name && !appointmentData?.patient
+          ? appointmentData?.id
+          : null);
+      const finalSponsorId =
+        appointmentData?.sponsor?.id ||
+        appointmentData?.sponsorid ||
+        (typeof appointmentData?.patient?.sponsor === "object"
+          ? appointmentData.patient.sponsor?.id
+          : appointmentData?.patient?.sponsor) ||
+        (typeof appointmentData?.sponsor === "number"
+          ? appointmentData.sponsor
+          : null) ||
+        null;
 
-      if (
-        !finalCaretakerId ||
-        !finalDoctorId ||
-        !finalPatientId ||
-        !finalSponsorId
-      ) {
+      if (!finalDoctorId) {
         try {
-          if (!finalCaretakerId) {
-            const cRes = await axios.get(`${base_url}/caretakerprofile_list/`, {
-              headers,
-            });
-            if (Array.isArray(cRes.data) && cRes.data.length > 0) {
-              finalCaretakerId = cRes.data[0]?.id || null;
-            }
+          const doctorDataRaw = localStorage.getItem("doctorData");
+          if (
+            doctorDataRaw &&
+            doctorDataRaw !== "undefined" &&
+            doctorDataRaw !== "null"
+          ) {
+            finalDoctorId = JSON.parse(doctorDataRaw)?.id || null;
           }
-          if (!finalDoctorId) {
+        } catch {
+          finalDoctorId = null;
+        }
+      }
+
+      if (!finalDoctorId) {
+        try {
+          const userDataRaw = localStorage.getItem("userData");
+          const currentUser =
+            userDataRaw && userDataRaw !== "undefined" && userDataRaw !== "null"
+              ? JSON.parse(userDataRaw)
+              : null;
+          if (currentUser?.id) {
             const dRes = await axios.get(`${base_url}/doctorprofile_list/`, {
               headers,
             });
-            if (Array.isArray(dRes.data) && dRes.data.length > 0) {
-              finalDoctorId = dRes.data[0]?.id || null;
-            }
-          }
-          if (!finalPatientId) {
-            const pRes = await axios.get(`${base_url}/patientprofile_list/`, {
-              headers,
-            });
-            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
-              finalPatientId = pRes.data[0]?.id || null;
-            }
-          }
-          if (!finalSponsorId) {
-            const sRes = await axios.get(`${base_url}/sponsorprofile_list/`, {
-              headers,
-            });
-            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
-              finalSponsorId = sRes.data[0]?.id || null;
+            const matchedDoctor = (
+              Array.isArray(dRes.data) ? dRes.data : []
+            ).find((doc) => doc?.user?.id === currentUser.id);
+            if (matchedDoctor?.id) {
+              finalDoctorId = matchedDoctor.id;
+              localStorage.setItem("doctorData", JSON.stringify(matchedDoctor));
             }
           }
         } catch (err) {
           console.log(
-            "Error auto-fetching fallback profile IDs in DoctorForm:",
+            "Error resolving logged-in doctor profile in DoctorForm:",
             err,
           );
-        } finally {
-          // Completed auto-fetching fallback profile IDs
         }
+      }
+
+      if (!finalDoctorId || !finalPatientId) {
+        const errMsg =
+          "Missing required doctor or patient profile ID. Please open this form from an assigned patient appointment.";
+        message.error(errMsg);
+        Modal.error({
+          title: "Submission Failed",
+          content: errMsg,
+          centered: true,
+        });
+        return;
       }
 
       const payloadData = {
@@ -128,7 +157,10 @@ export default function DoctorForm(doc_data) {
           values.bloodGroup || appointmentData?.patient?.blood_group || "N/A",
         bp: values.bp || appointmentData?.patient?.blood_pressure || "N/A",
         heart_rate:
-          values.heartRate || appointmentData?.patient?.heartRate || "N/A",
+          values.heartRate ||
+          appointmentData?.patient?.heart_rate ||
+          appointmentData?.patient?.heartRate ||
+          "N/A",
         sugar: values.sugar || appointmentData?.patient?.blood_sugar || "N/A",
         oxygen: values.oxygen || appointmentData?.patient?.oxygen || "N/A",
         temperature:
@@ -139,6 +171,7 @@ export default function DoctorForm(doc_data) {
           "N/A",
         weight: values.weight || appointmentData?.patient?.weight || "N/A",
         doctor_notes: values.doctorNotes || "",
+        initial_visit: values.initialVisit || "",
       };
 
       const formData = new FormData();
@@ -154,18 +187,6 @@ export default function DoctorForm(doc_data) {
         const fileObj = file.originFileObj || file;
         if (fileObj) formData.append("doc_reports", fileObj);
       });
-      (values.results_records || []).forEach((file) => {
-        const fileObj = file.originFileObj || file;
-        if (fileObj) formData.append("results_records", fileObj);
-      });
-      (values.diagnostic_images || []).forEach((file) => {
-        const fileObj = file.originFileObj || file;
-        if (fileObj) formData.append("diagnostic_images", fileObj);
-      });
-      (values.voice_notes || []).forEach((file) => {
-        const fileObj = file.originFileObj || file;
-        if (fileObj) formData.append("voice_notes", fileObj);
-      });
 
       const response = await axios.post(endpoint, formData, { headers });
       console.log("API Response:", response.data);
@@ -176,6 +197,7 @@ export default function DoctorForm(doc_data) {
     } catch (error) {
       console.error("Error submitting report:", error);
       const errMsg =
+        error.response?.data?.error ||
         error.response?.data?.message ||
         error.response?.data?.detail ||
         "Failed to submit report. Please try again.";
@@ -190,34 +212,19 @@ export default function DoctorForm(doc_data) {
     }
   };
 
+  const fullNameOrNA = (u) =>
+    [u?.first_name, u?.last_name].filter(Boolean).join(" ") || "N/A";
+
   const careTeam = {
     name: appointmentData?.patient?.patient_name || "",
     Condition: appointmentData?.appointment_type,
-    AssignedDoctor:
-      appointmentData?.doc?.user?.first_name +
-        " " +
-        appointmentData?.doc?.user?.last_name || "N/A",
-    // CareTaker:
-    //   appointmentData?.caretaker?.user?.first_name +
-    //     " " +
-    //     appointmentData?.caretaker?.user?.last_name || "N/A",
+    AssignedDoctor: fullNameOrNA(appointmentData?.doc?.user),
     Conditions: appointmentData?.appointment_type,
     AssignedSince: appointmentData?.appointment_date || "N/A",
-    SponsorInfo:
-      appointmentData?.sponsor?.user?.first_name +
-        " " +
-        appointmentData?.sponsor?.user?.last_name || "N/A",
+    SponsorInfo: fullNameOrNA(appointmentData?.sponsor?.user),
     SponsorNumber: appointmentData?.sponsor?.user?.phone || "N/A",
     Address: appointmentData?.patient?.patient_home_address || "N/A",
-    // PrimaryCareTaker:
-    //   appointmentData?.caretaker?.user?.first_name +
-    //     " " +
-    //     appointmentData?.caretaker?.user?.last_name || "N/A",
-    AssignedPhysician:
-      appointmentData?.doc?.user?.first_name +
-        " " +
-        appointmentData?.doc?.user?.last_name || "N/A",
-    //
+    AssignedPhysician: fullNameOrNA(appointmentData?.doc?.user),
   };
 
   return (
@@ -257,11 +264,10 @@ export default function DoctorForm(doc_data) {
               <div className="h-[6px] bg-gradient-to-r from-[#004E89] to-[#007F5F]"></div>
               <div className="p-[20px] flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
                 <img
-                  src={
-                    appointmentData
-                      ? appointmentData?.patient?.photo_view_url
-                      : patientdetails
-                  }
+                  src={resolveMediaUrl(
+                    appointmentData?.patient?.photo_view_url,
+                    patientdetails,
+                  )}
                   alt="Profile"
                   onError={(e) => {
                     e.target.onerror = null;
@@ -328,7 +334,9 @@ export default function DoctorForm(doc_data) {
                     appointmentData?.patient?.blood_group,
                   bp: doc_data.bp || appointmentData?.patient?.blood_pressure,
                   heartRate:
-                    doc_data.heart_rate || appointmentData?.patient?.heartRate,
+                    doc_data.heart_rate ||
+                    appointmentData?.patient?.heart_rate ||
+                    appointmentData?.patient?.heartRate,
                   sugar:
                     doc_data.sugar || appointmentData?.patient?.blood_sugar,
                   oxygen: doc_data.oxygen || appointmentData?.patient?.oxygen,
@@ -599,9 +607,12 @@ export default function DoctorForm(doc_data) {
                   Your clinical report for patient{" "}
                   <strong>
                     {appointmentData?.patient?.patient_name ||
-                      appointmentData?.patient?.user?.first_name +
-                        " " +
-                        appointmentData?.patient?.user?.last_name ||
+                      [
+                        appointmentData?.patient?.user?.first_name,
+                        appointmentData?.patient?.user?.last_name,
+                      ]
+                        .filter(Boolean)
+                        .join(" ") ||
                       "the patient"}
                   </strong>{" "}
                   has been recorded. An email notification has been dispatched

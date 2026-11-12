@@ -19,7 +19,8 @@ import { useNavigate } from "react-router-dom";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
 import { Empty, message } from "antd";
-import { base_url } from "../../constants/constants";
+import { resolveMediaUrl } from "../../constants/constants";
+import apiClient from "../../services/apiClient";
 
 
 export default function MyPatients() {
@@ -75,18 +76,51 @@ export default function MyPatients() {
     }
   };
 
-  let careTakerData = null;
-  try {
-    const careTakerDataRaw = localStorage.getItem("careTakerData");
-    careTakerData =
-      careTakerDataRaw &&
-      careTakerDataRaw !== "undefined" &&
-      careTakerDataRaw !== "null"
+  const [careTakerData, setCareTakerData] = useState(() => {
+    try {
+      const careTakerDataRaw = localStorage.getItem("careTakerData");
+      return careTakerDataRaw &&
+        careTakerDataRaw !== "undefined" &&
+        careTakerDataRaw !== "null"
         ? JSON.parse(careTakerDataRaw)
         : null;
-  } catch {
-    careTakerData = null;
-  }
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (!token || careTakerData?.id) return;
+    let currentUser = null;
+    try {
+      const rawUser = localStorage.getItem("userData");
+      currentUser =
+        rawUser && rawUser !== "undefined" && rawUser !== "null"
+          ? JSON.parse(rawUser)
+          : null;
+    } catch {
+      currentUser = null;
+    }
+    if (!currentUser || currentUser.user_role !== "care_taker") return;
+    let isMounted = true;
+    const resolveCaretakerProfile = async () => {
+      try {
+        const res = await apiClient.get("/caretakerprofile_list/");
+        const list = Array.isArray(res.data) ? res.data : [];
+        const matched = list.find((ct) => ct?.user?.id === currentUser.id);
+        if (matched && isMounted) {
+          localStorage.setItem("careTakerData", JSON.stringify(matched));
+          setCareTakerData(matched);
+        }
+      } catch (err) {
+        console.error("Error resolving caretaker profile:", err);
+      }
+    };
+    resolveCaretakerProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, [token, careTakerData?.id]);
   const { data: allAppointments = [] } = useQuery({
     queryKey: ["allAppointments", careTakerData?.id || "all"],
     queryFn: async () => {
@@ -102,39 +136,50 @@ export default function MyPatients() {
 
   console.log("patient data", patient);
 
+  const activeAppt = appointmentData || patient || {};
+  const activeCaretaker = activeAppt?.caretaker || {};
+
   // Create the vitals array with color
   const vitals = [
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: appointmentData?.patient?.blood_pressure || "N/A",
+      value: activeAppt?.patient?.blood_pressure || "N/A",
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: appointmentData?.patient?.heart_rate || "N/A",
+      value: activeAppt?.patient?.heart_rate || "N/A",
     },
     {
       icon: sugar,
       label: "Blood Sugar",
-      value: appointmentData?.patient?.blood_sugar || "N/A",
+      value: activeAppt?.patient?.blood_sugar || "N/A",
     },
-    { icon: oxygen, label: "Oxygen", value: appointmentData?.oxygen || "N/A" },
+    {
+      icon: oxygen,
+      label: "Oxygen",
+      value: activeAppt?.patient?.oxygen || activeAppt?.oxygen || "N/A",
+    },
     {
       icon: temperature,
       label: "Temperature",
-      value: appointmentData?.patient?.temperature || "N/A",
+      value: activeAppt?.patient?.temperature || "N/A",
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: appointmentData?.patient?.respiratory_rate || "N/A",
+      value: activeAppt?.patient?.respiratory_rate || "N/A",
     },
-    { icon: weight, label: "Weight", value: appointmentData?.weight || "N/A" },
+    {
+      icon: weight,
+      label: "Weight",
+      value: activeAppt?.patient?.weight || activeAppt?.weight || "N/A",
+    },
     {
       icon: statusIcon,
       label: "Status",
-      value: appointmentData?.appointment_status || "pending",
+      value: activeAppt?.appointment_status || "pending",
     },
   ].map((v) => ({ ...v, color: getVitalColor(v.label, v.value) }));
 
@@ -146,31 +191,42 @@ export default function MyPatients() {
     flexShrink: 0,
   });
 
+  const caretakerUser = activeCaretaker?.user || {};
+  const caretakerFullName = [caretakerUser.first_name, caretakerUser.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   const careTeam = {
-    name:
-      appointmentData?.caretaker?.user?.first_name +
-        appointmentData?.caretaker?.user?.last_name || "N/A",
+    name: caretakerFullName || "N/A",
     role: "Caretaker",
-    contact: appointmentData?.caretaker?.user?.phone || "N/A",
-    nextVisit: appointmentData?.appointment_date || "N/A",
+    contact: caretakerUser.phone || "N/A",
+    assignedSince: activeAppt?.appointment_date || "N/A",
+    address: activeAppt?.patient?.patient_home_address || "N/A",
+    nextVisit: activeAppt?.appointment_date || "N/A",
     frequency: "Weekly",
-    specialization: appointmentData?.caretaker?.skillset || "General Care",
-    experience: caretaker?.caretaker_exprience || "N/A",
-    languages: appointmentData?.caretaker?.languages || "N/A",
+    specialization: activeCaretaker?.skillset || "General Care",
+    experience: activeCaretaker?.caretaker_exprience || "N/A",
+    languages: activeCaretaker?.languages || "N/A",
+    avatar: resolveMediaUrl(
+      caretakerUser.photo_view_url || caretakerUser.photo,
+      patientdetails,
+    ),
   };
 
-  const appointments = appointmentData
+  const appointments = activeAppt?.id
     ? [
         {
-          id: patient?.id,
-          doctor: patient?.doc?.user?.id
-            ? `${patient?.doc?.user?.first_name} ${patient?.doc?.user?.last_name}`
+          ...activeAppt,
+          id: activeAppt?.id,
+          doctor: activeAppt?.doc?.user?.id
+            ? `${activeAppt?.doc?.user?.first_name} ${activeAppt?.doc?.user?.last_name}`
             : "N/A",
-          date: patient?.appointment_date
-            ? new Date(patient?.appointment_date)
+          date: activeAppt?.appointment_date
+            ? new Date(activeAppt?.appointment_date)
             : null,
-          time: patient?.appointment_time || "N/A",
-          type: patient?.appointment_type || "N/A",
+          time: activeAppt?.appointment_time || "N/A",
+          type: activeAppt?.appointment_type || "N/A",
         },
       ]
     : [];
@@ -223,23 +279,33 @@ export default function MyPatients() {
       : ""
   );
 
-  const appointmentDetails = appointmentData
+  const appointmentDetails = activeAppt?.id
     ? [
         {
-          date: appointmentData.appointment_date
-            ? new Date(appointmentData.appointment_date).toLocaleDateString(
+          date: activeAppt.appointment_date
+            ? new Date(activeAppt.appointment_date).toLocaleDateString(
                 "en-US",
                 { month: "short", day: "numeric", year: "numeric" }
-              ) + ` – ${appointmentData.appointment_time?.slice(0, 5)}`
+              ) + ` – ${activeAppt.appointment_time?.slice(0, 5) || ""}`
             : "N/A",
-          type: appointmentData.appointment_type || "N/A",
-          provider: appointmentData.doc?.doctor_id || "N/A",
-          status: appointmentData.appointment_status || "N/A",
-          comments: appointmentData.care_taker_notes || "",
-          checkin: appointmentData.checkin_status || "N/A",
-          vitals: appointmentData.vitals?.recorded || "N/A",
-          next: appointmentData.next_appointment || "N/A",
-          badge: appointmentData.badge || "",
+          type: activeAppt.appointment_type || "N/A",
+          provider: activeAppt.doc?.doctor_id || "N/A",
+          status: activeAppt.appointment_status || "N/A",
+          comments: activeAppt.care_taker_notes || "",
+          checkin: activeAppt.checkin_status || "N/A",
+          vitals:
+            [
+              activeAppt?.patient?.blood_pressure &&
+                `BP: ${activeAppt.patient.blood_pressure}`,
+              activeAppt?.patient?.blood_sugar &&
+                `Sugar: ${activeAppt.patient.blood_sugar}`,
+              activeAppt?.patient?.temperature &&
+                `Temp: ${activeAppt.patient.temperature}`,
+            ]
+              .filter(Boolean)
+              .join(" | ") || "N/A",
+          next: activeAppt.next_appointment || "N/A",
+          badge: activeAppt.badge || "",
         },
       ]
     : [];
@@ -295,7 +361,7 @@ export default function MyPatients() {
             {/* Profile Info */}
             <div className="flex items-center gap-[20px]">
               <img
-                src={patientdetails}
+                src={careTeam.avatar || patientdetails}
                 alt="Care Team Profile"
                 className="w-[80px] h-[80px] rounded-[100px] object-cover border-[3px] border-solid border-[#007F5F]"
               />
@@ -340,7 +406,8 @@ export default function MyPatients() {
                 onClick={() =>
                   navigate("/view_patient_details", {
                     state: {
-                      appointmentData: appointmentData || appointments[0] || {},
+                      appointmentData:
+                        appointmentData || patient || appointments[0] || {},
                     },
                   })
                 }
@@ -435,7 +502,7 @@ export default function MyPatients() {
                     navigate("/view_patient_details", {
                       state: {
                         appointmentData:
-                          appointmentData || appointments[0] || {},
+                          appointmentData || patient || appointments[0] || {},
                       },
                     })
                   }
@@ -610,8 +677,8 @@ export default function MyPatients() {
                 <div
                   className="grid grid-cols-7 gap-[4px] -mt-[15px] text-center text-[12px] py-[10px] px-[10px] rounded-b-[8px] bg-[#007F5F14]"
                 >
-                  {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                    <div key={d} className="font-semibold">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d, idx) => (
+                    <div key={`${d}-${idx}`} className="font-semibold">
                       {d}
                     </div>
                   ))}

@@ -28,6 +28,7 @@ import {
   PlusOutlined,
   UploadOutlined,
   CameraOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import apiClient from "../../services/apiClient";
 import Primarybtn from "../../components/common/PrimaryBtn";
@@ -40,7 +41,7 @@ import statusIcon from "../../assets/icons/status.svg";
 import sugar from "../../assets/icons/sugar.svg";
 import weight from "../../assets/icons/weight.svg";
 import temperature from "../../assets/icons/temperature.png";
-import { base_url } from "../../constants/constants";
+import { resolveMediaUrl, stripDialCode } from "../../constants/constants";
 
 const linkedPatients = [
   {
@@ -107,6 +108,7 @@ export default function UserManagement() {
   // uploadedImage: preview URL shown in avatar
   const [uploadedImage, setUploadedImage] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [tablePage, setTablePage] = useState(1);
   const token = localStorage.getItem("token");
 
   const {
@@ -170,6 +172,7 @@ export default function UserManagement() {
           : userObj.last_name || "",
         email: p.email || userObj.email || "",
         phone: p.phone || userObj.phone || "",
+        is_active_state: p.is_active_state ?? userObj.is_active_state ?? true,
         patientProfile: p,
       };
     });
@@ -320,7 +323,10 @@ export default function UserManagement() {
       console.error("Signup error:", error);
       notification.error({
         message: "Error",
-        description: error.response?.data?.detail || "Something went wrong.",
+        description:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Something went wrong.",
       });
     } finally {
       // Completed create user request
@@ -343,27 +349,42 @@ export default function UserManagement() {
           keyName = "user_update_data";
           updateData = {
             updateid: selectedSponsor?.id,
-            first_name: editedData.first_name || "",
-            last_name: editedData.last_name || "",
-            phone: trimPhoneNumber(editedData.phone) || "",
-            countrycode: editedData.country_code,
-            is_active_state: true,
+            first_name: editedData.first_name ?? selectedSponsor?.first_name ?? "",
+            last_name: editedData.last_name ?? selectedSponsor?.last_name ?? "",
+            email: editedData.email ?? selectedSponsor?.email ?? "",
+            phone: stripDialCode(editedData.phone),
+            countrycode:
+              editedData.country_code || selectedSponsor?.country_code || "CM",
+            is_active_state: selectedSponsor?.is_active_state ?? true,
           };
           break;
 
-        case "doctors":
+        case "doctors": {
           endpoint = "/doctorprofile_update/";
           keyName = "doctorprofile_update_data";
+          const normalizedDepId =
+            editedData.dep && typeof editedData.dep === "object"
+              ? editedData.dep.id
+              : editedData.dep
+                ? Number(editedData.dep) || null
+                : null;
+          const parsedExp =
+            editedData.doc_exprience !== "" &&
+            editedData.doc_exprience !== undefined &&
+            editedData.doc_exprience !== null &&
+            !Number.isNaN(Number(editedData.doc_exprience))
+              ? parseInt(editedData.doc_exprience, 10)
+              : null;
           updateData = {
             doc_profile_updateid: selectedDoctor?.doctorProfile?.id || "",
-            dep: editedData.dep || 2,
+            dep: normalizedDepId,
             doc_address: editedData.doc_address || "",
-            doc_exprience: editedData.doc_exprience || "",
+            doc_exprience: parsedExp,
             doc_gender: editedData.doc_gender || "",
             speciality: editedData.speciality || "",
             doc_country_code: editedData.doc_country_code || "CM",
-            doc_phone: trimPhoneNumber(editedData.doc_phone) || "",
-            joining_date: editedData.joining_date || "",
+            doc_phone: stripDialCode(editedData.doc_phone),
+            joining_date: editedData.joining_date || null,
             doc_licence_no: editedData.doc_licence_no || "",
             doc_city: editedData.doc_city || "",
             doc_state: editedData.doc_state || "",
@@ -371,30 +392,65 @@ export default function UserManagement() {
             doc_pincode: editedData.doc_pincode || "",
           };
           break;
+        }
 
         case "patients": {
           endpoint = "/patientprofile_create_update/";
-          keyName = "patientprofile_data";
+          keyName = "patientprofile_update_data";
           const formattedDOB =
             editedData.patient_dob && !isNaN(Date.parse(editedData.patient_dob))
               ? new Date(editedData.patient_dob).toISOString().split("T")[0]
+              : null;
+          const patientProfileId =
+            selectedPatient?.patientProfile?.id || selectedPatient?.id;
+          const rawSponsorId =
+            editedData.sponsorid !== "" &&
+            editedData.sponsorid !== undefined &&
+            editedData.sponsorid !== null
+              ? editedData.sponsorid
+              : selectedPatient?.patientProfile?.sponsor?.id ??
+                selectedPatient?.patientProfile?.sponsor ??
+                "";
+          const rawCaretakerId =
+            editedData.caretakerid !== "" &&
+            editedData.caretakerid !== undefined &&
+            editedData.caretakerid !== null
+              ? editedData.caretakerid
               : "";
+          const rawAge =
+            editedData.age === "N/A"
+              ? selectedPatient?.patientProfile?.age
+              : editedData.age;
+          const parsedAge =
+            rawAge !== "" &&
+            rawAge !== undefined &&
+            rawAge !== null &&
+            !Number.isNaN(Number(rawAge))
+              ? parseInt(rawAge, 10)
+              : null;
+          const cleanPhone = stripDialCode(editedData.phone);
+          const cleanEmerPhone = stripDialCode(editedData.emer_con_phone);
+          const cleanLocalPhone = stripDialCode(editedData.local_con_phone);
+          const emerCountryCode = editedData.emer_con_country_code || "";
           updateData = {
-            id: selectedPatient?.patientProfile?.id,
-            patient_profile_updateid: selectedPatient?.patientProfile?.id,
-            updateid: selectedPatient?.patientProfile?.id,
-            patientprofileid: selectedPatient?.patientProfile?.id,
+            patient_profile_updateid: patientProfileId,
+            patient_name:
+              editedData.patient_name ||
+              selectedPatient?.patientProfile?.patient_name ||
+              "",
+            country_code:
+              editedData.country_code ||
+              selectedPatient?.patientProfile?.country_code ||
+              (cleanPhone ? "CM" : ""),
+            phone: cleanPhone,
+            email: editedData.email ?? selectedPatient?.patientProfile?.email ?? "",
+            age: parsedAge,
             reason_enrollment:
-              selectedPatient?.patientProfile?.reason_enrollment ||
-              editedData.reason_enrollment ||
+              editedData.reason_enrollment ??
+              selectedPatient?.patientProfile?.reason_enrollment ??
               "Patient",
-            reason:
-              selectedPatient?.patientProfile?.reason_enrollment ||
-              editedData.reason_enrollment ||
-              "Patient",
-            sponsorid: editedData.sponsorid || "",
-            doctorid: editedData.doctorid || "",
-            caretakerid: editedData.caretakerid || "",
+            sponsorid: rawSponsorId,
+            caretakerid: rawCaretakerId,
             patient_dob: formattedDOB,
             patient_gender: editedData.patient_gender || "",
             blood_group: editedData.blood_group || "",
@@ -414,13 +470,13 @@ export default function UserManagement() {
             emer_con_name: editedData.emer_con_name || "",
             emer_con_relation: editedData.emer_con_relation || "",
             emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
-            emer_con_country_code: editedData.emer_con_country_code || "",
-            emer_con_phone: editedData.emer_con_phone || "",
+            emer_con_country_code: emerCountryCode,
+            emer_con_phone: cleanEmerPhone,
             emer_con_email: editedData.emer_con_email || "",
             local_con_name: editedData.local_con_name || "",
             local_con_relation: editedData.local_con_relation || "",
             local_con_country_code: editedData.local_con_country_code || "",
-            local_con_phone: editedData.local_con_phone || "",
+            local_con_phone: cleanLocalPhone,
             reason_other: editedData.reason_other || "",
             medical_his_diagnosis: editedData.medical_his_diagnosis || "",
             medical_his_cancer: editedData.medical_his_cancer || "",
@@ -433,13 +489,6 @@ export default function UserManagement() {
             last_doctor_visit: editedData.last_doctor_visit || null,
             has_regular_doctor: editedData.has_regular_doctor || "",
             regular_doctor_name: editedData.regular_doctor_name || "",
-            medication_name: editedData.medication_name || "",
-            medication_dose: editedData.medication_dose || "",
-            medication_frequency: editedData.medication_frequency || "",
-            medication_reason: editedData.medication_reason || "",
-            medication_issues: editedData.medication_issues || false,
-            medication_issues_explain:
-              editedData.medication_issues_explain || "",
             allergies_issues: editedData.allergies_issues || false,
             allergies_drug: editedData.allergies_drug || "",
             allergies_food: editedData.allergies_food || "",
@@ -474,41 +523,47 @@ export default function UserManagement() {
             goals_term_membership: editedData.goals_term_membership || "",
           };
 
-          formData.append(keyName, JSON.stringify(updateData));
-          if (editedData.patient_upload_files?.length > 0) {
-            editedData.patient_upload_files.forEach((file) => {
+          const filesToUpload = (editedData.patient_upload_files || [])
+            .map((file) => file?.originFileObj || file)
+            .filter((file) => file instanceof File || file instanceof Blob);
+          if (filesToUpload.length > 0) {
+            filesToUpload.forEach((file) => {
               formData.append("patient_upload_files", file);
             });
+            const uploadedIds = filesToUpload.map(() => "null").join(",");
+            const uploadedNames = filesToUpload
+              .map((file, idx) =>
+                (file.name || `document_${idx + 1}`).replace(/,/g, " "),
+              )
+              .join(",");
+            formData.append("patient_files_ids", uploadedIds);
+            formData.append("patient_files_name", uploadedNames);
           }
-          formData.append(
-            "patient_files_ids",
-            Array.isArray(editedData.patient_files_ids)
-              ? JSON.stringify(editedData.patient_files_ids)
-              : editedData.patient_files_ids
-                ? JSON.stringify([editedData.patient_files_ids])
-                : "[]",
-          );
-          formData.append(
-            "patient_files_name",
-            editedData.patient_files_name || "",
-          );
           break;
         }
 
-        case "caretakers":
+        case "caretakers": {
           endpoint = "/caretakerprofile_update/";
           keyName = "caretakerprofile_update_data";
+          const parsedCaretakerExp =
+            editedData.experience !== "" &&
+            editedData.experience !== undefined &&
+            editedData.experience !== null &&
+            !Number.isNaN(Number(editedData.experience))
+              ? parseInt(editedData.experience, 10)
+              : null;
           updateData = {
             caretaker_profile_updateid:
               selectedCaretaker?.caretakerProfile?.id || "",
             caretaker_address: editedData.address || "",
-            caretaker_exprience: editedData.experience || 0,
+            caretaker_exprience: parsedCaretakerExp,
             care_gender: editedData.gender || "",
             credentials: editedData.credentials || "",
             yr_of_graduation: editedData.yr_graduation || "",
             skillset: editedData.skillset || "",
           };
           break;
+        }
 
         default:
           console.warn("⚠️ Unknown user type:", activeTab);
@@ -516,19 +571,17 @@ export default function UserManagement() {
       }
 
       formData.append(keyName, JSON.stringify(updateData));
-      if (activeTab === "patients") {
-        formData.append(
-          "patientprofile_data",
-          JSON.stringify(updateData),
-        );
-      }
 
       if (
         editedData.photo &&
         typeof editedData.photo === "object" &&
         editedData.photo.name
       ) {
-        formData.append("photo", editedData.photo);
+        if (activeTab === "patients") {
+          formData.append("patient_photo", editedData.photo);
+        } else if (activeTab === "sponsors") {
+          formData.append("photo", editedData.photo);
+        }
         console.log("📸 Photo being uploaded:", editedData.photo.name);
       }
 
@@ -541,6 +594,49 @@ export default function UserManagement() {
 
       const res = await apiClient.patch(endpoint, formData, { headers });
       console.log("✅ Update Success:", res.data);
+
+      // Sync User-level name / photo when editing doctors or caretakers
+      if (activeTab === "doctors" || activeTab === "caretakers") {
+        const targetUser =
+          activeTab === "doctors" ? selectedDoctor : selectedCaretaker;
+        const origFullName = [targetUser?.first_name, targetUser?.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const editedName = (editedData.name || "").trim();
+        const hasNewPhoto =
+          editedData.photo &&
+          typeof editedData.photo === "object" &&
+          editedData.photo.name;
+        const nameChanged = editedName && editedName !== origFullName;
+
+        if (targetUser?.id && (hasNewPhoto || nameChanged)) {
+          const nameParts = editedName ? editedName.split(/\s+/) : [];
+          const firstName = nameChanged
+            ? nameParts[0] || targetUser.first_name || ""
+            : targetUser.first_name || "";
+          const lastName = nameChanged
+            ? nameParts.slice(1).join(" ")
+            : targetUser.last_name || "";
+          const userFormData = new FormData();
+          userFormData.append(
+            "user_update_data",
+            JSON.stringify({
+              updateid: targetUser.id,
+              first_name: firstName,
+              last_name: lastName,
+              email: targetUser.email || "",
+              countrycode: targetUser.country_code || "CM",
+              phone: stripDialCode(targetUser.phone),
+              is_active_state: targetUser.is_active_state ?? true,
+            }),
+          );
+          if (hasNewPhoto) {
+            userFormData.append("photo", editedData.photo);
+          }
+          await userManagementService.updateUser(userFormData);
+        }
+      }
 
       notification.success({
         message: `${activeTab.slice(0, -1).toUpperCase()} PROFILE UPDATED`,
@@ -557,6 +653,7 @@ export default function UserManagement() {
       notification.error({
         message: "UPDATE FAILED",
         description:
+          error.response?.data?.error ||
           error.response?.data?.detail ||
           `Unable to update ${activeTab.slice(0, -1)} profile.`,
         placement: "topRight",
@@ -567,48 +664,45 @@ export default function UserManagement() {
   };
 
   const handleStatusChange = async (newStatus) => {
-    let targetId = null;
-    let isPatient = activeTab === "patients";
+    if (activeTab === "patients") {
+      notification.info({
+        message: "Status Managed on Sponsor",
+        description:
+          "Patients do not have standalone login accounts. Update status on the linked sponsor account instead.",
+        placement: "topRight",
+      });
+      return;
+    }
 
+    let selectedRecord = null;
     switch (activeTab) {
       case "sponsors":
-        targetId = selectedSponsor?.id;
+        selectedRecord = selectedSponsor;
         break;
       case "doctors":
-        targetId = selectedDoctor?.id;
+        selectedRecord = selectedDoctor;
         break;
       case "caretakers":
-        targetId = selectedCaretaker?.id;
-        break;
-      case "patients":
-        // Try to get the User ID for the patient, fallback to profile id
-        targetId = selectedPatient?.user_id || selectedPatient?.user?.id || selectedPatient?.id;
+        selectedRecord = selectedCaretaker;
         break;
       default:
         console.warn("⚠️ Unknown user type:", activeTab);
         return;
     }
-    if (!targetId) {
+
+    if (!selectedRecord?.id) {
       notification.error({
         message: "ERROR",
-        description: "Unable to identify ID.",
+        description: "Unable to identify user ID.",
         placement: "topRight",
       });
       return;
     }
     try {
-      const endpoint = "/user_update/";
-      const formdata = new FormData();
-      
-      const updateData = {
-        updateid: targetId,
-        is_active_state: newStatus,
-      };
-      formdata.append("user_update_data", JSON.stringify(updateData));
-
-      console.log("🚀 Updating status:", formdata.get("user_update_data") || formdata.get("patientprofile_data"));
-      const response = await apiClient.patch(endpoint, formdata);
-      const result = response.data;
+      const result = await userManagementService.updateUserStatus(
+        selectedRecord,
+        newStatus,
+      );
       console.log("✅ Status Update Success:", result);
       setEditedData((prev) => ({ ...prev, is_active_state: newStatus }));
       notification.success({
@@ -622,6 +716,8 @@ export default function UserManagement() {
       notification.error({
         message: "UPDATE FAILED",
         description:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
           error.message ||
           `Unable to change status for ${activeTab.slice(0, -1)} account.`,
         placement: "topRight",
@@ -632,101 +728,83 @@ export default function UserManagement() {
   };
 
   const handleDeleteClick = async () => {
-    let targetId = null;
-    let isPatient = activeTab === "patients";
-
-    switch (activeTab) {
-      case "sponsors":
-        targetId = selectedSponsor?.id;
-        break;
-      case "doctors":
-        targetId = selectedDoctor?.id;
-        break;
-      case "caretakers":
-        targetId = selectedCaretaker?.id;
-        break;
-      case "patients": {
-        // Try all possible locations for the user ID
-        const pUser = selectedPatient?.patientProfile?.user;
-        const pUserId = typeof pUser === 'object' ? pUser?.id : pUser; // Handles if pUser is an object or a primitive (number/string)
-        
-        targetId = selectedPatient?.user_id 
-          || pUserId 
-          || selectedPatient?.user?.id 
-          || (typeof selectedPatient?.user === 'object' ? selectedPatient?.user?.id : selectedPatient?.user)
-          || selectedPatient?.patientProfile?.user_id;
-
-        // If STILL not found, let's try to find the user in allUsers by email or phone as a last resort
-        if (!targetId && selectedPatient?.email) {
-            const matchedUser = allusers.find(u => u.email === selectedPatient.email);
-            if (matchedUser) targetId = matchedUser.id;
-        }
-
-        // Absolute fallback: use the patient profile ID so the API call at least triggers. 
-        // If it's the wrong ID type, the backend will return 400, but it will show in the Network tab.
-        if (!targetId) {
-            targetId = selectedPatient?.id;
-        }
-        break;
-      }
-      default:
-        return;
-    }
-
-    if (!targetId) {
-      console.error("DELETE FAILED: Unable to identify ID. selectedPatient:", selectedPatient);
-      notification.error({
-        message: "DELETE FAILED",
-        description: "Unable to identify User ID for deletion. The patient might not have an associated user account.",
-        placement: "topRight",
-      });
-      return;
-    }
-
     try {
-      let endpoint = "/user_delete/";
-      let payload = { deleteids: [targetId] };
-      let method = "delete";
-
-      // If we are deleting a patient, we use the patientprofile_list API with the DELETE method
-      // and we must pass the patient profile ID instead of the User ID.
       if (activeTab === "patients") {
-        endpoint = "/patientprofile_list/";
-        payload = { patientprofiledeleteids: [selectedPatient?.id] }; // Use patient profile ID
-        method = "delete";
-      }
+        const patientProfileId =
+          selectedPatient?.patientProfile?.id || selectedPatient?.id;
+        if (!patientProfileId) {
+          notification.error({
+            message: "DELETE FAILED",
+            description: "Unable to identify patient profile ID for deletion.",
+            placement: "topRight",
+          });
+          return;
+        }
 
-      if (method === "post") {
-        await apiClient.post(endpoint, payload);
+        await apiClient.delete("/patientprofile_list/", {
+          data: { patientprofiledeleteids: [patientProfileId] },
+        });
+
+        queryClient.setQueryData(["userManagementLists", token], (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            patients:
+              oldData.patients?.filter(
+                (item) => item.id !== patientProfileId,
+              ) || [],
+          };
+        });
       } else {
-        await apiClient.delete(endpoint, {
-          data: payload,
+        let targetId = null;
+        switch (activeTab) {
+          case "sponsors":
+            targetId = selectedSponsor?.id;
+            break;
+          case "doctors":
+            targetId = selectedDoctor?.id;
+            break;
+          case "caretakers":
+            targetId = selectedCaretaker?.id;
+            break;
+          default:
+            return;
+        }
+
+        if (!targetId) {
+          notification.error({
+            message: "DELETE FAILED",
+            description: "Unable to identify User ID for deletion.",
+            placement: "topRight",
+          });
+          return;
+        }
+
+        await apiClient.delete("/user_delete/", {
+          data: { deleteids: [targetId] },
+        });
+
+        queryClient.setQueryData(["userManagementLists", token], (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            allUsers:
+              oldData.allUsers?.filter((item) => item.id !== targetId) || [],
+            sponsors:
+              oldData.sponsors?.filter(
+                (item) => item.id !== targetId && item.user?.id !== targetId,
+              ) || [],
+            caretakers:
+              oldData.caretakers?.filter(
+                (item) => item.id !== targetId && item.user?.id !== targetId,
+              ) || [],
+            doctors:
+              oldData.doctors?.filter(
+                (item) => item.id !== targetId && item.user?.id !== targetId,
+              ) || [],
+          };
         });
       }
-
-      queryClient.setQueryData(["userManagementLists", token], (oldData) => {
-        if (!oldData) return oldData;
-        return {
-          allUsers:
-            oldData.allUsers?.filter((item) => item.id !== targetId) || [],
-          sponsors:
-            oldData.sponsors?.filter(
-              (item) => item.id !== targetId && item.user?.id !== targetId,
-            ) || [],
-          caretakers:
-            oldData.caretakers?.filter(
-              (item) => item.id !== targetId && item.user?.id !== targetId,
-            ) || [],
-          patients:
-            oldData.patients?.filter(
-              (item) => item.id !== targetId && item.user?.id !== targetId,
-            ) || [],
-          doctors:
-            oldData.doctors?.filter(
-              (item) => item.id !== targetId && item.user?.id !== targetId,
-            ) || [],
-        };
-      });
 
       setDrawerVisible(false);
       fetchAllUsersData();
@@ -740,6 +818,7 @@ export default function UserManagement() {
       notification.error({
         message: "DELETE FAILED",
         description:
+          error.response?.data?.error ||
           error.response?.data?.detail ||
           error.response?.data?.message ||
           "Unable to delete account.",
@@ -787,11 +866,12 @@ export default function UserManagement() {
         setSelectedSponsor(record);
         setEditedData({
           ...record,
+          email: record.email || "",
           sponsor_address: record.sponsorProfile?.sponsor_address || "",
           sponsor_gender: record.sponsorProfile?.sponsor_gender || "",
           work_employment: record.sponsorProfile?.work_employment || "",
           how_found_us: record.sponsorProfile?.how_found_us || "",
-          phone: trimPhoneNumber(
+          phone: stripDialCode(
             record.phone || record.sponsorProfile?.phone || "",
           ),
           country_code: record.country_code || record.countrycode || "CM",
@@ -802,14 +882,21 @@ export default function UserManagement() {
         setSelectedDoctor(record);
         setEditedData({
           ...record,
+          name:
+            record.name ||
+            [record.first_name, record.last_name].filter(Boolean).join(" "),
           doc_profile_updateid: record.doctorProfile?.id || "",
-          dep: record.doctorProfile?.dep || 2,
+          dep:
+            record.doctorProfile?.dep?.id ||
+            (typeof record.doctorProfile?.dep === "number"
+              ? record.doctorProfile.dep
+              : undefined),
           doc_address: record.doctorProfile?.doc_address || "",
-          doc_exprience: record.doctorProfile?.doc_exprience || "",
+          doc_exprience: record.doctorProfile?.doc_exprience ?? "",
           doc_gender: record.doctorProfile?.doc_gender || record.gender || "",
           speciality: record.doctorProfile?.speciality || "",
           doc_country_code: record.doctorProfile?.doc_country_code || "CM",
-          doc_phone: trimPhoneNumber(
+          doc_phone: stripDialCode(
             record.doctorProfile?.doc_phone || record.phone || "",
           ),
           joining_date: record.doctorProfile?.joining_date || "",
@@ -825,10 +912,12 @@ export default function UserManagement() {
         setSelectedCaretaker(record);
         setEditedData({
           ...record,
-          name: record.name || "",
+          name:
+            record.name ||
+            [record.first_name, record.last_name].filter(Boolean).join(" "),
           address: record.caretakerProfile?.caretaker_address || "",
           gender: record.caretakerProfile?.care_gender || "",
-          experience: record.caretakerProfile?.caretaker_exprience || "",
+          experience: record.caretakerProfile?.caretaker_exprience ?? "",
           yr_graduation: record.caretakerProfile?.yr_of_graduation || "",
           credentials: record.caretakerProfile?.credentials || "",
           skillset: record.caretakerProfile?.skillset || "",
@@ -839,10 +928,29 @@ export default function UserManagement() {
         setSelectedPatient(record);
         setEditedData({
           ...record,
-          patient_profile_updateid: record.patientProfile?.id || "",
-          sponsorid: record.patientProfile?.sponsorid || "",
-          doctorid: record.patientProfile?.doctorid || "",
-          caretakerid: record.patientProfile?.caretakerid || "",
+          patient_profile_updateid: record.patientProfile?.id || record.id || "",
+          patient_name:
+            record.patientProfile?.patient_name ||
+            record.patient_name ||
+            record.name ||
+            "",
+          phone: stripDialCode(
+            record.patientProfile?.phone || record.phone || "",
+          ),
+          country_code:
+            record.patientProfile?.country_code || record.country_code || "",
+          email: record.patientProfile?.email || record.email || "",
+          age: record.patientProfile?.age ?? "",
+          sponsorid:
+            record.patientProfile?.sponsorid ??
+            record.patientProfile?.sponsor?.id ??
+            record.patientProfile?.sponsor ??
+            "",
+          caretakerid:
+            record.patientProfile?.caretakerid ??
+            record.patientProfile?.caretaker?.id ??
+            record.patientProfile?.caretaker ??
+            "",
           patient_dob: record.patientProfile?.patient_dob || "",
           patient_gender: record.patientProfile?.patient_gender || "",
           blood_group: record.patientProfile?.blood_group || "",
@@ -857,14 +965,20 @@ export default function UserManagement() {
           emer_con_coun_of_residen:
             record.patientProfile?.emer_con_coun_of_residen || "",
           emer_con_country_code:
-            record.patientProfile?.emer_con_country_code || "",
-          emer_con_phone: record.patientProfile?.emer_con_phone || "",
+            record.patientProfile?.emer_con_country_code ||
+            record.patientProfile?.emer_country_code ||
+            "",
+          emer_con_phone: stripDialCode(
+            record.patientProfile?.emer_con_phone || "",
+          ),
           emer_con_email: record.patientProfile?.emer_con_email || "",
           local_con_name: record.patientProfile?.local_con_name || "",
           local_con_relation: record.patientProfile?.local_con_relation || "",
           local_con_country_code:
             record.patientProfile?.local_con_country_code || "",
-          local_con_phone: record.patientProfile?.local_con_phone || "",
+          local_con_phone: stripDialCode(
+            record.patientProfile?.local_con_phone || "",
+          ),
           reason_enrollment: record.patientProfile?.reason_enrollment || "",
           reason_other: record.patientProfile?.reason_other || "",
           medical_his_diagnosis:
@@ -954,7 +1068,8 @@ export default function UserManagement() {
       <div className="relative w-[72px] h-[72px]">
         <Avatar
           size={72}
-          src={uploadedImage || currentSrc}
+          src={uploadedImage || currentSrc || undefined}
+          icon={<UserOutlined />}
           className="rounded-full object-cover"
         />
 
@@ -993,10 +1108,11 @@ export default function UserManagement() {
       key: "name",
       render: (text, record) => (
         <Space>
-          <img
-            src={record.avatar}
-            alt={text}
-            className="w-[32px] h-[32px] rounded-full object-cover"
+          <Avatar
+            src={record.avatar || undefined}
+            icon={<UserOutlined />}
+            size={32}
+            className="shrink-0"
           />
           {text}
         </Space>
@@ -1005,12 +1121,16 @@ export default function UserManagement() {
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Phone", dataIndex: "phone", key: "phone" },
     { title: "Country", dataIndex: "country", key: "country" },
-    {
-      title: "Patients Linked",
-      dataIndex: "patientsLinked",
-      key: "patientsLinked",
-    },
-    { title: "Membership", dataIndex: "membership", key: "membership" },
+    ...(activeTab === "sponsors"
+      ? [
+          {
+            title: "Patients Linked",
+            dataIndex: "patientsLinked",
+            key: "patientsLinked",
+          },
+          { title: "Membership", dataIndex: "membership", key: "membership" },
+        ]
+      : []),
     {
       title: "Status",
       dataIndex: "is_active_state",
@@ -1035,23 +1155,36 @@ export default function UserManagement() {
 
   const filteredData = useMemo(() => {
     const dataMap = {
-      sponsors: sponsorList.map((s) => ({
-        ...s,
-        key: s?.id || Math.random(),
-        username:
-          s?.username ||
-          (s?.first_name && s?.last_name
-            ? `${s.first_name.toLowerCase()}_${s.last_name.toLowerCase()}`
-            : "N/A"),
-        avatar: s?.photo_view_url || (s?.photo && s.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${s.photo}` : s?.photo),
-        name: (s?.first_name || "") + " " + (s?.last_name || ""),
-        email: s?.email,
-        phone: trimPhoneNumber(s?.phone),
-        country: s?.country_code || s?.country,
-        patientsLinked: s.sponsorProfile?.patients_count || 0,
-        membership: s.sponsorProfile?.membership_plan || "N/A",
-        status: s.is_active ? "Active" : "Inactive",
-      })),
+      sponsors: sponsorList.map((s) => {
+        const sponsorProfileId = s.sponsorProfile?.id;
+        const linkedPatientsCount = sponsorProfileId
+          ? patientsData.filter((p) => {
+              const pSponsorId =
+                typeof p?.sponsor === "object" ? p?.sponsor?.id : p?.sponsor;
+              return (
+                pSponsorId && Number(pSponsorId) === Number(sponsorProfileId)
+              );
+            }).length
+          : 0;
+        return {
+          ...s,
+          key: s?.id || Math.random(),
+          username:
+            s?.username ||
+            (s?.first_name && s?.last_name
+              ? `${s.first_name.toLowerCase()}_${s.last_name.toLowerCase()}`
+              : "N/A"),
+          avatar: resolveMediaUrl(s?.photo_view_url || s?.photo),
+          name: (s?.first_name || "") + " " + (s?.last_name || ""),
+          email: s?.email,
+          phone: trimPhoneNumber(s?.phone),
+          country: s?.country_code || s?.country,
+          patientsLinked:
+            s.sponsorProfile?.patients_count ?? linkedPatientsCount,
+          membership: s.sponsorProfile?.membership_plan || "N/A",
+          status: s.is_active ? "Active" : "Inactive",
+        };
+      }),
       doctors: docList.map((d) => ({
         ...d,
         key: d?.id || Math.random(),
@@ -1061,11 +1194,12 @@ export default function UserManagement() {
           (d?.first_name && d?.last_name
             ? `${d.first_name.toLowerCase()}_${d.last_name.toLowerCase()}`
             : d?.email?.split("@")[0] || "N/A"),
-        avatar: d?.photo_view_url || (d?.photo && d.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${d.photo}` : d?.photo),
+        avatar: resolveMediaUrl(d?.photo_view_url || d?.photo),
         name: (d?.first_name || "") + " " + (d?.last_name || ""),
         email: d?.email,
-        phone: trimPhoneNumber(d?.phone),
-        country: d?.country_code || d?.country,
+        phone: trimPhoneNumber(d?.phone || d?.doctorProfile?.doc_phone),
+        country:
+          d?.country_code || d?.doctorProfile?.doc_country_code || d?.country,
         patientsLinked: d.doctorProfile?.patients_count || 0,
         membership: d.doctorProfile?.membership_plan || "N/A",
         status: d.is_active ? "Active" : "Inactive",
@@ -1079,7 +1213,7 @@ export default function UserManagement() {
           (c?.first_name && c?.last_name
             ? `${c.first_name.toLowerCase()}_${c.last_name.toLowerCase()}`
             : c?.email?.split("@")[0] || "N/A"),
-        avatar: c?.photo_view_url || (c?.photo && c.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${c.photo}` : c?.photo),
+        avatar: resolveMediaUrl(c?.photo_view_url || c?.photo),
         name: (c?.first_name || "") + " " + (c?.last_name || ""),
         email: c?.email,
         phone: trimPhoneNumber(c?.phone),
@@ -1098,7 +1232,7 @@ export default function UserManagement() {
           (p?.first_name && p?.last_name
             ? `${p.first_name.toLowerCase()}_${p.last_name.toLowerCase()}`
             : p?.email?.split("@")[0] || `patient_${p?.id || "N/A"}`),
-        avatar: p?.photo_view_url || (p?.photo && p.photo.startsWith('/') ? `${base_url.replace(/\/$/, '')}${p.photo}` : p?.photo),
+        avatar: resolveMediaUrl(p?.photo_view_url || p?.photo),
         name: (p?.first_name || "") + " " + (p?.last_name || ""),
         email: p?.email,
         phone: trimPhoneNumber(p?.phone),
@@ -1121,7 +1255,15 @@ export default function UserManagement() {
     return data.filter(
       (d) => d.name && d.name.toLowerCase().includes(searchText.toLowerCase()),
     );
-  }, [sponsorList, docList, caretakerList, patientList, activeTab, searchText]);
+  }, [
+    sponsorList,
+    docList,
+    caretakerList,
+    patientList,
+    patientsData,
+    activeTab,
+    searchText,
+  ]);
 
   const drawerTitleMap = {
     sponsors: "Sponsor Detailed View",
@@ -1321,7 +1463,11 @@ export default function UserManagement() {
         <div className="flex flex-col gap-[16px]">
           {/* ── Profile photo uploader ── */}
           <AvatarUploader
-            currentSrc={selectedDoctor.photo}
+            currentSrc={resolveMediaUrl(
+              selectedDoctor.photo_view_url ||
+                selectedDoctor.photo ||
+                selectedDoctor.avatar,
+            )}
             inputId="doctor-photo-upload"
           />
 
@@ -1468,7 +1614,11 @@ export default function UserManagement() {
         <div className="flex flex-col gap-[16px]">
           {/* ── Profile photo uploader ── */}
           <AvatarUploader
-            currentSrc={selectedCaretaker.photo}
+            currentSrc={resolveMediaUrl(
+              selectedCaretaker.photo_view_url ||
+                selectedCaretaker.photo ||
+                selectedCaretaker.avatar,
+            )}
             inputId="caretaker-photo-upload"
           />
 
@@ -1572,7 +1722,11 @@ export default function UserManagement() {
       return (
         <div className="flex flex-col gap-[16px]">
           <AvatarUploader
-            currentSrc={selectedPatient.photo}
+            currentSrc={resolveMediaUrl(
+              selectedPatient.photo_view_url ||
+                selectedPatient.photo ||
+                selectedPatient.avatar,
+            )}
             inputId="patient-photo-upload"
           />
           <div className="grid grid-cols-[1fr_1fr] gap-[16px]">
@@ -1881,43 +2035,46 @@ export default function UserManagement() {
     }
   }, [currentUserRole, activeTab]);
 
-  const adminStats = [
-    {
-      id: 1,
-      name: "Total Sponsors",
-      count: 88,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 2,
-      name: "Total Doctors",
-      count: 58,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 3,
-      name: "Care Takers",
-      count: 20,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 4,
-      name: "Patients",
-      count: 24,
-      diff: "+25%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 5,
-      name: "Active Memberships",
-      count: 6,
-      diff: "+15%",
-      duration: "in last 7 Days",
-    },
-  ];
+  const adminStats = useMemo(
+    () => [
+      {
+        id: 1,
+        name: "Total Sponsors",
+        count: sponsorList.length,
+        diff: "Live",
+        duration: "Registered accounts",
+      },
+      {
+        id: 2,
+        name: "Total Doctors",
+        count: docList.length,
+        diff: "Live",
+        duration: "Registered accounts",
+      },
+      {
+        id: 3,
+        name: "Care Takers",
+        count: caretakerList.length,
+        diff: "Live",
+        duration: "Registered accounts",
+      },
+      {
+        id: 4,
+        name: "Patients",
+        count: patientList.length,
+        diff: "Live",
+        duration: "Enrolled profiles",
+      },
+      {
+        id: 5,
+        name: "Active Accounts",
+        count: allusers.filter((u) => u?.is_active_state === true).length,
+        diff: "Live",
+        duration: "Across all roles",
+      },
+    ],
+    [sponsorList, docList, caretakerList, patientList, allusers],
+  );
 
   return (
     <div className="flex h-screen bg-[#F7F9FB]">
@@ -1927,7 +2084,7 @@ export default function UserManagement() {
 
       {loading && (
         <div className="fixed top-0 left-0 w-screen h-screen bg-[rgba(255,255,255,0.7)] z-[9999] flex items-center justify-center">
-          <Spin size="large" tip="Loading..." />
+          <Spin size="large" />
         </div>
       )}
 
@@ -2021,6 +2178,8 @@ export default function UserManagement() {
               activeKey={activeTab}
               onChange={(key) => {
                 setActiveTab(key);
+                setSearchText("");
+                setTablePage(1);
                 setDrawerVisible(false);
               }}
               items={tabItems}
@@ -2031,7 +2190,10 @@ export default function UserManagement() {
                 <Input
                   placeholder="Search"
                   value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+                  onChange={(e) => {
+                    setSearchText(e.target.value);
+                    setTablePage(1);
+                  }}
                   className="w-[200px]"
                 />
 
@@ -2057,7 +2219,11 @@ export default function UserManagement() {
               <Table
                 columns={columns}
                 dataSource={filteredData}
-                pagination={{ pageSize: 5 }}
+                pagination={{
+                  current: tablePage,
+                  pageSize: 5,
+                  onChange: (page) => setTablePage(page),
+                }}
                 rowKey="id"
                 bordered
               />
@@ -2072,20 +2238,24 @@ export default function UserManagement() {
                 setUploadedImage(null);
               }}
               open={drawerVisible}
-              bodyStyle={{ padding: 24 }}
+              styles={{ body: { padding: 24 } }}
             >
               {renderDrawerContent()}
               <div className="flex justify-end mt-[24px] gap-[20px]">
                 <div className="flex items-center gap-[12px]">
-                  <span className="font-medium">Status:</span>
-                  <Radio.Group
-                    value={editedData.is_active_state !== false}
-                    onChange={(e) => handleStatusChange(e.target.value)}
-                    buttonStyle="solid"
-                  >
-                    <Radio.Button value={true}>Active</Radio.Button>
-                    <Radio.Button value={false}>Inactive</Radio.Button>
-                  </Radio.Group>
+                  {activeTab !== "patients" && (
+                    <>
+                      <span className="font-medium">Status:</span>
+                      <Radio.Group
+                        value={editedData.is_active_state !== false}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        buttonStyle="solid"
+                      >
+                        <Radio.Button value={true}>Active</Radio.Button>
+                        <Radio.Button value={false}>Inactive</Radio.Button>
+                      </Radio.Group>
+                    </>
+                  )}
                   {(currentUserRole === "admin" ||
                     currentUser?.username?.toLowerCase().includes("foy") ||
                     currentUser?.first_name?.toLowerCase().includes("foy")) && (

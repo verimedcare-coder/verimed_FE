@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
 import BackButton from "../../components/common/BackButton";
 import { base_url } from "../../constants/constants";
+import apiClient from "../../services/apiClient";
 
 
 function SectionHeader({ title, children }) {
@@ -28,22 +29,55 @@ function SectionHeader({ title, children }) {
 
 export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(3);
+  const [selectedYear, setSelectedYear] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem("token");
   const data = localStorage.getItem("userData");
-  const user = data ? JSON.parse(data) : null;
+  const user =
+    data && data !== "undefined" && data !== "null" ? JSON.parse(data) : null;
   if (!user) {
     window.location.href = "/";
   }
   const { appointmentData } = location.state || {};
 
-  const doctorDataRaw = localStorage.getItem("doctorData");
-  let doctorId = null;
-  if (doctorDataRaw && doctorDataRaw !== "undefined") {
-    const doctorData = JSON.parse(doctorDataRaw);
-    doctorId = doctorData?.id || null;
-  }
+  const [doctorId, setDoctorId] = useState(() => {
+    try {
+      const doctorDataRaw = localStorage.getItem("doctorData");
+      if (
+        doctorDataRaw &&
+        doctorDataRaw !== "undefined" &&
+        doctorDataRaw !== "null"
+      ) {
+        return JSON.parse(doctorDataRaw)?.id || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (!token || doctorId || user?.user_role !== "doctor") return;
+    let isMounted = true;
+    const resolveDoctorProfile = async () => {
+      try {
+        const res = await apiClient.get("/doctorprofile_list/");
+        const list = Array.isArray(res.data) ? res.data : [];
+        const matched = list.find((doc) => doc?.user?.id === user?.id);
+        if (matched && isMounted) {
+          localStorage.setItem("doctorData", JSON.stringify(matched));
+          setDoctorId(matched.id || null);
+        }
+      } catch (err) {
+        console.error("Error resolving doctor profile:", err);
+      }
+    };
+    resolveDoctorProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, [token, doctorId, user?.id, user?.user_role]);
 
   const { data: doctorAppointments = [], isLoading: loading } = useQuery({
     queryKey: ["doctorAppointments", doctorId],
@@ -54,10 +88,18 @@ export default function MyAppointments() {
     enabled: !!doctorId && !!token,
   });
 
+  const filteredAppointments = selectedYear
+    ? doctorAppointments.filter(
+        (appt) =>
+          appt?.appointment_date &&
+          dayjs(appt.appointment_date).year() === selectedYear.year(),
+      )
+    : doctorAppointments;
+
   const showMore = () =>
-    setVisibleCount((prev) => Math.min(prev + 3, doctorAppointments.length));
+    setVisibleCount((prev) => Math.min(prev + 3, filteredAppointments.length));
   const showLess = () => setVisibleCount(3);
-  const hasMore = visibleCount < doctorAppointments.length;
+  const hasMore = visibleCount < filteredAppointments.length;
 
   // Columns for Table
   const columns = [
@@ -123,7 +165,7 @@ export default function MyAppointments() {
           className="text-[#D97706] font-semibold cursor-pointer"
           onClick={() =>
             navigate("/view_patient_details", {
-              state: { appointmentData: doctorAppointments[record.key] },
+              state: { appointmentData: filteredAppointments[record.key] },
             })
           }
         >
@@ -134,7 +176,7 @@ export default function MyAppointments() {
   ];
 
   // Map API data for Table
-  const dataSource = doctorAppointments.map((appt, index) => {
+  const dataSource = filteredAppointments.map((appt, index) => {
     const patientUser = appt?.patient?.patient_name;
     const dateTime = appt.appointment_date
       ? new Date(
@@ -154,8 +196,9 @@ export default function MyAppointments() {
       patientName: patientUser || "",
       type: appt?.dep?.dep_name || "-",
       careTaker:
-        appt.caretaker?.user?.first_name + appt?.caretaker?.user?.last_name ||
-        "-",
+        [appt?.caretaker?.user?.first_name, appt?.caretaker?.user?.last_name]
+          .filter(Boolean)
+          .join(" ") || "-",
       time: dateTime
         ? dateTime.toLocaleTimeString([], {
           hour: "2-digit",
@@ -191,9 +234,12 @@ export default function MyAppointments() {
                 <div className="flex items-center justify-center gap-[12px]">
                   <DatePicker
                     picker="year"
-                    defaultValue={dayjs("2025", "YYYY")}
+                    value={selectedYear}
+                    onChange={(val) => setSelectedYear(val)}
+                    allowClear
+                    placeholder="All Years"
                     suffixIcon={<CalendarOutlined />}
-                    className="w-[100px]"
+                    className="w-[115px]"
                   />
                   <Primarybtn icon={<FilterOutlined />} name="Filter" />
                 </div>

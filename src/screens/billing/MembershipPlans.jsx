@@ -514,7 +514,7 @@ export default function MembershipPlans() {
           width={450}
           onClose={() => setAddDrawerOpen(false)}
           open={addDrawerOpen}
-          bodyStyle={{ paddingBottom: 80 }}
+          styles={{ body: { paddingBottom: 80 } }}
         >
           <Form layout="vertical" onFinish={handleFinish}>
             {/* Plan Info */}

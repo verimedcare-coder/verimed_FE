@@ -19,7 +19,7 @@ import { Table, message, Modal, Form, Input, Upload, Button, Select, DatePicker,
 import dayjs from "dayjs";
 import { getData } from "country-list";
 import { UploadOutlined, EditOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { base_url, isAdminUser } from "../../constants/constants";
+import { base_url, isAdminUser, resolveMediaUrl, stripDialCode } from "../../constants/constants";
 import {
   filterSponsorAppointments,
   filterSponsorPatients,
@@ -285,7 +285,7 @@ export default function MyLovedOnes() {
             {record.documents.map((doc, i) => (
               <a
                 key={i}
-                href={doc.view_link || doc.download_link || doc.file}
+                href={resolveMediaUrl(doc.view_link || doc.download_link || doc.file)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#004C91] underline text-[13px] flex items-center gap-[4px]"
@@ -320,15 +320,13 @@ export default function MyLovedOnes() {
   const sponsorId = resolvedSponsorId;
 
   const getPhotoUrl = (url) => {
-    if (!url || typeof url !== "string" || url === "null" || url === "undefined") return patientdetails;
-    if (url?.startsWith("http")) {
-      const hasQuery = url.includes("?");
-      return `${url}${hasQuery ? "&" : "?"}t=${imageHash}`;
+    if (!url || typeof url !== "string" || url === "null" || url === "undefined") {
+      return patientdetails;
     }
-    url = url.replace(/^\/media\/+/i, "/");
-    const base = base_url.replace(/\/+$/, "");
-    const cleanedUrl = url.replace(/^\/+/, "");
-    return `${base}/${cleanedUrl}?t=${imageHash}`;
+    const resolved = resolveMediaUrl(url, patientdetails);
+    if (!resolved || resolved === patientdetails) return patientdetails;
+    const hasQuery = resolved.includes("?");
+    return `${resolved}${hasQuery ? "&" : "?"}t=${imageHash}`;
   };
 
   const patientData = useMemo(() => {
@@ -341,7 +339,7 @@ export default function MyLovedOnes() {
     if (!patientData) return;
     editForm.setFieldsValue({
       name: patientData.patient_name || "",
-      phone: patientData.phone || "",
+      phone: stripDialCode(patientData.phone || ""),
       email: patientData.email || "",
       age: patientData.age || "",
       patient_dob: patientData.patient_dob ? dayjs(patientData.patient_dob) : null,
@@ -361,12 +359,13 @@ export default function MyLovedOnes() {
       religion: patientData.religion || "",
       emer_con_name: patientData.emer_con_name || "",
       emer_con_relation: patientData.emer_con_relation || "",
-      emer_con_country_code: patientData.emer_con_country_code || "",
-      emer_con_phone: patientData.emer_con_phone || "",
+      emer_con_country_code:
+        patientData.emer_con_country_code || patientData.emer_country_code || "",
+      emer_con_phone: stripDialCode(patientData.emer_con_phone || ""),
       local_con_name: patientData.local_con_name || "",
       local_con_relation: patientData.local_con_relation || "",
       local_con_country_code: patientData.local_con_country_code || "",
-      local_con_phone: patientData.local_con_phone || "",
+      local_con_phone: stripDialCode(patientData.local_con_phone || ""),
       condition: patientData.medical_his_diagnosis || "",
       medical_his_cancer: patientData.medical_his_cancer || "",
       medical_his_major_surgeries: patientData.medical_his_major_surgeries || "",
@@ -404,11 +403,35 @@ export default function MyLovedOnes() {
         values.patient_dob && dayjs.isDayjs(values.patient_dob)
           ? values.patient_dob.format("YYYY-MM-DD")
           : values.patient_dob || null;
+      const parsedAge =
+        values.age !== undefined &&
+        values.age !== null &&
+        String(values.age).trim() !== "" &&
+        !Number.isNaN(Number(values.age))
+          ? parseInt(values.age, 10)
+          : null;
+      const cleanPhone = stripDialCode(values.phone || "");
+      const cleanEmerPhone = stripDialCode(values.emer_con_phone || "");
+      const cleanLocalPhone = stripDialCode(values.local_con_phone || "");
+      const emerCountryCode = values.emer_con_country_code || "";
+
       const patientprofile_update_data = {
         patient_profile_updateid: Number(patientData.id),
         sponsorid: Number(targetSponsorId),
-        doctorid: patientData.doctorid || patientData.doctor || 1,
         caretakerid: patientData.caretakerid || patientData.caretaker || null,
+        patient_name: values.name || patientData.patient_name || "",
+        phone: cleanPhone,
+        email: values.email ?? patientData.email ?? "",
+        country_code: values.country_code ?? patientData.country_code ?? "",
+        age: parsedAge,
+        height: values.height ?? "",
+        weight: values.weight ?? "",
+        blood_pressure: values.blood_pressure ?? "",
+        heart_rate: values.heart_rate ?? "",
+        blood_sugar: values.blood_sugar ?? "",
+        oxygen: values.oxygen ?? "",
+        temperature: values.temperature ?? "",
+        respiratory_rate: values.respiratory_rate ?? "",
         patient_dob: formattedDOB,
         patient_gender: values.patient_gender || "",
         blood_group: values.blood_group || "",
@@ -420,14 +443,14 @@ export default function MyLovedOnes() {
         emer_con_name: values.emer_con_name || "",
         emer_con_relation: values.emer_con_relation || "",
         emer_con_coun_of_residen: values.emer_con_coun_of_residen || "",
-        emer_con_country_code: values.emer_con_country_code || "",
-        emer_con_phone: values.emer_con_phone || "",
+        emer_con_country_code: emerCountryCode,
+        emer_con_phone: cleanEmerPhone,
         emer_con_email: values.emer_con_email || "",
 
         local_con_name: values.local_con_name || "",
         local_con_relation: values.local_con_relation || "",
         local_con_country_code: values.local_con_country_code || "",
-        local_con_phone: values.local_con_phone || "",
+        local_con_phone: cleanLocalPhone,
 
         reason_enrollment: values.reason_enrollment || patientData.reason_enrollment || patientData.reason || "",
         reason_other: values.reason_other || null,
@@ -438,6 +461,9 @@ export default function MyLovedOnes() {
         medical_his_provided_medi_care: values.medical_his_provided_medi_care || "",
         medical_his_major_surgeries: values.medical_his_major_surgeries || "",
         medical_his_curr_symp: values.medical_his_curr_symp || "",
+        last_doctor_visit: values.last_doctor_visit || null,
+        has_regular_doctor: values.has_regular_doctor || "",
+        regular_doctor_name: values.regular_doctor_name || "",
 
         medication_name: values.medication_name || "",
         medication_dose: values.medication_dose || "",
@@ -495,7 +521,11 @@ export default function MyLovedOnes() {
       setImageHash(Date.now());
     } catch (error) {
       console.error("Error updating loved one:", error);
-      const backendError = error.response?.data?.error || error.response?.data?.message || "Failed to update loved one profile.";
+      const backendError =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Failed to update loved one profile.";
       toast.error(backendError, { position: "top-right", autoClose: 3000 });
     } finally {
       setEditLoading(false);
@@ -547,50 +577,50 @@ export default function MyLovedOnes() {
     {
       icon: bloodPressure,
       label: "Blood Pressure",
-      value: vitalsData?.blood_pressure || "N/A",
-      color: getVitalColor("Blood Pressure", vitalsData?.blood_pressure),
+      value: patientData?.blood_pressure || "N/A",
+      color: getVitalColor("Blood Pressure", patientData?.blood_pressure),
     },
     {
       icon: heartRate,
       label: "Heart Rate",
-      value: vitalsData?.heart_rate || "N/A",
-      color: getVitalColor("Heart Rate", vitalsData?.heart_rate),
+      value: patientData?.heart_rate || "N/A",
+      color: getVitalColor("Heart Rate", patientData?.heart_rate),
     },
     {
       icon: sugar,
       label: "Blood Sugar",
-      value: vitalsData?.blood_sugar || "N/A",
-      color: getVitalColor("Blood Sugar", vitalsData?.blood_sugar),
+      value: patientData?.blood_sugar || "N/A",
+      color: getVitalColor("Blood Sugar", patientData?.blood_sugar),
     },
     {
       icon: oxygen,
       label: "Oxygen",
-      value: vitalsData?.oxygen || "N/A",
-      color: getVitalColor("Oxygen", vitalsData?.oxygen),
+      value: patientData?.oxygen || "N/A",
+      color: getVitalColor("Oxygen", patientData?.oxygen),
     },
     {
       icon: temperature,
       label: "Temperature",
-      value: vitalsData?.temperature || "N/A",
-      color: getVitalColor("Temperature", vitalsData?.temperature),
+      value: patientData?.temperature || "N/A",
+      color: getVitalColor("Temperature", patientData?.temperature),
     },
     {
       icon: respiratory,
       label: "Respiratory Rate",
-      value: vitalsData?.respiratory_rate || "N/A",
-      color: getVitalColor("Respiratory Rate", vitalsData?.respiratory_rate),
+      value: patientData?.respiratory_rate || "N/A",
+      color: getVitalColor("Respiratory Rate", patientData?.respiratory_rate),
     },
     {
       icon: weight,
       label: "Weight",
-      value: vitalsData?.weight || "N/A",
-      color: getVitalColor("Weight", vitalsData?.weight),
+      value: patientData?.weight || "N/A",
+      color: getVitalColor("Weight", patientData?.weight),
     },
     {
       icon: statusIcon,
       label: "Status",
-      value: vitalsData?.status || "N/A",
-      color: getVitalColor("Status", vitalsData?.status),
+      value: patientData?.status || "N/A",
+      color: getVitalColor("Status", patientData?.status),
     },
   ];
 
@@ -685,54 +715,61 @@ export default function MyLovedOnes() {
                       label="Age/Gender"
                       value={`${
                         patientData?.age ||
-                        calculateAge(patientData?.date_of_birth)
-                      } Years / ${patientData?.gender}`}
+                        calculateAge(patientData?.patient_dob || patientData?.date_of_birth)
+                      } Years / ${patientData?.patient_gender || patientData?.gender || "N/A"}`}
                     />
                     <InfoItem
                       label="Relationship"
-                      value={patientData?.relation || "Mother"}
+                      value={patientData?.reason_enrollment || patientData?.relation || "Loved One"}
                     />
                     <InfoItem
                       label="Primary Diagnosis"
-                      value={
-                        patientData?.diagnosis
-                          ? Array.isArray(patientData.diagnosis)
-                            ? patientData.diagnosis.map((d) => d.name || JSON.stringify(d)).join(", ")
-                            : typeof patientData.diagnosis === "object"
-                            ? patientData.diagnosis.name || JSON.stringify(patientData.diagnosis)
-                            : patientData.diagnosis
-                          : "N/A"
-                      }
+                      value={(() => {
+                        const diag = patientData?.medical_his_diagnosis || patientData?.diagnosis;
+                        if (!diag) return "N/A";
+                        if (Array.isArray(diag)) return diag.map((d) => d.name || JSON.stringify(d)).join(", ");
+                        if (typeof diag === "object") return diag.name || JSON.stringify(diag);
+                        return diag;
+                      })()}
                     />
                     <InfoItem
                       label="Primary Doctor"
-                      value={patientData?.primary_doctor || "N/A"}
+                      value={patientData?.regular_doctor_name || patientData?.primary_doctor || "N/A"}
                     />
                     <InfoItem
                       label="Allergies"
-                      value={
-                        patientData?.allergies
-                          ? Array.isArray(patientData.allergies)
-                            ? patientData.allergies.map((a) => a.name || JSON.stringify(a)).join(", ")
-                            : typeof patientData.allergies === "object"
-                            ? patientData.allergies.name || JSON.stringify(patientData.allergies)
-                            : patientData.allergies
-                          : "N/A"
-                      }
+                      value={(() => {
+                        const combined = [patientData?.allergies_drug, patientData?.allergies_food]
+                          .filter(Boolean)
+                          .join(", ");
+                        if (combined) return combined;
+                        const allergies = patientData?.allergies;
+                        if (!allergies) return "N/A";
+                        if (Array.isArray(allergies)) return allergies.map((a) => a.name || JSON.stringify(a)).join(", ");
+                        if (typeof allergies === "object") return allergies.name || JSON.stringify(allergies);
+                        return allergies;
+                      })()}
                     />
                     <InfoItem
                       label="Current Medication"
-                      value={
-                        patientData?.medication
-                          ? Array.isArray(patientData.medication)
-                            ? patientData.medication
-                                .map((m) => m.name || JSON.stringify(m))
-                                .join(", ")
-                            : typeof patientData.medication === "object"
-                            ? patientData.medication.name || JSON.stringify(patientData.medication)
-                            : patientData.medication
-                          : "N/A"
-                      }
+                      value={(() => {
+                        let med = patientData?.medication;
+                        if (!med) return "N/A";
+                        if (typeof med === "string") {
+                          try {
+                            const parsed = JSON.parse(med);
+                            if (Array.isArray(parsed)) med = parsed;
+                          } catch {
+                            return med || "N/A";
+                          }
+                        }
+                        if (Array.isArray(med)) {
+                          const names = med.map((m) => m?.name || m?.medication_name).filter(Boolean);
+                          return names.length > 0 ? names.join(", ") : "N/A";
+                        }
+                        if (typeof med === "object") return med.name || JSON.stringify(med);
+                        return String(med);
+                      })()}
                     />
                     <InfoItem
                       label="Insurance Provider"
@@ -1320,7 +1357,7 @@ export default function MyLovedOnes() {
                   {selectedHistoryRecord.documents.map((doc, i) => (
                     <a
                       key={i}
-                      href={doc.view_link || doc.download_link || doc.file}
+                      href={resolveMediaUrl(doc.view_link || doc.download_link || doc.file)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-all duration-300"

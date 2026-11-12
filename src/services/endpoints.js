@@ -1,45 +1,54 @@
 /**
  * Centralized API Endpoints Dictionary
- * All API route paths should be registered and exported from here.
+ * Matches backend routes in verimed/urls.py (under /verimed prefix via apiClient baseURL).
  */
 
 export const ENDPOINTS = {
   AUTH: {
-    LOGIN: "/login/",
-    LOGOUT: "/logout/",
-    FORGOT_PASSWORD: "/forgot-password/",
+    LOGIN: "/user_login/",
+    LOGOUT: "/user_logout/",
+    SIGNUP: "/user-signup/",
+    VERIFY_EMAIL: "/verify-email/",
+    FORGOT_PASSWORD: "/user_update_user/",
+    USER_CHOICES: "/user_choices/",
   },
   APPOINTMENTS: {
-    LIST: "/appointments/",
-    CREATE: "/appointments/create/",
-    MY_APPOINTMENTS: "/my-appointments/",
-    DOCTOR_FORM: "/doctor-form/",
+    LIST: "/verimed_bookappoinment_create_update/",
+    CREATE_UPDATE: "/verimed_bookappoinment_create_update/",
+    STATUS_CHOICES: "/appoinmentstatus_choices/",
+    PATIENT_APPOINTMENTS: "/vb_patientappoinment_list/",
+    DOCTOR_APPOINTMENTS: "/vb_doctorappoinment_list/",
+    SPONSOR_APPOINTMENTS: "/vb_sponsorappoinment_list/",
+    DOCTOR_REPORTS: "/doctor_reports_curd/",
   },
   PATIENTS: {
-    LIST: "/patients/",
-    DETAILS: "/patient-details/",
+    LIST: "/patientprofile_list/",
+    CREATE_UPDATE: "/patientprofile_create_update/",
+    SPONSOR_PATIENTS: "/sponsorid_patientprofile_list/",
+    DELETE_PATIENT: "/sponsorid_patientprofile_delete/",
   },
   CARE_TEAM: {
-    LIST: "/care-team/",
-    LOVED_ONES: "/my-loved-ones/",
-    CARETAKER: "/my-caretaker/",
+    DOCTORS: "/doctorprofile_list/",
+    DOCTOR_UPDATE: "/doctorprofile_update/",
+    CARETAKERS: "/caretakerprofile_list/",
+    CARETAKER_UPDATE: "/caretakerprofile_update/",
+    SPONSORS: "/sponsorprofile_list/",
+    SPONSOR_UPDATE: "/sponsorprofile_update/",
   },
   ADMIN: {
-    USERS: "/users/",
-    DEPARTMENTS: "/departments/",
-  },
-  DASHBOARD: {
-    OVERVIEW: "/overview/",
-    DAILY_REPORTS: "/daily-reports/",
-    HEALTH_MONITORING: "/health-monitoring/",
+    USERS: "/user_view/",
+    USER_CREATE: "/user_create/",
+    USER_UPDATE: "/user_update/",
+    USER_DELETE: "/user_delete/",
+    DEPARTMENTS: "/verimed_department_create_update/",
+    COUNTRY_CODES: "/verimed_countrycode/",
   },
   BILLING: {
-    MEMBERSHIP_PLANS: "/membership-plans/",
-    CHECKOUT: "/checkout/",
+    PAYMENT: "/payment/",
+    CHECKOUT: "/create-checkout-session/",
   },
-  MESSAGES: {
-    LIST: "/messages/",
-    REPORTS: "/my-reports/",
-    SUPPORT: "/support/",
+  CONTACT: {
+    CREATE: "/contactus_c/",
+    LIST_DELETE: "/contactus_rd/",
   },
 };

@@ -18,8 +18,7 @@ import {
 } from "@ant-design/icons";
 import LoginBg from "../../assets/images/loginBg.jpg";
 import VerimedLogo from "../../assets/icons/VerimedLogo.png";
-import { base_url } from "../../constants/constants";
-import apiClient from "../../services/apiClient";
+import { forgotPasswordService } from "../../services/forgotPasswordService";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -34,15 +33,7 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append(
-        "user_update_data",
-        JSON.stringify({ username, password }),
-      );
-
-      await apiClient.patch('/user_update_user/', formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await forgotPasswordService.resetPassword({ username, password });
 
       setSuccess(true);
       notification.success({
@@ -60,6 +51,7 @@ export default function ForgotPasswordScreen() {
     } catch (error) {
       console.error("Reset password error:", error);
       const detail =
+        error?.response?.data?.error ||
         error?.response?.data?.detail ||
         error?.response?.data?.message ||
         "Failed to reset password. Please check your username and try again.";

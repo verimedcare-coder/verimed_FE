@@ -1,18 +1,15 @@
 import apiClient from "./apiClient";
 
 export const forgotPasswordService = {
-  sendOtp: async (data) => {
-    const response = await apiClient.post("/send_otp/", data);
-    return response.data;
-  },
-
-  verifyOtp: async (data) => {
-    const response = await apiClient.post("/verify_otp/", data);
-    return response.data;
-  },
-
-  resetPassword: async (data) => {
-    const response = await apiClient.post("/reset_password/", data);
+  resetPassword: async ({ username, password }) => {
+    const formData = new FormData();
+    formData.append(
+      "user_update_data",
+      JSON.stringify({ username, password }),
+    );
+    const response = await apiClient.patch("/user_update_user/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
 };

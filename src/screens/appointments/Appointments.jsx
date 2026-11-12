@@ -48,8 +48,10 @@ import SecondaryBtn from "../../components/common/SecondaryBtn";
 import {
   base_url,
   isAdminUser,
+  isMatchingService,
   REQUEST_SERVICES_LIST,
   getServiceStripeLink,
+  resolveMediaUrl,
 } from "../../constants/constants";
 import {
   filterSponsorAppointments,
@@ -120,6 +122,48 @@ export default function Appointments() {
     useState(false);
   const [pendingStripeUrl, setPendingStripeUrl] = useState(null);
 
+  const token = localStorage.getItem("token");
+  const userData = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userData");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+  const isAdmin = isAdminUser(userData);
+  const isSponsor = userData?.user_role === "sponsor" && !isAdmin;
+
+  const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
+
+  const { data: sponsors = [] } = useQuery({
+    queryKey: ["sponsors", isSponsor ? userData?.id : "all"],
+    queryFn: async () => {
+      const data = await appointmentsService.getSponsors();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!token,
+  });
+
+  const matchedSponsorProfile = useMemo(
+    () => (isSponsor ? resolveSponsorProfileFromList(sponsors, userData) : null),
+    [isSponsor, sponsors, userData],
+  );
+
+  const resolvedSponsorId = useMemo(
+    () =>
+      isSponsor
+        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
+        : null,
+    [isSponsor, storedSponsorId, matchedSponsorProfile],
+  );
+
+  useEffect(() => {
+    if (isSponsor && matchedSponsorProfile) {
+      persistSponsorProfile(matchedSponsorProfile);
+    }
+  }, [isSponsor, matchedSponsorProfile]);
+
   const handleOpenBookingModal = () => {
     form.resetFields();
     setSelectedDates([]);
@@ -177,48 +221,6 @@ export default function Appointments() {
       form.validateFields(["preferred_dates"]);
     }
   };
-
-  const token = localStorage.getItem("token");
-  const userData = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("userData");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  }, []);
-  const isAdmin = isAdminUser(userData);
-  const isSponsor = userData?.user_role === "sponsor" && !isAdmin;
-
-  const storedSponsorId = isSponsor ? getStoredSponsorProfileId() : null;
-
-  const { data: sponsors = [] } = useQuery({
-    queryKey: ["sponsors", isSponsor ? userData?.id : "all"],
-    queryFn: async () => {
-      const data = await appointmentsService.getSponsors();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: !!token,
-  });
-
-  const matchedSponsorProfile = useMemo(
-    () => (isSponsor ? resolveSponsorProfileFromList(sponsors, userData) : null),
-    [isSponsor, sponsors, userData],
-  );
-
-  const resolvedSponsorId = useMemo(
-    () =>
-      isSponsor
-        ? storedSponsorId || toValidId(matchedSponsorProfile?.id)
-        : null,
-    [isSponsor, storedSponsorId, matchedSponsorProfile],
-  );
-
-  useEffect(() => {
-    if (isSponsor && matchedSponsorProfile) {
-      persistSponsorProfile(matchedSponsorProfile);
-    }
-  }, [isSponsor, matchedSponsorProfile]);
 
   const { data: patients = [], isSuccess: isPatientsLoaded } = useQuery({
     queryKey: [
@@ -641,18 +643,14 @@ export default function Appointments() {
         getServiceStripeLink(values.appointmentType);
 
       // Check if user has already purchased this service via Stripe during website signup
-      const purchasedService = userData?.service_purchased?.trim().toLowerCase();
-      const currentServiceName = (selectedServiceObj?.name || values.appointmentType || "").trim().toLowerCase();
+      const purchasedService = userData?.service_purchased?.trim();
+      const currentServiceName = (
+        selectedServiceObj?.name ||
+        values.appointmentType ||
+        ""
+      ).trim();
 
-      const isPrePaid = Boolean(
-        purchasedService &&
-        currentServiceName &&
-        (currentServiceName.includes(purchasedService) ||
-         purchasedService.includes(currentServiceName) ||
-         (purchasedService.includes("nurse") && currentServiceName.includes("nurse")) ||
-         (purchasedService.includes("intake") && currentServiceName.includes("intake")) ||
-         (purchasedService.includes("wellness") && currentServiceName.includes("wellness")))
-      );
+      const isPrePaid = isMatchingService(purchasedService, currentServiceName);
 
       if (isPrePaid) {
         setPendingStripeUrl(null);
@@ -677,7 +675,10 @@ export default function Appointments() {
     } catch (error) {
       console.log(error);
       message.error(
-        "Failed to book appointment. Please check your inputs and try again.",
+        error.response?.data?.error ||
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Failed to book appointment. Please check your inputs and try again.",
       );
     } finally {
       setLoading(false);
@@ -736,7 +737,13 @@ export default function Appointments() {
   // Updated status logic: treat empty string or null appointment_date as upcoming
   const getAppointmentStatus = (appointment) => {
     const today = new Date();
-    if (appointment.appointment_status === "cancelled") return "cancelled";
+    const rawStatus = (appointment.appointment_status || "").toLowerCase();
+    if (rawStatus === "cancelled" || rawStatus === "expired") {
+      return "cancelled";
+    }
+    if (rawStatus === "completed") {
+      return "past";
+    }
     // If appointment_date is empty string or null, treat as upcoming
     if (!appointment.appointment_date || appointment.appointment_date === "") {
       return "upcoming";
@@ -792,7 +799,7 @@ export default function Appointments() {
       let patientName = appt.patient?.patient_name || "Patient";
 
       // Department name
-      let depName = appt.dep?.dep_name || "Department";
+      let depName = appt.dep?.dep_name || appt.appointment_type || "Department";
 
       return {
         id: appt.id,
@@ -832,9 +839,20 @@ export default function Appointments() {
         }
       }
 
+      const existingCaretakerId =
+        toValidId(
+          appt.fullData?.caretaker?.id ?? appt.fullData?.caretaker,
+        ) || undefined;
+      const existingDoctorId =
+        toValidId(appt.fullData?.doc?.id ?? appt.fullData?.doc) || undefined;
+      const rawStatus = appt.fullData?.appointment_status;
+      const defaultStatus =
+        !rawStatus || rawStatus === "Pending" ? "Confirmed" : rawStatus;
+
       assignForm.setFieldsValue({
-        caretakerId: undefined,
-        doctorId: undefined,
+        caretakerId: existingCaretakerId,
+        doctorId: existingDoctorId,
+        appointment_status: defaultStatus,
         appointment_date: appt.date ? dayjs(appt.date) : undefined,
         appointment_time: parsedTime,
         care_taker_notes:
@@ -949,12 +967,14 @@ export default function Appointments() {
                     {appt.documents.map((doc) => (
                       <a
                         key={doc.id}
-                        href={doc.view_link}
+                        href={resolveMediaUrl(
+                          doc.view_link || doc.download_link || doc.file,
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#004C91] text-[12px] mt-[2px] underline"
                       >
-                        {doc.filename.split("/").pop()}
+                        {doc.filename?.split("/").pop() || "Document"}
                       </a>
                     ))}
                   </span>
@@ -1062,6 +1082,8 @@ export default function Appointments() {
       toValidId(selectedAppointment?.fullData?.sponsorid) ||
       toValidId(selectedAppointment?.fullData?.sponsor_id) ||
       toValidId(selectedAppointment?.fullData?.sponsor) ||
+      toValidId(selectedAppointment?.fullData?.patient?.sponsor?.id) ||
+      toValidId(selectedAppointment?.fullData?.patient?.sponsor) ||
       null;
 
     let finalPatientId =
@@ -1079,35 +1101,14 @@ export default function Appointments() {
         : null) ||
       null;
 
-    if (!finalPatientId || !finalSponsorId || !finalCaretakerId) {
+    if (isSponsor && !finalSponsorId) {
       try {
-        if (!isSponsor) {
-          if (!finalPatientId) {
-            const pRes = await apiClient.get("/patientprofile_list/");
-            if (Array.isArray(pRes.data) && pRes.data.length > 0) {
-              finalPatientId = pRes.data[0]?.id || null;
-            }
-          }
-          if (!finalSponsorId) {
-            const sRes = await apiClient.get("/sponsorprofile_list/");
-            if (Array.isArray(sRes.data) && sRes.data.length > 0) {
-              finalSponsorId = sRes.data[0]?.id || null;
-            }
-          }
-        } else if (!finalSponsorId) {
-          const sRes = await appointmentsService.getSponsors();
-          const matchedS = resolveSponsorProfileFromList(sRes, userData);
-          finalSponsorId = toValidId(matchedS?.id);
-        }
-        if (!finalCaretakerId) {
-          const cRes = await apiClient.get("/caretakerprofile_list/");
-          if (Array.isArray(cRes.data) && cRes.data.length > 0) {
-            finalCaretakerId = cRes.data[0]?.id || null;
-          }
-        }
+        const sRes = await appointmentsService.getSponsors();
+        const matchedS = resolveSponsorProfileFromList(sRes, userData);
+        finalSponsorId = toValidId(matchedS?.id);
       } catch (err) {
         console.log(
-          "Error auto-fetching fallback profile IDs in assignAppointment:",
+          "Error auto-fetching fallback sponsor profile ID in assignAppointment:",
           err,
         );
       }
@@ -1162,7 +1163,10 @@ export default function Appointments() {
       appointment_reason: safe(
         selectedAppointment?.fullData?.appointment_reason,
       ),
-      appointment_status: "Rescheduled",
+      appointment_status:
+        values?.appointment_status ||
+        selectedAppointment?.fullData?.appointment_status ||
+        "Confirmed",
       preferred_dates: selectedAppointment?.fullData?.preferred_dates,
       preferred_times: selectedAppointment?.fullData?.preferred_times,
       service_purchased:
@@ -1180,19 +1184,41 @@ export default function Appointments() {
       if (values.labReport && values.labReport.length > 0) {
         appendLabReportFields(formData, values.labReport);
       }
-      await apiClient.patch(endpoint, formData);
-      message.success("Appointment updated successfully!");
-      Modal.success({
-        title: "Appointment Updated",
-        content:
-          "The appointment date, time, and doctor have been updated successfully.",
-        centered: true,
-      });
+      const res = await apiClient.patch(endpoint, formData);
+      const emailSent = res?.data?.email_sent;
+      const emailError = res?.data?.email_error;
+
+      if (emailSent === false) {
+        message.warning(
+          "Appointment updated, but the confirmation email could not be sent.",
+        );
+        Modal.warning({
+          title: "Appointment Updated (Email Not Sent)",
+          content: emailError
+            ? `The appointment details were saved, but sending the confirmation email failed: ${emailError}`
+            : "The appointment details were saved, but the sponsor confirmation email could not be sent.",
+          centered: true,
+        });
+      } else {
+        message.success("Appointment updated successfully!");
+        Modal.success({
+          title:
+            bookappoinment_data.appointment_status === "Confirmed"
+              ? "Appointment Confirmed & Email Sent"
+              : "Appointment Updated",
+          content:
+            emailSent === true
+              ? "The appointment has been updated and the confirmation email was sent to the sponsor."
+              : "The appointment date, time, and details have been updated successfully.",
+          centered: true,
+        });
+      }
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } catch (error) {
       console.error("Error updating appointment:", error);
       const errMsg =
+        error.response?.data?.error ||
         error.response?.data?.message ||
         error.response?.data?.detail ||
         "Failed to update appointment.";
@@ -1207,8 +1233,6 @@ export default function Appointments() {
     }
   };
 
-  console.log("selectedAppointment", selectedAppointment);
-
   return (
     <div className="flex bg-[#F7F9FB]">
       <div className="w-[240px] shrink-0">
@@ -1217,7 +1241,7 @@ export default function Appointments() {
 
       {loading && (
         <div className="fixed top-0 left-0 w-screen h-screen bg-[rgba(255,255,255,0.7)] z-[9999] flex items-center justify-center">
-          <Spin size="large" tip="Loading..." />
+          <Spin size="large" />
         </div>
       )}
 
@@ -1230,11 +1254,15 @@ export default function Appointments() {
             <Banner hideButtons={true} />
             <div className="bg-white rounded-[10px] p-[20px] font-sans shadow-[0_1px_3px_rgba(0,0,0,0.08)] mt-[20px] w-full min-w-0">
               <div className="flex justify-between items-center mb-[15px]">
-                <Tabs defaultActiveKey="upcoming" onChange={handleTabChange}>
-                  <Tabs.TabPane tab="Upcoming" key="upcoming" />
-                  <Tabs.TabPane tab="Past" key="past" />
-                  <Tabs.TabPane tab="Cancelled" key="cancelled" />
-                </Tabs>
+                <Tabs
+                  defaultActiveKey="upcoming"
+                  onChange={handleTabChange}
+                  items={[
+                    { label: "Upcoming", key: "upcoming" },
+                    { label: "Past", key: "past" },
+                    { label: "Cancelled", key: "cancelled" },
+                  ]}
+                />
                 <Primarybtn
                   name={
                     userData?.user_role === "sponsor"
@@ -1256,10 +1284,12 @@ export default function Appointments() {
                 onCancel={handleCloseModal}
                 footer={null}
                 centered
-                bodyStyle={{
-                  padding: "28px",
-                  maxHeight: "85vh",
-                  overflowY: "auto",
+                styles={{
+                  body: {
+                    padding: "28px",
+                    maxHeight: "85vh",
+                    overflowY: "auto",
+                  },
                 }}
                 closeIcon={<CloseOutlined className="text-[18px]" />}
               >
@@ -1280,7 +1310,10 @@ export default function Appointments() {
                         <Tag
                           className={`m-0 py-[4px] px-[12px] rounded-[20px] font-semibold text-[12px] border-none ${selectedAppointment.status === "upcoming" ? "bg-[#E6F0FA] text-[#004C91]" : selectedAppointment.status === "past" ? "bg-[#F3F4F6] text-[#4B5563]" : "bg-[#FEE2E2] text-[#DC2626]"}`}
                         >
-                          {selectedAppointment.status.toUpperCase()}
+                          {(
+                            selectedAppointment.fullData?.appointment_status ||
+                            selectedAppointment.status
+                          ).toUpperCase()}
                         </Tag>
                         <div className="text-[13px] flex items-center gap-[6px] opacity-90">
                           <CalendarOutlined />
@@ -1387,12 +1420,14 @@ export default function Appointments() {
                           <div>
                             <span className="text-[#64748B]">Name:</span>{" "}
                             <strong className="text-[#1E293B]">
-                              {
+                              {[
                                 selectedAppointment.fullData?.sponsor?.user
-                                  ?.first_name
-                              }{" "}
-                              {selectedAppointment.fullData?.sponsor?.user
-                                ?.last_name || "N/A"}
+                                  ?.first_name,
+                                selectedAppointment.fullData?.sponsor?.user
+                                  ?.last_name,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") || "N/A"}
                             </strong>
                           </div>
                           <div>
@@ -1429,13 +1464,18 @@ export default function Appointments() {
                                 {selectedAppointment.documents.map((doc) => (
                                   <a
                                     key={doc.id}
-                                    href={doc.view_link}
+                                    href={resolveMediaUrl(
+                                      doc.view_link ||
+                                        doc.download_link ||
+                                        doc.file,
+                                    )}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="bg-[#FFF] border-[1px] border-solid border-[#CBD5E1] py-[4px] px-[8px] rounded-[4px] text-[#004C91] text-[12px] flex items-center gap-[4px] no-underline"
                                   >
                                     <FileTextOutlined />
-                                    {doc.filename.split("/").pop()}
+                                    {doc.filename?.split("/").pop() ||
+                                      "Document"}
                                   </a>
                                 ))}
                               </div>
@@ -1477,14 +1517,14 @@ export default function Appointments() {
                       </div>
                     )}
 
-                    {/* Reschedule Section */}
+                    {/* Confirm / Update Section */}
                     <div className="bg-white border border-solid border-[#E2E8F0] rounded-[12px] py-[20px] px-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center gap-[8px] mb-[16px] pb-[12px] border-b border-solid border-[#F1F5F9]">
                         <EditOutlined className="text-[#004C91] text-[16px]" />
                         <h3 className="font-semibold text-[16px] text-[#0F172A] m-0">
                           {userData?.user_role === "care_taker" ||
                           isAdminUser(userData)
-                            ? "Reschedule / Assign Appointment"
+                            ? "Confirm / Update Appointment"
                             : "Appointment Action"}
                         </h3>
                       </div>
@@ -1548,10 +1588,34 @@ export default function Appointments() {
                           )}
 
                           <Form.Item
+                            name="appointment_status"
+                            label={
+                              <span className="font-medium text-[#334155]">
+                                Appointment Status
+                              </span>
+                            }
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please select a status",
+                              },
+                            ]}
+                          >
+                            <Select placeholder="Select status" className="w-full">
+                              <Option value="Confirmed">Confirmed</Option>
+                              <Option value="InProgress">In Progress</Option>
+                              <Option value="Rescheduled">Rescheduled</Option>
+                              <Option value="Completed">Completed</Option>
+                              <Option value="Pending">Pending</Option>
+                              <Option value="Cancelled">Cancelled</Option>
+                            </Select>
+                          </Form.Item>
+
+                          <Form.Item
                             name="appointment_date"
                             label={
                               <span className="font-medium text-[#334155]">
-                                New Date
+                                Appointment Date
                               </span>
                             }
                             rules={[
@@ -1572,7 +1636,7 @@ export default function Appointments() {
                             name="appointment_time"
                             label={
                               <span className="font-medium text-[#334155]">
-                                New Time
+                                Appointment Time
                               </span>
                             }
                             rules={[
@@ -1647,7 +1711,7 @@ export default function Appointments() {
                             loading={loading}
                             className="bg-[linear-gradient(135deg,#004C91_0%,#0066C0_100%)] border border-solid border-[#004C91] rounded-[6px] px-[24px] font-medium shadow-[0_2px_6px_rgba(0,76,145,0.25)]"
                           >
-                            Update Appointment
+                            Confirm / Update Appointment
                           </Button>
                         </div>
                       </Form>
@@ -1700,8 +1764,8 @@ export default function Appointments() {
 
               {showCalendar && (
                 <div className="grid grid-cols-[repeat(7,1fr)] gap-[4px] -mt-[15px] text-center text-[12px] p-[10px] rounded-br-[8px] rounded-bl-[8px] bg-[#007F5F14] relative">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                    <div key={d} className="font-semibold">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d, idx) => (
+                    <div key={`${d}-${idx}`} className="font-semibold">
                       {d}
                     </div>
                   ))}
@@ -1807,7 +1871,9 @@ export default function Appointments() {
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         width="80%"
-        bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: "32px" }}
+        styles={{
+          body: { maxHeight: "80vh", overflowY: "auto", padding: "32px" },
+        }}
         closeIcon={<CloseOutlined className="text-[20px]" />}
         centered
         title={
@@ -1844,14 +1910,10 @@ export default function Appointments() {
               }}
             >
               {REQUEST_SERVICES_LIST.map((service) => {
-                const isUserPlan =
-                  userData?.service_purchased &&
-                  (service.name
-                    ?.toLowerCase()
-                    .includes(userData.service_purchased.toLowerCase()) ||
-                    userData.service_purchased
-                      .toLowerCase()
-                      .includes(service.name?.toLowerCase()));
+                const isUserPlan = isMatchingService(
+                  userData?.service_purchased,
+                  service.name,
+                );
                 return (
                   <Option key={service.id} value={service.id}>
                     <div className="flex justify-between items-center w-full">

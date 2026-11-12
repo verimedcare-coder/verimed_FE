@@ -9,7 +9,6 @@ import {
   Space,
   Tooltip,
   Dropdown,
-  Menu,
   Modal,
   Avatar,
   Form,
@@ -32,7 +31,7 @@ import {
 import flagIcon from "../../assets/icons/flag.svg";
 import Primarybtn from "../common/PrimaryBtn";
 import { useNavigate } from "react-router-dom";
-import { base_url, isAdminUser } from "../../constants/constants";
+import { base_url, isAdminUser, stripDialCode } from "../../constants/constants";
 import {
   clearRoleSessionStorage,
   getStoredSponsorProfileId,
@@ -227,44 +226,54 @@ export default function HeaderComponent() {
   const handleMenuClick = (e) => {
     if (e.key === "1") {
       localStorage.removeItem("patient_profile_updateid");
-      setEditedData((prev) => ({
-        ...prev,
+      const cleanPhone = user ? stripDialCode(user.phone) : "";
+      const selfDefaults = {
         id: undefined,
         patient_profile_updateid: undefined,
         patientName: user
           ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
           : "",
         patientEmail: user ? user.email || "" : "",
-        patientPhone: user ? user.phone || "" : "",
+        patientPhone: cleanPhone,
+        country_code: user?.country_code || "",
         reason_enrollment: "Self",
+        patient_upload_files: [],
+      };
+      form.resetFields();
+      form.setFieldsValue(selfDefaults);
+      setEditedData((prev) => ({
+        ...prev,
+        ...selfDefaults,
       }));
       setIsSecondModalVisible(true);
     } else if (e.key === "2") {
       localStorage.removeItem("patient_profile_updateid");
-      setEditedData((prev) => ({
-        ...prev,
+      const lovedOneDefaults = {
         id: undefined,
         patient_profile_updateid: undefined,
         patientName: "",
         patientEmail: "",
         patientPhone: "",
+        country_code: "",
         reason_enrollment: "Loved One",
+        patient_upload_files: [],
+      };
+      form.resetFields();
+      form.setFieldsValue(lovedOneDefaults);
+      setEditedData((prev) => ({
+        ...prev,
+        ...lovedOneDefaults,
       }));
       setIsSecondModalVisible(true);
     }
   };
 
-  const languageMenu = (
-    <Menu
-      onClick={(e) => handleLanguageChange(e.key)}
-      items={[
-        { key: "EN", label: "English" },
-        { key: "FR", label: "French" },
-        { key: "ES", label: "Spanish" },
-        { key: "DE", label: "German" },
-      ]}
-    />
-  );
+  const languageMenuItems = [
+    { key: "EN", label: "English" },
+    { key: "FR", label: "French" },
+    { key: "ES", label: "Spanish" },
+    { key: "DE", label: "German" },
+  ];
 
   const handleLogout = () => {
     queryClient.clear();
@@ -586,7 +595,11 @@ export default function HeaderComponent() {
       });
 
       const matchedProfile = profileRes.data.find(
-        (p) => p.user?.username === matchedUser.username,
+        (p) =>
+          p.user?.username === matchedUser.username ||
+          (p.email &&
+            matchedUser.email &&
+            p.email.toLowerCase() === matchedUser.email.toLowerCase()),
       );
 
       if (matchedProfile) {
@@ -611,6 +624,7 @@ export default function HeaderComponent() {
       Modal.error({
         title: "Enrollment Failed",
         content:
+          error.response?.data?.error ||
           error.response?.data?.detail ||
           error.response?.data?.message ||
           "Something went wrong while enrolling the patient. Please check your inputs.",
@@ -622,8 +636,15 @@ export default function HeaderComponent() {
   };
 
   const handleUpdateClick = async (formValues = {}) => {
+    const mergedData = {
+      ...editedData,
+      ...Object.fromEntries(
+        Object.entries(formValues || {}).filter(([, val]) => val !== undefined),
+      ),
+    };
+
     try {
-      await enrollSchema.validate(editedData, { abortEarly: false });
+      await enrollSchema.validate(mergedData, { abortEarly: false });
     } catch (error) {
       if (error.name === "ValidationError") {
         error.inner.forEach((err) => {
@@ -641,9 +662,22 @@ export default function HeaderComponent() {
       const resolvedSponsorId =
         effectiveSponsorId || getStoredSponsorProfileId();
 
-      const formattedDOB = editedData.patient_dob
-        ? dayjs(editedData.patient_dob).format("YYYY-MM-DD")
+      const formattedDOB = mergedData.patient_dob
+        ? dayjs(mergedData.patient_dob).format("YYYY-MM-DD")
         : null;
+
+      const parsedAge =
+        mergedData.age !== undefined &&
+        mergedData.age !== null &&
+        String(mergedData.age).trim() !== "" &&
+        !Number.isNaN(Number(mergedData.age))
+          ? parseInt(mergedData.age, 10)
+          : null;
+
+      const cleanPatientPhone = stripDialCode(mergedData.patientPhone);
+      const cleanEmerPhone = stripDialCode(mergedData.emer_con_phone);
+      const cleanLocalPhone = stripDialCode(mergedData.local_con_phone);
+      const emerCountryCode = mergedData.emer_con_country_code || "";
 
       const medicationArray = medications.map((m) => ({
         name: m.medication_name || "",
@@ -658,8 +692,8 @@ export default function HeaderComponent() {
 
       const storedUpdateId =
         localStorage.getItem("patient_profile_updateid") ||
-        editedData.id ||
-        editedData.patient_profile_updateid ||
+        mergedData.id ||
+        mergedData.patient_profile_updateid ||
         null;
 
       const patientprofile_data = {
@@ -670,110 +704,109 @@ export default function HeaderComponent() {
         updateid: storedUpdateId ? Number(storedUpdateId) : null,
         patientprofileid: storedUpdateId ? Number(storedUpdateId) : null,
         reason_enrollment:
-          editedData.reason_enrollment || editedData.reason || "Patient",
-        reason: editedData.reason_enrollment || editedData.reason || "Patient",
+          mergedData.reason_enrollment || mergedData.reason || "Patient",
+        reason: mergedData.reason_enrollment || mergedData.reason || "Patient",
         sponsorid: resolvedSponsorId || null,
-        caretakerid: editedData.caretakerid || null,
+        caretakerid: mergedData.caretakerid || null,
 
-        patient_name: editedData.patientName || "",
-        country_code: editedData.country_code || "",
-        phone: editedData.patientPhone || "",
-        email: editedData.patientEmail || "",
+        patient_name: mergedData.patientName || "",
+        country_code: mergedData.country_code || "",
+        phone: cleanPatientPhone,
+        email: mergedData.patientEmail || "",
 
-        age: editedData.age || "",
-        height: editedData.height || "",
-        weight: editedData.weight || "",
+        age: parsedAge,
+        height: mergedData.height || "",
+        weight: mergedData.weight || "",
 
-        blood_pressure: editedData.bp || editedData.blood_pressure || "",
-        blood_sugar: editedData.sugar || editedData.blood_sugar || "",
-        heart_rate: editedData.heartRate || editedData.heart_rate || "",
-        oxygen: editedData.oxygen || "",
-        temperature: editedData.temperature || "",
+        blood_pressure: mergedData.bp || mergedData.blood_pressure || "",
+        blood_sugar: mergedData.sugar || mergedData.blood_sugar || "",
+        heart_rate: mergedData.heartRate || mergedData.heart_rate || "",
+        oxygen: mergedData.oxygen || "",
+        temperature: mergedData.temperature || "",
         respiratory_rate:
-          editedData.respiratoryRate || editedData.respiratory_rate || "",
+          mergedData.respiratoryRate || mergedData.respiratory_rate || "",
 
         patient_dob: formattedDOB,
-        patient_gender: editedData.patient_gender || "",
-        blood_group: editedData.blood_group || "",
-        patient_home_address: editedData.patient_home_address || "",
-        primary_language: editedData.primary_language || "",
-        religion: editedData.religion || "",
-        escalate_to_physician: editedData.escalate_to_physician || "",
+        patient_gender: mergedData.patient_gender || "",
+        blood_group: mergedData.blood_group || "",
+        patient_home_address: mergedData.patient_home_address || "",
+        primary_language: mergedData.primary_language || "",
+        religion: mergedData.religion || "",
+        escalate_to_physician: mergedData.escalate_to_physician || "",
 
-        emer_con_name: editedData.emer_con_name || "",
-        emer_con_relation: editedData.emer_con_relation || "",
-        emer_con_coun_of_residen: editedData.emer_con_coun_of_residen || "",
-        emer_con_country_code: editedData.emer_con_country_code || "",
-        emer_con_phone: editedData.emer_con_phone || "",
-        emer_con_email: editedData.emer_con_email || "",
+        emer_con_name: mergedData.emer_con_name || "",
+        emer_con_relation: mergedData.emer_con_relation || "",
+        emer_con_coun_of_residen: mergedData.emer_con_coun_of_residen || "",
+        emer_con_country_code: emerCountryCode,
+        emer_con_phone: cleanEmerPhone,
+        emer_con_email: mergedData.emer_con_email || "",
 
-        local_con_name: editedData.local_con_name || "",
-        local_con_relation: editedData.local_con_relation || "",
-        local_con_country_code: editedData.local_con_country_code || "",
-        local_con_phone: editedData.local_con_phone || "",
+        local_con_name: mergedData.local_con_name || "",
+        local_con_relation: mergedData.local_con_relation || "",
+        local_con_country_code: mergedData.local_con_country_code || "",
+        local_con_phone: cleanLocalPhone,
 
-        reason_other: editedData.reason_other || null,
+        reason_other: mergedData.reason_other || null,
 
-        medical_his_diagnosis: editedData.medical_his_diagnosis || "",
-        medical_his_cancer: editedData.medical_his_cancer || null,
-        medical_his_other: editedData.medical_his_other || "",
+        medical_his_diagnosis: mergedData.medical_his_diagnosis || "",
+        medical_his_cancer: mergedData.medical_his_cancer || null,
+        medical_his_other: mergedData.medical_his_other || "",
         medical_his_provided_medi_care:
-          editedData.medical_his_provided_medi_care || "",
+          mergedData.medical_his_provided_medi_care || "",
         medical_his_major_surgeries:
-          editedData.medical_his_major_surgeries || "",
-        medical_his_curr_symp: editedData.medical_his_curr_symp || "",
-        last_doctor_visit: editedData.last_doctor_visit || null,
-        has_regular_doctor: editedData.has_regular_doctor || "",
-        regular_doctor_name: editedData.regular_doctor_name || "",
+          mergedData.medical_his_major_surgeries || "",
+        medical_his_curr_symp: mergedData.medical_his_curr_symp || "",
+        last_doctor_visit: mergedData.last_doctor_visit || null,
+        has_regular_doctor: mergedData.has_regular_doctor || "",
+        regular_doctor_name: mergedData.regular_doctor_name || "",
 
-        allergies_issues: editedData.allergies_issues || false,
-        allergies_drug: editedData.allergies_drug || "",
-        allergies_food: editedData.allergies_food || "",
+        allergies_issues: mergedData.allergies_issues || false,
+        allergies_drug: mergedData.allergies_drug || "",
+        allergies_food: mergedData.allergies_food || "",
 
-        functional_bathe: editedData.functional_bathe || "",
-        functional_dress: editedData.functional_dress || "",
-        functional_eat: editedData.functional_eat || "",
-        functional_walk: editedData.functional_walk || "",
-        functional_use_bathroom: editedData.functional_use_bathroom || "",
-        functional_daily_activity: editedData.functional_daily_activity || "",
-        functional_manage_finance: editedData.functional_manage_finance || "",
-        functional_any_falls: editedData.functional_any_falls || false,
-        functional_how_many: editedData.functional_how_many || null,
-        functional_memory_pbms: editedData.functional_memory_pbms || false,
+        functional_bathe: mergedData.functional_bathe || "",
+        functional_dress: mergedData.functional_dress || "",
+        functional_eat: mergedData.functional_eat || "",
+        functional_walk: mergedData.functional_walk || "",
+        functional_use_bathroom: mergedData.functional_use_bathroom || "",
+        functional_daily_activity: mergedData.functional_daily_activity || "",
+        functional_manage_finance: mergedData.functional_manage_finance || "",
+        functional_any_falls: mergedData.functional_any_falls || false,
+        functional_how_many: mergedData.functional_how_many || null,
+        functional_memory_pbms: mergedData.functional_memory_pbms || false,
 
-        lifestyle_daily_routine: editedData.lifestyle_daily_routine || "",
-        lifestyle_dietary_habits: editedData.lifestyle_dietary_habits || "",
-        lifestyle_sleep_quality: editedData.lifestyle_sleep_quality || "",
+        lifestyle_daily_routine: mergedData.lifestyle_daily_routine || "",
+        lifestyle_dietary_habits: mergedData.lifestyle_dietary_habits || "",
+        lifestyle_sleep_quality: mergedData.lifestyle_sleep_quality || "",
         lifestyle_physical_activity:
-          editedData.lifestyle_physical_activity || "",
-        lifestyle_alcohol_use: editedData.lifestyle_alcohol_use || "",
-        lifestyle_pain_complaints: editedData.lifestyle_pain_complaints || "",
-        lifestyle_pain_where: editedData.lifestyle_pain_where || "",
+          mergedData.lifestyle_physical_activity || "",
+        lifestyle_alcohol_use: mergedData.lifestyle_alcohol_use || "",
+        lifestyle_pain_complaints: mergedData.lifestyle_pain_complaints || "",
+        lifestyle_pain_where: mergedData.lifestyle_pain_where || "",
 
-        social_emotion_health: editedData.social_emotion_health || "",
-        social_spiritual_needs: editedData.social_spiritual_needs || "",
-        social_trusted_person: editedData.social_trusted_person || false,
-        social_name: editedData.social_name || "",
+        social_emotion_health: mergedData.social_emotion_health || "",
+        social_spiritual_needs: mergedData.social_spiritual_needs || "",
+        social_trusted_person: mergedData.social_trusted_person || false,
+        social_name: mergedData.social_name || "",
 
-        goals_family_hope: editedData.goals_family_hope || "",
-        goals_special_instructions: editedData.goals_special_instructions || "",
-        goals_term_membership: editedData.goals_term_membership || "",
+        goals_family_hope: mergedData.goals_family_hope || "",
+        goals_special_instructions: mergedData.goals_special_instructions || "",
+        goals_term_membership: mergedData.goals_term_membership || "",
       };
 
-      // Match Postman payload exactly
-      formData.append(
-        "patientprofile_data",
-        JSON.stringify(patientprofile_data),
-      );
+      const formKey = storedUpdateId
+        ? "patientprofile_update_data"
+        : "patientprofile_data";
+      formData.append(formKey, JSON.stringify(patientprofile_data));
 
       formData.append("medication", JSON.stringify(medicationArray));
 
       // Profile Photo
       const photoList =
         formValues?.profile_photo ||
-        editedData.profile_photo ||
+        mergedData.profile_photo ||
         formValues?.photo ||
-        editedData.photo;
+        mergedData.photo;
       if (photoList && photoList.length > 0) {
         const fileObj = photoList[0].originFileObj || photoList[0];
         formData.append("patient_photo", fileObj);
@@ -781,42 +814,36 @@ export default function HeaderComponent() {
         formData.append("user_photo", fileObj);
       }
 
-      // Upload files
-      if (
-        editedData.patient_upload_files &&
-        editedData.patient_upload_files.length > 0
-      ) {
-        editedData.patient_upload_files.forEach((file) => {
-          formData.append("patient_upload_files", file.originFileObj || file);
-        });
-      }
+      // Upload files (only append when files are present so backend counts stay 1:1)
+      const filesToUpload = Array.isArray(mergedData.patient_upload_files)
+        ? mergedData.patient_upload_files
+            .map((f) => ({
+              file: f.originFileObj || f,
+              name: (f.name || f.originFileObj?.name || "document").replace(
+                /,/g,
+                "_",
+              ),
+            }))
+            .filter(
+              (item) => item.file instanceof File || item.file instanceof Blob,
+            )
+        : [];
 
-      // Existing file names
-      if (editedData.patient_files_name) {
+      if (filesToUpload.length > 0) {
+        filesToUpload.forEach(({ file }) => {
+          formData.append("patient_upload_files", file);
+        });
         formData.append(
           "patient_files_name",
-          Array.isArray(editedData.patient_files_name)
-            ? editedData.patient_files_name.join(",")
-            : editedData.patient_files_name,
+          filesToUpload.map(({ name }) => name).join(","),
         );
+        if (storedUpdateId) {
+          formData.append(
+            "patient_files_ids",
+            Array(filesToUpload.length).fill("null").join(","),
+          );
+        }
       }
-
-      // Existing file ids
-      if (editedData.patient_files_ids) {
-        formData.append(
-          "patient_files_ids",
-          Array.isArray(editedData.patient_files_ids)
-            ? editedData.patient_files_ids.join(",")
-            : editedData.patient_files_ids,
-        );
-      }
-
-      // Debug payload
-      console.log(
-        "patientprofile_data:",
-        JSON.stringify(patientprofile_data, null, 2),
-      );
-      console.log("medication:", JSON.stringify(medicationArray, null, 2));
 
       const endpoint = `${base_url}/patientprofile_create_update/`;
       const config = {
@@ -851,6 +878,7 @@ export default function HeaderComponent() {
         console.error("Response Status:", error.response.status);
 
         const errMsg =
+          error.response.data?.error ||
           error.response.data?.message ||
           error.response.data?.detail ||
           "Unable to update patient profile.";
@@ -963,7 +991,10 @@ export default function HeaderComponent() {
           )}
 
           <Dropdown
-            overlay={languageMenu}
+            menu={{
+              items: languageMenuItems,
+              onClick: (e) => handleLanguageChange(e.key),
+            }}
             placement="bottomRight"
             trigger={["click"]}
           >

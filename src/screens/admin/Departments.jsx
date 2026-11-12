@@ -22,7 +22,7 @@ import {
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
-import { base_url } from "../../constants/constants";
+import { base_url, resolveMediaUrl, stripDialCode } from "../../constants/constants";
 import {
   CalendarOutlined,
   FilterOutlined,
@@ -150,7 +150,8 @@ export default function Departments() {
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [addForm] = Form.useForm();
+  const [editForm] = Form.useForm();
   const [logoFile, setLogoFile] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -169,7 +170,7 @@ export default function Departments() {
           ...item,
           hospital_name: item.dep_ID,
           hospital_address: item.address,
-          hospital_phone: item.contact_phone,
+          hospital_phone: stripDialCode(item.contact_phone),
           dep_email: item.contact_email,
           dep_exprience: item.description,
           dep_category: item.dep_type,
@@ -195,14 +196,17 @@ export default function Departments() {
     setLoading(true);
     try {
       const formData = new FormData();
+      const cleanPhone = stripDialCode(values.hospital_phone);
       const deptData = {
         dep_name: values.dep_name,
         dep_ID: values.hospital_name,
-        address: values.hospital_address,
-        contact_phone: values.hospital_phone,
-        contact_email: values.dep_email,
-        description: values.dep_exprience,
-        dep_type: values.dep_category,
+        address: values.hospital_address || "",
+        contact_phone: cleanPhone || "",
+        ...(cleanPhone ? { country_code: values.country_code || "CM" } : {}),
+        contact_email: values.dep_email || "",
+        description: values.dep_exprience || "",
+        dep_type: values.dep_category || "",
+        status: values.status || "Active",
       };
       formData.append("verimed_department", JSON.stringify(deptData));
       if (logoFile) {
@@ -221,11 +225,16 @@ export default function Departments() {
       );
       message.success("Department created successfully!");
       setAddDrawerOpen(false);
-      form.resetFields();
+      addForm.resetFields();
       setLogoFile(null);
       queryClient.invalidateQueries({ queryKey: ["departments"] });
     } catch (error) {
-      message.error("Failed to create department");
+      message.error(
+        error.response?.data?.error ||
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Failed to create department",
+      );
     } finally {
       setLoading(false);
     }
@@ -236,15 +245,27 @@ export default function Departments() {
     setLoading(true);
     try {
       const formData = new FormData();
+      const cleanPhone = stripDialCode(values.hospital_phone);
+      const resolvedCountryCode =
+        values.country_code ||
+        selectedDept.country_code ||
+        (cleanPhone ? "CM" : null);
       const deptData = {
         depupdateid: selectedDept.id,
         dep_name: values.dep_name,
         dep_ID: values.hospital_name,
-        address: values.hospital_address,
-        contact_phone: values.hospital_phone,
-        contact_email: values.dep_email,
-        description: values.dep_exprience,
-        dep_type: values.dep_category,
+        address: values.hospital_address ?? selectedDept.address ?? null,
+        contact_phone: cleanPhone || null,
+        country_code: resolvedCountryCode,
+        contact_email: values.dep_email ?? selectedDept.contact_email ?? null,
+        description: values.dep_exprience ?? selectedDept.description ?? null,
+        dep_type: values.dep_category ?? selectedDept.dep_type ?? null,
+        status: values.status ?? selectedDept.status ?? "Active",
+        docid: selectedDept.doctor || selectedDept.docid || null,
+        dep_city: selectedDept.dep_city ?? null,
+        dep_state: selectedDept.dep_state ?? null,
+        dep_country: selectedDept.dep_country ?? null,
+        dep_pincode: selectedDept.dep_pincode ?? null,
       };
       formData.append("verimed_department", JSON.stringify(deptData));
       if (logoFile) {
@@ -263,11 +284,16 @@ export default function Departments() {
       );
       message.success("Department updated successfully!");
       setViewDrawerOpen(false);
-      form.resetFields();
+      editForm.resetFields();
       setLogoFile(null);
       queryClient.invalidateQueries({ queryKey: ["departments"] });
     } catch (error) {
-      message.error("Failed to update department");
+      message.error(
+        error.response?.data?.error ||
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Failed to update department",
+      );
     } finally {
       setLoading(false);
     }
@@ -291,7 +317,10 @@ export default function Departments() {
       width: 80,
       render: (_, record) => (
         <Avatar
-          src={record.logo || `https://ui-avatars.com/api/?name=${record.dep_name || "D"}`}
+          src={resolveMediaUrl(
+            record.logo,
+            `https://ui-avatars.com/api/?name=${record.dep_name || "D"}`,
+          )}
           className="object-cover"
         />
       ),
@@ -341,6 +370,7 @@ export default function Departments() {
           onClick={(e) => {
             e.stopPropagation();
             setSelectedDept(record);
+            editForm.setFieldsValue(record);
             setViewDrawerOpen(true);
           }}
           className="cursor-pointer text-[#007F5F] text-[18px]"
@@ -493,13 +523,13 @@ export default function Departments() {
         width={720}
         onClose={() => {
           setAddDrawerOpen(false);
-          form.resetFields();
+          addForm.resetFields();
           setLogoFile(null);
         }}
         open={addDrawerOpen}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleCreateDepartment}>
+        <Form form={addForm} layout="vertical" onFinish={handleCreateDepartment}>
           {/* Two-Column Grid Layout */}
           <div className="grid grid-cols-[1fr_1fr] gap-[16px] mt-[16px]">
             <Form.Item
@@ -587,7 +617,7 @@ export default function Departments() {
         width={600}
         onClose={() => {
           setViewDrawerOpen(false);
-          form.resetFields();
+          editForm.resetFields();
           setLogoFile(null);
         }}
         open={viewDrawerOpen}
@@ -595,10 +625,9 @@ export default function Departments() {
       >
         {selectedDept && (
           <Form
-            form={form}
+            form={editForm}
             layout="vertical"
             onFinish={handleUpdateDepartment}
-            initialValues={selectedDept}
           >
             <div className="flex flex-col gap-[16px]">
               {/* Department Logo */}
@@ -615,10 +644,10 @@ export default function Departments() {
                 >
                   <Avatar
                     size={72}
-                    src={
-                      selectedDept.logo ||
-                      `https://ui-avatars.com/api/?name=${selectedDept.dep_name}`
-                    }
+                    src={resolveMediaUrl(
+                      selectedDept.logo,
+                      `https://ui-avatars.com/api/?name=${selectedDept.dep_name}`,
+                    )}
                     className="rounded-full cursor-pointer object-cover"
                   />
                 </Upload>

@@ -16,7 +16,7 @@ export const myAppointmentsService = {
   },
 
   updateAppointment: async (formData) => {
-    const response = await apiClient.post("/verimed_bookappoinment_create_update/", formData);
+    const response = await apiClient.patch("/verimed_bookappoinment_create_update/", formData);
     return response.data;
   },
 };

@@ -26,7 +26,12 @@ import { useState } from "react";
 import { Form, Input, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
-import { isAdminUser, base_url } from "../../constants/constants";
+import {
+  isAdminUser,
+  base_url,
+  resolveMediaUrl,
+  stripDialCode,
+} from "../../constants/constants";
 import {
   persistSponsorProfile,
   resolveSponsorProfileFromList,
@@ -173,12 +178,11 @@ export default function CustomSider() {
     if (!user) return;
 
     const storedPhone = user.phone || "";
-    const phoneVal = storedPhone.includes("-")
-      ? storedPhone.split("-")[1]
-      : storedPhone;
+    const phoneVal = stripDialCode(storedPhone);
     
     let countryVal =
       user.countrycode ||
+      user.country_code ||
       (storedPhone.includes("-") ? storedPhone.split("-")[0] : "IN");
 
     const prefixMap = {
@@ -209,7 +213,7 @@ export default function CustomSider() {
       countrycode: countryVal,
     });
 
-    const currentPhoto = user.photo_view_url || user.photo;
+    const currentPhoto = resolveMediaUrl(user.photo_view_url || user.photo);
     if (currentPhoto) {
       setFileList([
         {
@@ -236,8 +240,8 @@ export default function CustomSider() {
         last_name: values.last_name,
         email: values.email,
         countrycode: values.countrycode || "IN",
-        phone: values.phone,
-        is_active_state: true,
+        phone: stripDialCode(values.phone),
+        is_active_state: user?.is_active_state ?? true,
       };
 
       const formData = new FormData();
@@ -309,12 +313,15 @@ export default function CustomSider() {
       window.dispatchEvent(new Event("userUpdated"));
       window.dispatchEvent(new Event("storage"));
     } catch (err) {
+      const errData = err.response?.data;
+      const errMsg =
+        (typeof errData === "string"
+          ? errData
+          : errData?.error || errData?.detail || errData?.message) ||
+        "Something went wrong";
       notification.error({
         message: "Update failed",
-        description:
-          err.response?.data?.detail ||
-          err.response?.data ||
-          "Something went wrong",
+        description: errMsg,
       });
     } finally {
       // Completed update request
@@ -322,17 +329,15 @@ export default function CustomSider() {
   };
 
   const getPhotoUrl = (url) => {
-    // Guard against null/undefined url
-    if (!url) return Profile;
-    let finalUrl = url;
-    if (!url?.startsWith("http")) {
-      url = url.replace(/^\/media\/+/i, "/");
-      const base = base_url.replace(/\/+$/, "");
-      const cleanedUrl = url.replace(/^\/+/, "");
-      finalUrl = `${base}/${cleanedUrl}`;
-    }
+    let finalUrl = resolveMediaUrl(url, Profile);
+    if (!finalUrl || finalUrl === Profile) return Profile;
     const timestamp = localStorage.getItem("photoUpdatedTime");
-    if (timestamp && finalUrl.includes("/media/") && !finalUrl.includes("?t=")) {
+    if (
+      timestamp &&
+      !finalUrl.startsWith("data:") &&
+      !finalUrl.includes("?t=") &&
+      !finalUrl.includes("&t=")
+    ) {
       finalUrl = finalUrl.includes("?")
         ? `${finalUrl}&t=${timestamp}`
         : `${finalUrl}?t=${timestamp}`;
@@ -373,7 +378,11 @@ export default function CustomSider() {
         >
           {/* Edit Icon */}
 
-          <Avatar src={getPhotoUrl(user?.photo_view_url || user?.photo)} size={67} />
+          <Avatar
+            src={getPhotoUrl(user?.photo_view_url || user?.photo)}
+            icon={<UserOutlined />}
+            size={67}
+          />
 
           <div className="mt-[10px]">
             <Text strong className="text-[16px] block">

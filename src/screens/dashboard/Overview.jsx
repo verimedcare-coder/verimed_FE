@@ -29,7 +29,11 @@ import {
 } from "@ant-design/icons";
 import { Popconfirm, message } from "antd";
 import { Pie, Column } from "@ant-design/plots";
-import { base_url, isAdminUser } from "../../constants/constants";
+import {
+  base_url,
+  isAdminUser,
+  resolveMediaUrl,
+} from "../../constants/constants";
 import {
   filterSponsorAppointments,
   getStoredSponsorPatientIds,
@@ -269,6 +273,18 @@ export default function Overview() {
     }
   }, [patientsList, selectedPatientId]);
 
+  const [doctorId, setDoctorId] = useState(() => {
+    try {
+      const raw = localStorage.getItem("doctorData");
+      if (raw && raw !== "undefined" && raw !== "null") {
+        return JSON.parse(raw)?.id || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+
   useEffect(() => {
     if (!token || user?.user_role !== "doctor") return;
 
@@ -284,8 +300,10 @@ export default function Overview() {
         );
         if (loggedInDoctor) {
           localStorage.setItem("doctorData", JSON.stringify(loggedInDoctor));
+          setDoctorId(loggedInDoctor.id || null);
         } else {
           localStorage.removeItem("doctorData");
+          setDoctorId(null);
         }
       } catch (error) {
         console.log("Error fetching logged in doctor:", error);
@@ -296,30 +314,6 @@ export default function Overview() {
     };
     fetchLoggedInDoctor();
   }, [user, token]);
-
-  // useEffect(() => {
-  //   const doctorDataRaw = localStorage.getItem("doctorData");
-  //   if (doctorDataRaw && doctorDataRaw !== "undefined") {
-  //     try {
-  //       const doctorData = JSON.parse(doctorDataRaw);
-  //       setDoctorId(doctorData?.id || null);
-  //     } catch (error) {
-  //       console.error("Error parsing doctorData:", error);
-  //       setDoctorId(null);
-  //     }
-  //   }
-  // }, []);
-
-  const doctorDataRaw = localStorage.getItem("doctorData");
-  let doctorId = 0;
-  if (doctorDataRaw && doctorDataRaw !== "undefined" && doctorDataRaw !== "null") {
-    try {
-      const doctorData = JSON.parse(doctorDataRaw);
-      doctorId = doctorData?.id || null;
-    } catch {
-      doctorId = 0;
-    }
-  }
 
   const { data: doctorAppointments = [] } = useQuery({
     queryKey: ["doctorAppointments", doctorId],
@@ -518,43 +512,62 @@ export default function Overview() {
     },
   ];
 
-  const docStats = [
-    {
-      id: 1,
-      name: "Total Appointments",
-      count: scopedAppointments.length,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 2,
-      name: "Total Appointments",
-      count: scopedAppointments.length,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 3,
-      name: "Completed",
-      count: 20,
-      diff: "+95%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 4,
-      name: "Pending",
-      count: 24,
-      diff: "+25%",
-      duration: "in last 7 Days",
-    },
-    {
-      id: 5,
-      name: "Cancelled",
-      count: 6,
-      diff: "+15%",
-      duration: "in last 7 Days",
-    },
-  ];
+  const docStats = useMemo(() => {
+    const normalizeStatus = (s) => String(s || "").trim().toLowerCase();
+    const completedCount = scopedAppointments.filter(
+      (a) => normalizeStatus(a?.appointment_status) === "completed",
+    ).length;
+    const pendingCount = scopedAppointments.filter((a) => {
+      const st = normalizeStatus(a?.appointment_status);
+      return !st || st === "pending";
+    }).length;
+    const activeCount = scopedAppointments.filter((a) =>
+      ["confirmed", "inprogress", "in progress", "ongoing", "rescheduled"].includes(
+        normalizeStatus(a?.appointment_status),
+      ),
+    ).length;
+    const cancelledCount = scopedAppointments.filter((a) =>
+      ["cancelled", "expired"].includes(normalizeStatus(a?.appointment_status)),
+    ).length;
+
+    return [
+      {
+        id: 1,
+        name: "Total Appointments",
+        count: scopedAppointments.length,
+        diff: "Live",
+        duration: "All records",
+      },
+      {
+        id: 2,
+        name: "Confirmed / In Progress",
+        count: activeCount,
+        diff: "Live",
+        duration: "Active visits",
+      },
+      {
+        id: 3,
+        name: "Completed",
+        count: completedCount,
+        diff: "Live",
+        duration: "Finished visits",
+      },
+      {
+        id: 4,
+        name: "Pending",
+        count: pendingCount,
+        diff: "Live",
+        duration: "Awaiting action",
+      },
+      {
+        id: 5,
+        name: "Cancelled",
+        count: cancelledCount,
+        diff: "Live",
+        duration: "Cancelled / Expired",
+      },
+    ];
+  }, [scopedAppointments]);
 
   const doctorPatientDetailsColumns = [
     {
@@ -977,23 +990,7 @@ export default function Overview() {
     fetchUsers();
   }, [userToken, isAdmin, user?.user_role]);
 
-  const base_url1 = process.env.REACT_APP_API_BASE_URL
-    ? process.env.REACT_APP_API_BASE_URL.replace(/\/verimed\/?$/i, "")
-    : "";
-
-  const getPhotoUrl = (url) => {
-    if (!url) return patientdetails;
-    if (url?.startsWith("http")) return url;
-
-    url = url?.replace(/^\/media\/+/i, "/");
-
-    const base = base_url1?.replace(/\/+$/, "");
-    const cleanedUrl = url?.replace(/^\/+/, "");
-
-    const finalUrl = `${base}/${cleanedUrl}`;
-
-    return finalUrl;
-  };
+  const getPhotoUrl = (url) => resolveMediaUrl(url, patientdetails);
 
   const handleDownloadExcel = () => {
     if (!patientData) {
@@ -1001,14 +998,50 @@ export default function Overview() {
       return;
     }
 
+    const csvEscape = (val) =>
+      `"${String(val ?? "N/A").replace(/"/g, '""')}"`;
+    const matchedAppt = scopedAppointments.find(
+      (a) => toValidId(a?.patient?.id) === toValidId(patientData?.id),
+    );
+    const assignedDoctorName = matchedAppt?.doc?.user
+      ? [matchedAppt.doc.user.first_name, matchedAppt.doc.user.last_name]
+          .filter(Boolean)
+          .join(" ")
+      : patientData?.doctor_name || "N/A";
+    const caretakerName =
+      typeof patientData?.caretaker === "object" &&
+      patientData?.caretaker !== null
+        ? [
+            patientData.caretaker?.user?.first_name ||
+              patientData.caretaker?.first_name,
+            patientData.caretaker?.user?.last_name ||
+              patientData.caretaker?.last_name,
+          ]
+            .filter(Boolean)
+            .join(" ") ||
+          patientData.caretaker?.caretaker_id ||
+          "N/A"
+        : matchedAppt?.caretaker?.user
+          ? [
+              matchedAppt.caretaker.user.first_name,
+              matchedAppt.caretaker.user.last_name,
+            ]
+              .filter(Boolean)
+              .join(" ")
+          : patientData?.caretaker_name || patientData?.caretaker || "N/A";
+
     // Prepare CSV header and rows
     let csvContent = "Patient Details\n";
     csvContent += `Name,Patient ID,Condition,Assigned Doctor,Care Taker\n`;
-    csvContent += `"${patientData && patientData?.patient_name}","${
-      patientData && patientData?.id
-    }","${patientData && patientData?.medical_his_diagnosis}","${
-      patientData && patientData?.caretaker
-    }"\n\n`;
+    csvContent += `${[
+      patientData?.patient_name || "N/A",
+      patientData?.id ?? "N/A",
+      patientData?.medical_his_diagnosis || "N/A",
+      assignedDoctorName || "N/A",
+      caretakerName || "N/A",
+    ]
+      .map(csvEscape)
+      .join(",")}\n\n`;
 
     csvContent += "Vitals\n";
     csvContent += "Parameter,Value\n";
@@ -1061,7 +1094,7 @@ export default function Overview() {
       <div className="bg-white rounded-[16px] p-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.05)] border-[1px] border-solid border-[#F0F2F5] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col gap-[16px]">
         <div className="flex items-center gap-[16px] border-b-[1px] border-solid border-[#F0F2F5] pb-[16px]">
           <img
-            src={appointment?.patient?.photo_view_url || patientdetails}
+            src={resolveMediaUrl(appointment?.patient?.photo_view_url, patientdetails)}
             alt={appointment?.patient?.patient_name || "Unknown"}
             className="w-[60px] h-[60px] rounded-[100px] object-cover border-[2px] border-solid border-[#007F5F]"
           />
@@ -1133,6 +1166,22 @@ export default function Overview() {
 
   const userData = user;
 
+  const [careTakerId, setCareTakerId] = useState(() => {
+    try {
+      const careTakerDataRaw = localStorage.getItem("careTakerData");
+      if (
+        careTakerDataRaw &&
+        careTakerDataRaw !== "undefined" &&
+        careTakerDataRaw !== "null"
+      ) {
+        return JSON.parse(careTakerDataRaw)?.id || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+
   useEffect(() => {
     if (!token || userData?.user_role !== "care_taker") return;
 
@@ -1150,8 +1199,10 @@ export default function Overview() {
             "careTakerData",
             JSON.stringify(loggedInCaretaker),
           );
+          setCareTakerId(loggedInCaretaker.id || null);
         } else {
           localStorage.removeItem("careTakerData");
+          setCareTakerId(null);
         }
       } catch (error) {
         console.log("Error fetching care taker patients:", error);
@@ -1163,21 +1214,8 @@ export default function Overview() {
     fetchCareTakerPatients();
   }, [userData, token]);
 
-  let careTakerData = null;
-  try {
-    const careTakerDataRaw = localStorage.getItem("careTakerData");
-    careTakerData =
-      careTakerDataRaw &&
-      careTakerDataRaw !== "undefined" &&
-      careTakerDataRaw !== "null"
-        ? JSON.parse(careTakerDataRaw)
-        : null;
-  } catch {
-    careTakerData = null;
-  }
-
   useEffect(() => {
-    if (!token || userData?.user_role !== "care_taker" || !careTakerData?.id) {
+    if (!token || userData?.user_role !== "care_taker" || !careTakerId) {
       return;
     }
 
@@ -1188,7 +1226,7 @@ export default function Overview() {
         const res = await axios.get(endpoint, { headers });
         const data = res.data;
         const patients = Array.isArray(data)
-          ? data.filter((appt) => appt?.caretaker?.id === careTakerData?.id)
+          ? data.filter((appt) => appt?.caretaker?.id === careTakerId)
           : [];
 
         localStorage.setItem("careTakerPatients", JSON.stringify(patients));
@@ -1200,7 +1238,7 @@ export default function Overview() {
       }
     };
     fetchCareTakerPatients();
-  }, [careTakerData, token, userData?.user_role]);
+  }, [careTakerId, token, userData?.user_role]);
 
   const patientTableColumns = [
     {
@@ -1780,11 +1818,10 @@ export default function Overview() {
                       <div className="flex items-center gap-[16px] border-b-[1px] border-solid border-[#F0F2F5] pb-[16px]">
                         <img
                           alt={name}
-                          src={
-                            appt
-                              ? appt?.patient?.photo_view_url
-                              : patientdetails
-                          }
+                          src={resolveMediaUrl(
+                            appt?.patient?.photo_view_url,
+                            patientdetails,
+                          )}
                           className="w-[60px] h-[60px] rounded-[100px] object-cover border-[2px] border-solid border-[#007F5F]"
                         />
                         <div>
@@ -2042,13 +2079,13 @@ export default function Overview() {
                     <h3 className="text-[18px] font-bold m-0 text-gray-800 tracking-tight">
                       Care Team Details
                     </h3>
-                    <SecondaryBtn name="view reports" onClick={() => {}} />
+                    <SecondaryBtn name="view reports" onClick={() => navigate("/my_reports")} />
                   </div>
 
                   {/* Info Row */}
                   <div className="flex gap-[24px] items-start">
                     <img
-                      src={careTeam.avatar || patientdetails}
+                      src={resolveMediaUrl(careTeam.avatar, patientdetails)}
                       alt="Profile"
                       className="w-[80px] h-[80px] rounded-[20px] shrink-0 object-cover border border-gray-100 shadow-sm"
                     />
@@ -2059,7 +2096,14 @@ export default function Overview() {
                         <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
                           <div className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Name</div>
                           <div className="text-[14px] font-bold text-gray-700">
-                            {careTeam.name}
+                            {typeof careTeam.name === "object"
+                              ? [
+                                  careTeam.name?.user?.first_name,
+                                  careTeam.name?.user?.last_name,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ") || "N/A"
+                              : careTeam.name}
                           </div>
                         </div>
                         <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
@@ -2160,8 +2204,8 @@ export default function Overview() {
                   {/* Calendar Grid */}
                   <div className={`transition-all duration-300 overflow-hidden ${showCalendar ? "max-h-[300px] opacity-100 mt-[-10px]" : "max-h-0 opacity-0 m-0"}`}>
                     <div className="grid grid-cols-7 gap-y-[10px] gap-x-[4px] text-center text-[12px] p-[16px] rounded-b-[16px] bg-white border border-t-0 border-gray-100 shadow-sm mx-1">
-                      {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                        <div key={d} className="font-bold text-gray-400">
+                      {["S", "M", "T", "W", "T", "F", "S"].map((d, idx) => (
+                        <div key={`${d}-${idx}`} className="font-bold text-gray-400">
                           {d}
                         </div>
                       ))}
@@ -2309,7 +2353,7 @@ export default function Overview() {
                   <p className="text-[#2E2E2E] text-[16px] font-medium">
                     My Reports
                   </p>
-                  <Primarybtn name="View Full Reports" onClick={() => {}} />
+                  <Primarybtn name="View Full Reports" onClick={() => navigate("/my_reports")} />
                 </div>
 
                 <div className="h-[1px] w-full bg-[#1B1B1B] mt-[10px] mb-[10px] opacity-10" />
@@ -2527,8 +2571,8 @@ export default function Overview() {
                 {/* Calendar */}
                 {showCalendar && (
                   <div className="grid grid-cols-7 gap-[4px] mt-[5px] text-center text-[12px]">
-                    {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                      <div key={d} className="font-semibold">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((d, idx) => (
+                      <div key={`${d}-${idx}`} className="font-semibold">
                         {d}
                       </div>
                     ))}
@@ -2694,8 +2738,8 @@ export default function Overview() {
                   {/* Calendar */}
                   {showCalendar && (
                     <div className="grid grid-cols-7 gap-[4px] mt-[-15px] text-center text-[12px] p-[10px] rounded-br-[8px] rounded-bl-[8px] bg-[#007F5F14]">
-                      {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                        <div key={d} className="font-semibold">
+                      {["S", "M", "T", "W", "T", "F", "S"].map((d, idx) => (
+                        <div key={`${d}-${idx}`} className="font-semibold">
                           {d}
                         </div>
                       ))}

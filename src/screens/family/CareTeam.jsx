@@ -7,7 +7,7 @@ import Header from "../../components/layout/Header";
 import Sider from "../../components/layout/Sider";
 import SecondaryBtn from "../../components/common/SecondaryBtn";
 import patientdetails from "../../assets/images/patient-profile.jpg";
-import { base_url, isAdminUser } from "../../constants/constants";
+import { base_url, isAdminUser, resolveMediaUrl } from "../../constants/constants";
 import { getStoredSponsorProfileId } from "../../utils/sponsorIsolation";
 
 import { Empty, message, Table, Avatar } from "antd";
@@ -95,7 +95,15 @@ export default function CareTeam() {
       key: "name",
       render: (_, record) => (
         <div className="flex items-center gap-[10px]">
-          <Avatar src={record.caretaker_profile || record.user?.profile_picture || patientdetails} />
+          <Avatar
+            src={resolveMediaUrl(
+              record.user?.photo_view_url ||
+                record.user?.photo ||
+                record.caretaker_profile ||
+                record.user?.profile_picture,
+              patientdetails,
+            )}
+          />
           <span className="font-medium text-[#1B1B1B]">
             {record.user?.first_name} {record.user?.last_name}
           </span>

@@ -5,7 +5,8 @@ import { Button, Table, Spin, Empty, Tag, Card, Divider, DatePicker } from "antd
 import { DownloadOutlined, FilePdfOutlined, CalendarOutlined, FileImageOutlined, FileTextOutlined, AudioOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { myLovedOnesService } from "../../services/myLovedOnesService";
-import { base_url, isAdminUser } from "../../constants/constants";
+import { doctorFormService } from "../../services/doctorFormService";
+import { isAdminUser, resolveMediaUrl } from "../../constants/constants";
 import {
   filterSponsorAppointments,
   filterSponsorPatients,
@@ -27,15 +28,7 @@ function SectionHeader({ title, children }) {
   );
 }
 
-const getFileUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
-  const baseUrlStripped = base_url.replace(/\/+$/, "");
-  const relativeUrlStripped = url.replace(/^\/+/, "");
-  return `${baseUrlStripped}/${relativeUrlStripped}`;
-};
+const getFileUrl = (url) => resolveMediaUrl(url, null);
 
 export default function MyReports() {
   const [selectedPatientId, setSelectedPatientId] = useState(
@@ -129,7 +122,7 @@ export default function MyReports() {
     ? true
     : Boolean(cleanedPatientId && ownedPatientIds.includes(cleanedPatientId));
 
-  const { data: appointments = [], isLoading } = useQuery({
+  const { data: appointments = [], isLoading: isAppointmentsLoading } = useQuery({
     queryKey: [
       "lovedOnesMedicalHistory",
       cleanedPatientId,
@@ -148,21 +141,96 @@ export default function MyReports() {
       (!isSponsor || (isSponsorPatientsLoaded && isPatientAuthorized)),
   });
 
-  // Filter appointments that have files or notes
-  let reportsWithFiles = appointments.filter((item) => {
-    return (
-      item.doc_reports ||
-      item.results_records ||
-      item.diagnostic_images ||
-      item.voice_notes ||
-      item.doctor_notes
-    );
+  const { data: doctorReports = [], isLoading: isDoctorReportsLoading } = useQuery({
+    queryKey: [
+      "doctorReports",
+      cleanedPatientId,
+      isSponsor ? resolvedSponsorId : "all",
+    ],
+    queryFn: async () => {
+      const data = await doctorFormService.getDoctorReports();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled:
+      !!cleanedPatientId &&
+      !!token &&
+      (!isSponsor || (isSponsorPatientsLoaded && isPatientAuthorized)),
   });
+
+  const isLoading = isAppointmentsLoading || isDoctorReportsLoading;
+
+  const combinedReports = useMemo(() => {
+    const apptReports = (Array.isArray(appointments) ? appointments : [])
+      .filter(
+        (item) =>
+          item.doc_reports ||
+          item.results_records ||
+          item.diagnostic_images ||
+          item.voice_notes ||
+          item.doctor_notes ||
+          (Array.isArray(item.documents) && item.documents.length > 0),
+      )
+      .map((item) => ({
+        ...item,
+        _cardKey: `appt-${item.id}`,
+      }));
+
+    const submittedDoctorReports = (Array.isArray(doctorReports) ? doctorReports : [])
+      .filter((r) => toValidId(r?.patient) === cleanedPatientId)
+      .map((r) => {
+        const vitalsSummary = [
+          r.bp && r.bp !== "N/A" ? `BP: ${r.bp}` : null,
+          r.heart_rate && r.heart_rate !== "N/A" ? `HR: ${r.heart_rate}` : null,
+          r.sugar && r.sugar !== "N/A" ? `Sugar: ${r.sugar}` : null,
+          r.oxygen && r.oxygen !== "N/A" ? `O2: ${r.oxygen}` : null,
+          r.temperature && r.temperature !== "N/A" ? `Temp: ${r.temperature}` : null,
+          r.respiratory_rate && r.respiratory_rate !== "N/A"
+            ? `RR: ${r.respiratory_rate}`
+            : null,
+          r.weight && r.weight !== "N/A" ? `Weight: ${r.weight}` : null,
+        ]
+          .filter(Boolean)
+          .join(" | ");
+        const combinedNotes = [
+          r.doctor_notes,
+          vitalsSummary ? `Vitals Recorded: ${vitalsSummary}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+        const visitDate =
+          (r.initial_visit && dayjs(r.initial_visit).isValid()
+            ? dayjs(r.initial_visit).format("YYYY-MM-DD")
+            : null) ||
+          (r.uploaded_at && dayjs(r.uploaded_at).isValid()
+            ? dayjs(r.uploaded_at).format("YYYY-MM-DD")
+            : "");
+        const visitTime =
+          r.uploaded_at && dayjs(r.uploaded_at).isValid()
+            ? dayjs(r.uploaded_at).format("hh:mm A")
+            : "";
+        return {
+          ...r,
+          _cardKey: `doc-report-${r.id}`,
+          doctor_display_name: r.doctor_name || "VeriMED Physician",
+          appointment_type: "Doctor Visit Report",
+          appointment_date: visitDate || r.initial_visit || "",
+          appointment_time: visitTime,
+          doctor_notes: combinedNotes || r.doctor_notes || "",
+          documents: Array.isArray(r.documents) ? r.documents : [],
+        };
+      });
+
+    return [...submittedDoctorReports, ...apptReports];
+  }, [appointments, doctorReports, cleanedPatientId]);
+
+  let reportsWithFiles = combinedReports;
 
   // Apply date filter
   if (filterDate) {
     reportsWithFiles = reportsWithFiles.filter((item) => {
-      if (!item.appointment_date) return false;
+      if (!item.appointment_date || !dayjs(item.appointment_date).isValid()) {
+        return false;
+      }
       return dayjs(item.appointment_date).isSame(filterDate, "day");
     });
   }
@@ -225,9 +293,20 @@ export default function MyReports() {
               </div>
             ) : (
               <div className="flex flex-col gap-[20px]">
-                {reportsWithFiles.map((appt, i) => (
+                {reportsWithFiles.map((appt, i) => {
+                  const rawDocName =
+                    appt.doctor_display_name ||
+                    [appt.doc?.user?.first_name, appt.doc?.user?.last_name]
+                      .filter(Boolean)
+                      .join(" ");
+                  const formattedDoctorTitle = rawDocName
+                    ? /^dr\.?\s/i.test(rawDocName) || rawDocName === "VeriMED Physician"
+                      ? rawDocName
+                      : `Dr. ${rawDocName}`
+                    : "VeriMED Physician";
+                  return (
                   <Card 
-                    key={i} 
+                    key={appt._cardKey || i} 
                     className="border border-[#E5E7EB] shadow-sm rounded-[16px] overflow-hidden hover:shadow-md transition-shadow"
                     bodyStyle={{ padding: "0" }}
                   >
@@ -235,11 +314,11 @@ export default function MyReports() {
                     <div className="bg-[#004E890A] px-[24px] py-[16px] border-b border-[#004E891A] flex justify-between items-center">
                       <div className="flex items-center gap-[12px]">
                         <div className="w-[40px] h-[40px] rounded-full bg-[#004E89] flex items-center justify-center text-white font-bold text-[16px]">
-                          {appt.doc?.user?.first_name?.charAt(0) || "D"}
+                          {(rawDocName || "D").charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="text-[16px] font-bold text-[#1F2937] m-0 leading-tight">
-                            Dr. {appt.doc?.user?.first_name} {appt.doc?.user?.last_name}
+                            {formattedDoctorTitle}
                           </p>
                           <p className="text-[13px] text-[#6B7280] m-0">
                             {appt.appointment_type || "General Consultation"}
@@ -270,7 +349,12 @@ export default function MyReports() {
                       )}
 
                       {/* Attached Files Section */}
-                      {(appt.doc_reports || appt.results_records || appt.diagnostic_images || appt.voice_notes) && (
+                      {(appt.doc_reports ||
+                        appt.results_records ||
+                        appt.diagnostic_images ||
+                        appt.voice_notes ||
+                        (Array.isArray(appt.documents) &&
+                          appt.documents.length > 0)) && (
                         <div>
                           <p className="text-[14px] font-semibold text-[#4B5563] mb-[12px]">Attached Files</p>
                           <div className="flex flex-wrap gap-[12px]">
@@ -278,12 +362,23 @@ export default function MyReports() {
                             {renderFileLink(appt.results_records, "Lab Results", <FilePdfOutlined />)}
                             {renderFileLink(appt.diagnostic_images, "Diagnostic Image", <FileImageOutlined />)}
                             {renderFileLink(appt.voice_notes, "Voice Note", <AudioOutlined />)}
+                            {Array.isArray(appt.documents) &&
+                              appt.documents.map((doc, idx) =>
+                                renderFileLink(
+                                  doc.view_link || doc.download_link || doc.file,
+                                  doc.filename?.split("/").pop() ||
+                                    doc.name ||
+                                    `Report Document ${idx + 1}`,
+                                  <FilePdfOutlined />,
+                                ),
+                              )}
                           </div>
                         </div>
                       )}
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

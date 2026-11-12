@@ -20,8 +20,15 @@ export const userManagementService = {
     };
   },
 
-  updateUserStatus: async (userId, newStatus) => {
-    const updateData = { updateid: userId, is_active_state: newStatus };
+  updateUserStatus: async (userOrId, newStatus) => {
+    const isObj = userOrId && typeof userOrId === "object";
+    const userObj = isObj ? userOrId.user || userOrId : null;
+    const updateid = isObj ? userObj?.id : userOrId;
+
+    const updateData = {
+      updateid,
+      is_active_state: newStatus,
+    };
     const formdata = new FormData();
     formdata.append("user_update_data", JSON.stringify(updateData));
     const response = await apiClient.patch("/user_update/", formdata);
@@ -49,7 +56,7 @@ export const userManagementService = {
   },
 
   updatePatientProfile: async (formData) => {
-    const response = await apiClient.patch("/patientprofile_update/", formData);
+    const response = await apiClient.patch("/patientprofile_create_update/", formData);
     return response.data;
   },
 
