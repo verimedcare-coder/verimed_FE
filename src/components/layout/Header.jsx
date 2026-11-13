@@ -26,6 +26,7 @@ import {
   UploadOutlined,
   UserOutlined,
   HeartOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 
 import flagIcon from "../../assets/icons/flag.svg";
@@ -219,8 +220,16 @@ export default function HeaderComponent() {
   }
 
   const items = [
-    { key: "1", label: "Enroll Yourself" },
-    { key: "2", label: "Enroll Your Loved One" },
+    {
+      key: "1",
+      label: <span className="font-medium text-[#1F2937]">Enroll Yourself</span>,
+      icon: <UserOutlined className="text-[#007F5F] text-[14px]" />,
+    },
+    {
+      key: "2",
+      label: <span className="font-medium text-[#1F2937]">Enroll Your Loved One</span>,
+      icon: <HeartOutlined className="text-[#E11D48] text-[14px]" />,
+    },
   ];
 
   const handleMenuClick = (e) => {
@@ -980,13 +989,20 @@ export default function HeaderComponent() {
             </Select>
           )}
 
-          {isSponsor && (
+          {(isSponsor || isAdminUser(user)) && (
             <Dropdown
               menu={{ items, onClick: handleMenuClick }}
               trigger={["click"]}
-              placement="bottomLeft"
+              placement="bottomRight"
             >
-              <Primarybtn name="Enroll Patient" />
+              <button
+                type="button"
+                className="flex items-center gap-[7px] bg-gradient-to-r from-[#007F5F] to-[#009E75] hover:from-[#006B50] hover:to-[#008764] text-white font-semibold text-[13px] h-[36px] px-[14px] rounded-[8px] border-none shadow-[0_2px_6px_rgba(0,127,95,0.25)] hover:shadow-[0_4px_10px_rgba(0,127,95,0.35)] transition-all duration-200 cursor-pointer whitespace-nowrap active:scale-[0.98]"
+              >
+                <UserAddOutlined className="text-[15px]" />
+                <span>Enroll Patient</span>
+                <DownOutlined className="text-[10px] opacity-80 ml-[2px]" />
+              </button>
             </Dropdown>
           )}
 
